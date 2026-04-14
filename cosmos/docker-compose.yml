@@ -1,0 +1,42 @@
+services:
+  cosmos-mongo:
+    image: mongo:8
+    container_name: cosmos-mongo-8FZ
+    restart: always
+    ports:
+      - "127.0.0.1:27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=cosmos-Ba28K
+      - MONGO_INITDB_ROOT_PASSWORD=0MyNydcqG144a4zJOCZfozak
+    command:
+      - --wiredTigerCacheSizeGB
+      - "0.25"
+    volumes:
+      - cosmos-mongo-data:/data/db
+      - cosmos-mongo-config:/data/configdb
+
+  cosmos-server:
+    image: azukaar/cosmos-server:latest
+    container_name: cosmos-server
+    hostname: cosmos-server
+    restart: always
+    depends_on:
+      - cosmos-mongo
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /:/mnt/host
+#      - /var/lib/cosmos:/config
+      - ./config:/config:rw
+    environment:
+      - TZ=America/Los_Angeles
+      - COSMOS_MONGODB=mongodb://cosmos-Ba28K:0MyNydcqG144a4zJOCZfozak@127.0.0.1:27017/admin?authSource=admin
+      - COSMOS_HOSTNAME=home.local
+    network_mode: host
+
+volumes:
+  cosmos-mongo-data:
+    name: cosmos-mongo-data-8FZ
+  cosmos-mongo-config:
+    name: cosmos-mongo-config-8FZ

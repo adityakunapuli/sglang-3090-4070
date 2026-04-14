@@ -1,0 +1,202 @@
+services:
+  broker:
+    image: docker.io/library/redis:8
+    container_name: paperless_redis
+    restart: "no"
+    volumes:
+      - ./redis:/data
+
+  db:
+    image: docker.io/library/postgres:18
+    container_name: paperless_db
+    restart: "no"
+    volumes:
+      - ./db:/var/lib/postgresql
+    env_file:
+      - .env
+
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless_web
+    restart: "no"
+    depends_on:
+      - db
+      - broker
+      - gotenberg
+      - tika
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - ./data:/usr/src/paperless/data
+      - /mnt/storage/documents/archive:/usr/src/paperless/media
+      - /mnt/storage/documents/export:/usr/src/paperless/export
+      - /mnt/storage/documents/consume:/usr/src/paperless/consume
+    env_file:
+      - .env
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless.rule=Host(`paperless.home.lan`)"
+      - "traefik.http.routers.paperless.entrypoints=web"
+      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:7.10
+    container_name: paperless_gotenberg
+    restart: "no"
+    command:
+      - "gotenberg"
+      - "--chromium-disable-routes=true"
+
+  tika:
+    image: docker.io/apache/tika:latest
+    container_name: paperless_tika
+    restart: "no"
+
+  paperless-ai:
+    image: clusterzx/paperless-ai:latest
+    container_name: paperless_ai
+    restart: "no"
+    ports:
+      - "8001:3000"
+    depends_on:
+      webserver:
+        condition: service_healthy
+    environment:
+      - PAPERLESS_URL=http://webserver:8000/api
+      - PAPERLESS_TOKEN=${PAPERLESS_API_TOKEN}
+      - AI_PROVIDER=custom
+      - AI_MODEL=Qwen3.5-9B-GGUF
+      - OPENAI_API_KEY=local
+      - OPENAI_API_BASE=http://llama-server:9876/v1
+      - API_KEY=327727dddd63ce06901455aa4c0eee0d31e5d79cf83d51f7faa46f40b759cfb2
+      - DISABLE_AUTOMATIC_PROCESSING=no
+      - USE_LOCAL_LLM=true
+      - PAPERLESS_AI_INITIAL_SETUP=no
+      - >-
+        SYSTEM_PROMPT=You are a personalized document analyzer. Your task is to analyze documents and extract relevant information.
+
+                      Analyze the document content and extract the following information into a structured JSON object:
+
+                      1. title: Create a concise, meaningful title for the document
+                      2. correspondent: Identify the sender/institution but do not include addresses
+                      3. tags: Select up to 4 relevant thematic tags
+                      4. document_date: Extract the document date (format: YYYY-MM-DD).
+                      5. document_type: Determine a precise type that classifies the document (e.g., Invoice, Tax Form, Medical Superbill, Contract)
+                      6. language: Determine the document language (e.g. "de" or "en")
+                      7. healthcare_metadata: If and ONLY IF the document is a medical invoice or superbill, populate this nested object with the fields listed below. Otherwise, return null.
+
+                      Important rules for the analysis:
+
+                      For tags:
+                      - FIRST check the existing tags before suggesting new ones.
+                      - Use only relevant categories. Maximum 4 tags per document.
+                      - TAX DOCUMENTS: If the document is tax-related, you MUST include a tag with the specific tax year in the format "Tax YYYY" (e.g., "Tax 2024", "Tax 2025").
+                      - MEDICAL DOCUMENTS: If the document is a medical invoice, tag it with "Medical". If the document specifically relates to fertility, embryology, FET, or IVF procedures, you MUST include the tag "IVF".
+                      - The output language is the one used in the document! IMPORTANT!
+
+                      For the title:
+                      - Short and concise, NO ADDRESSES.
+                      - Contains the most important identification features.
+                      - For invoices/orders, mention invoice/order number if available.
+                      - The output language is the one used in the document! IMPORTANT!
+
+                      For the correspondent:
+                      - Identify the sender or institution.
+                      - Always create the shortest possible form of the company name (e.g. "Amazon" instead of "Amazon EU SARL, German branch").
+
+                      For the document date:
+                      - Extract the date of the document using the format YYYY-MM-DD.
+                      - If multiple dates are present, use the most relevant one (e.g., the date of service or the statement date).
+
+                      For tax forms:
+                      - Ensure that the tag says "Tax <YEAR>"--e.g., "Tax 2025" which would indicate that a given form should be filed with my 2025 taxes.  The most common types of tax forms include 1099s (Int/Div/etc) and W-2s, though may include other types as well.
+
+                      For the language:
+                      - ALWAYS default to English.
+
+                      For healthcare_metadata (Populate ONLY for medical invoices/superbills):
+                      Extract the following into a nested JSON object. Use null if a specific field cannot be found on the document:
+                      - provider_name: Name of the medical provider or clinic.
+                      - provider_address: Full address of the provider.
+                      - tax_id: The provider's Tax ID (TIN/EIN).
+                      - procedure_codes: Array of strings containing CPT or HCPC codes.
+                      - procedure_units: Array or mapping of the units for each corresponding procedure code.
+                      - diagnosis_codes: Array of strings containing Diagnosis (ICD-10) codes.
+                      - patient_name: Name of the patient receiving the service.
+                      - service_location: Location where the service was rendered.
+                      - date_of_service: Date the procedure/service took place (YYYY-MM-DD).
+                      - billed_amounts: Array or mapping of the billed amount in USD for each procedure code.
+                      - total_amount_paid: The total amount paid in USD by the patient.
+                      - npi: The National Provider ID (NPI).
+    volumes:
+      - ./paperless-ai-data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59']
+              capabilities: [gpu]
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless-ai.rule=Host(`paperless-ai.home.lan`)"
+      - "traefik.http.routers.paperless-ai.entrypoints=web"
+      - "traefik.http.services.paperless-ai.loadbalancer.server.port=3000"
+
+  paperless-gpt:
+    image: icereed/paperless-gpt:latest
+    container_name: paperless_gpt
+    restart: unless-stopped
+    ports:
+      - "8002:8080"
+    depends_on:
+      webserver:
+        condition: service_healthy
+    environment:
+      - PAPERLESS_BASE_URL=http://webserver:8000
+      - PAPERLESS_API_TOKEN=${PAPERLESS_API_TOKEN}
+      - LLM_PROVIDER=openai
+      - LLM_MODEL=Qwen3.5-9B-GGUF
+      - OPENAI_API_KEY=local
+      - OPENAI_BASE_URL=http://llama-server:9876/v1
+      - OCR_PROVIDER=llm
+      - VISION_LLM_PROVIDER=openai
+      - VISION_LLM_MODEL=Qwen3.5-9B-GGUF
+      - VISION_LLM_MAX_TOKENS=4096
+      - VISION_LLM_TEMPERATURE=0.0
+      - IMAGE_MAX_PIXEL_DIMENSION=2000
+      - IMAGE_MAX_TOTAL_PIXELS=4000000
+      - IMAGE_MAX_RENDER_DPI=300
+      - AUTO_PROCESS=true
+      - PROCESS_INTERVAL=300
+      - PROMPT=Analyze document and return JSON with keys title, correspondent, and created_date (YYYY-MM-DD). No other text.
+    volumes:
+      - ./gpt-data:/app/data
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless-gpt.rule=Host(`paperless-gpt.home.lan`)"
+      - "traefik.http.routers.paperless-gpt.entrypoints=web"
+      - "traefik.http.services.paperless-gpt.loadbalancer.server.port=8080"
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,73 @@
+[?1049h[22;0;0t[?1h= schemaname |        tablename        | tableowner 
+------------+-------------------------+------------
+ public     | kysely_migrations       | postgres
+ public     | kysely_migrations_lock  | postgres
+ public     | system_metadata         | postgres
+ public     | version_history         | postgres
+ public     | audit                   | postgres
+ public     | move_history            | postgres
+ public     | face_search             | postgres
+ public     | smart_search            | postgres
+ public     | tag_asset               | postgres
+ public     | activity                | postgres
+ public     | person                  | postgres
+ public     | migration_overrides     | postgres
+ public     | person_audit            | postgres
+ public     | user_metadata_audit     | postgres
+ public     | user_metadata           | postgres
+ public     | album_asset_audit       | postgres
+ public     | album_asset             | postgres
+ public     | album_audit             | postgres
+ public     | album_user_audit        | postgres
+ public     | album_user              | postgres
+ public     | album                   | postgres
+:[K[?1049h[22;0;0t[?1h= schemaname |        tablename        | tableowner 
+------------+-------------------------+------------
+ public     | kysely_migrations       | postgres
+ public     | kysely_migrations_lock  | postgres
+ public     | system_metadata         | postgres
+ public     | version_history         | postgres
+ public     | audit                   | postgres
+ public     | move_history            | postgres
+ public     | face_search             | postgres
+ public     | smart_search            | postgres
+ public     | tag_asset               | postgres
+ public     | activity                | postgres
+ public     | person                  | postgres
+ public     | migration_overrides     | postgres
+ public     | person_audit            | postgres
+ public     | user_metadata_audit     | postgres
+ public     | user_metadata           | postgres
+ public     | album_asset_audit       | postgres
+ public     | album_asset             | postgres
+ public     | album_audit             | postgres
+ public     | album_user_audit        | postgres
+ public     | album_user              | postgres
+ public     | album                   | postgres
+:[K[K public     | api_key                 | postgres
+:[K[K public     | asset_audit             | postgres
+:[K[K public     | asset                   | postgres
+:[K[?1049h[22;0;0t[?1h= schemaname |        tablename        | tableowner 
+------------+-------------------------+------------
+ public     | kysely_migrations       | postgres
+ public     | kysely_migrations_lock  | postgres
+ public     | system_metadata         | postgres
+ public     | version_history         | postgres
+ public     | audit                   | postgres
+ public     | move_history            | postgres
+ public     | face_search             | postgres
+ public     | smart_search            | postgres
+ public     | tag_asset               | postgres
+ public     | activity                | postgres
+ public     | person                  | postgres
+ public     | migration_overrides     | postgres
+ public     | person_audit            | postgres
+ public     | user_metadata_audit     | postgres
+ public     | user_metadata           | postgres
+ public     | album_asset_audit       | postgres
+ public     | album_asset             | postgres
+ public     | album_audit             | postgres
+ public     | album_user_audit        | postgres
+ public     | album_user              | postgres
+ public     | album                   | postgres
+:[K[K[?1l>[?1049l[23;0;0t

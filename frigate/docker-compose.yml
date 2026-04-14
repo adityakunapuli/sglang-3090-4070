@@ -1,0 +1,98 @@
+services:
+  frigate:
+    container_name: frigate
+    privileged: false # Keep disabled to enforce GPU device constraints
+    restart: unless-stopped
+    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
+    shm_size: "1gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
+    env_file: .env
+    environment:
+#      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+      - NVIDIA_VISIBLE_DEVICES=${GPU_3050}
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - OPENAI_BASE_URL=http://llama-server:9876/v1
+      - OPENAI_BASE=http://llama-server:9876/v1
+      - OPENAI_API_KEY=asddsa
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config:/config
+      - /mnt/FatMan/frigate_media:/media/frigate
+      - /mnt/data/models/frigate-detectors:/models
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - "5000:5000"
+    networks:
+      - default
+      - proxy
+  0861  labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frigate.rule=Host(`frigate.home.lan`)"
+      - "traefik.http.routers.frigate.entrypoints=web"
+      - "traefik.http.services.frigate.loadbalancer.server.port=5000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [
+#                            'GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877'
+                '${GPU_3050:?GPU_3050_UUID_NOT_SET}'
+              ]
+              capabilities: [gpu, compute, video, utility]
+
+
+networks:
+  proxy:
+    external: true
+
+
+#services:
+#  frigate:
+#    container_name: frigate
+#    privileged: false # Keep disabled to enforce GPU device constraints
+#    restart: unless-stopped
+#    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
+#    shm_size: "1gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
+#    env_file: .env
+#    environment:
+#      # We define the specific UUID in the deploy block, but keeping this
+#      # can be helpful for internal scripts or debugging within the container.
+#      # To see GPU UUID, use `nvidia-smi -L`
+#      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+#      - NVIDIA_DRIVER_CAPABILITIES=all
+#      - OPENAI_BASE_URL=http://llama-server:9876/v1
+#      - OPENAI_BASE=http://llama-server:9876/v1
+#      - OPENAI_API_KEY=asddsa
+#    volumes:
+#      - /etc/localtime:/etc/localtime:ro
+#      - ./config:/config
+#      - /mnt/FatMan/frigate_media:/media/frigate
+#      - /mnt/data/models/frigate-detectors:/models
+#      - type: tmpfs
+#        target: /tmp/cache
+#        tmpfs:
+#          size: 1000000000
+#    ports:
+#      - "5000:5000"
+#    networks:
+#      - default
+#      - proxy
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.frigate.rule=Host(`frigate.home.lan`)"
+#      - "traefik.http.routers.frigate.entrypoints=web"
+#      - "traefik.http.services.frigate.loadbalancer.server.port=5000"
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              device_ids: ['GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877']
+#              capabilities: [gpu, compute, video, utility]
+#
+#networks:
+#  proxy:
+#    external: true

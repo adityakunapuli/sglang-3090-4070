@@ -1,0 +1,41 @@
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    ports:
+      - "32400:32400"
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plex.rule=Host(`plex.home.lan`)"
+      - "traefik.http.routers.plex.entrypoints=web"
+      - "traefik.http.services.plex.loadbalancer.server.port=32400"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+      # CLAIM TOKEN: Get one at https://www.plex.tv/claim (valid for 4 minutes)
+      - PLEX_CLAIM=claim-wTGzzQYxpzs7Z7kWawyf
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    volumes:
+      - /mnt/data/media_cache/plex/config:/config
+      # Mapping your existing media pool
+      - /mnt/storage/media:/media
+      # Optional: Transcode to RAM (saves SSD wear). Requires enough RAM (8GB+ system).
+      # If you have low RAM, remove this line.
+      - /dev/shm:/transcode
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute, video]
+
+networks:
+  proxy:
+    external: true

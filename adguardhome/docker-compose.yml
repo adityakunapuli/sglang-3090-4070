@@ -1,0 +1,34 @@
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      # Bind DNS specifically to Local and Tailscale IPs to avoid libvirt conflict
+      - "192.168.254.111:53:53/tcp"
+      - "192.168.254.111:53:53/udp"
+      - "100.90.25.88:53:53/tcp"
+      - "100.90.25.88:53:53/udp"
+      - "3001:80/tcp"     # Web UI (Post-setup)
+    volumes:
+      - ./work:/opt/adguardhome/work
+      - ./conf:/opt/adguardhome/conf
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adguard.rule=Host(`adguard.home.lan`)"
+      - "traefik.http.routers.adguard.entrypoints=web"
+      - "traefik.http.services.adguard.loadbalancer.server.port=80"
+      - "homepage.group=Home Ops"
+      - "homepage.name=AdGuard Home"
+      - "homepage.icon=adguard-home.png"
+      - "homepage.href=http://adguard.home.lan"
+      - "homepage.description=DNS"
+      - "homepage.widget.type=adguard"
+      - "homepage.widget.url=http://adguardhome:80"
+
+networks:
+  proxy:
+    external: true

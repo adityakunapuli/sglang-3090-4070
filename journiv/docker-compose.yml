@@ -1,0 +1,24 @@
+services:
+  journiv:
+    image: swalabtech/journiv-app:${APP_VERSION:-latest}
+    container_name: journiv
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      - DISABLE_SIGNUP=false
+      - DOMAIN_SCHEME=http
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    labels:
+      - "homepage.group=System & AI"
+      - "homepage.name=Journiv"
+      - "homepage.icon=mdi-notebook-outline"
+      - "homepage.href=http://192.168.254.111:8000"
+      - "homepage.target=_self"
+      - "homepage.description=Self-hosted journal and milestone tracker"

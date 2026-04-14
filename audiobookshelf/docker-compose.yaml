@@ -1,0 +1,38 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    ports:
+      - "13378:80"
+    environment:
+      - TZ=UTC # Change this to your local timezone if needed
+    volumes:
+      - ./config:/config
+      - ./metadata:/metadata
+      - /mnt/storage/media/audiobooks:/audiobooks
+    restart: unless-stopped
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.audiobookshelf.rule=Host(`audiobookshelf.home.lan`)"
+      - "traefik.http.routers.audiobookshelf.entrypoints=web"
+      - "traefik.http.services.audiobookshelf.loadbalancer.server.port=80"
+
+  # abs-tract is primarily used to sync an Audible library to Audiobookshelf.
+  # Since you mentioned you might have only needed it once for migration, 
+  # it is not required for Audiobookshelf to function normally.
+  # You can leave it commented out if you no longer need to sync from Audible.
+#  abs-tract:
+#    image: arranhs/abs-tract
+#    build:
+#     context: .
+#    container_name: abs-tract
+#    ports:
+#     - "6666:5555"
+#    restart: unless-stopped
+#
+#networks:
+#  proxy:
+#    external: true

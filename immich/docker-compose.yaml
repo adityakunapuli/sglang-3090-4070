@@ -1,0 +1,119 @@
+services:
+  immich-server:
+    container_name: immich_server
+    image: ghcr.io/immich-app/immich-server:release
+    volumes:
+      # THE DESTINATION: Immich will manage this folder.
+      # It will create "library", "thumbs", "encoded-video", etc. here.
+      - /mnt/storage/media/photos:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # Database Connection
+      - DB_HOSTNAME=immich_postgres
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE_NAME=immich
+      # Redis Connection
+      - REDIS_HOSTNAME=immich_redis
+      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+      - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
+    ports:
+      - "2283:2283"
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.immich.rule=Host(`immich.home.lan`)"
+      - "traefik.http.routers.immich.entrypoints=web"
+      - "traefik.http.services.immich.loadbalancer.server.port=2283"
+    depends_on:
+      - immich_redis
+      - immich_postgres
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids:
+                - GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+              capabilities:
+                - gpu
+                - video
+                - utility
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    # CUDA tag for your Quadro P620
+    image: ghcr.io/immich-app/immich-machine-learning:release-cuda
+    environment:
+      # We define the specific UUID in the deploy block, but keeping this
+      # can be helpful for internal scripts or debugging within the container.
+      # To see GPU UUID, use `nvidia-smi -L`
+      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+      - NVIDIA_DRIVER_CAPABILITIES=all
+#      - MACHINE_LEARNING_MODEL_TTL=0
+#      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-SO400M-16-SigLIP2-384__webli
+#      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-SO400M-16-SigLIP2-384__webli
+    volumes:
+      - model-cache:/cache
+    restart: always
+    ports:
+      - "3003:3003" # useful for debugging
+
+    deploy: # This block passes the GPU to the container
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids:
+                - GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+              capabilities:
+                - all
+
+  immich_redis:
+    container_name: immich_redis
+    image: redis:6.2-alpine@sha256:d6c2911ac51b289db208767581a5d154544f2b2fe4914ea5056443f62dc6e900
+    restart: always
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 30s
+      timeout: 30s
+      retries: 50
+      start_period: 5s
+  immich_postgres:
+    container_name: immich_postgres
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      # Stores DB data in a local folder './postgres' relative to this compose file
+      - ./postgres:/var/lib/postgresql/data
+    restart: always
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=vectors.so
+      - -c
+      - search_path="$$user", public, vectors
+      - -c
+      - logging_collector=on
+      - -c
+      - max_wal_size=2GB
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - wal_compression=on
+volumes:
+  model-cache: null
+networks:
+  proxy:
+    external: true

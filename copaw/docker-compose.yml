@@ -1,0 +1,20 @@
+services:
+  copaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+#    image: copaw-ops:latest
+    image: agentscope/qwenpaw:latest
+    container_name: copaw
+    restart: always
+    privileged: true
+    pid: host
+    network_mode: host
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ./copaw-data:/app/working
+      - ./copaw-secrets:/app/working.secret
+      - /mnt/data:/mnt/data
+      - /var/run/docker.sock:/var/run/docker.sock
+#      - /run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock

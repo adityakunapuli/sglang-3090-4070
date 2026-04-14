@@ -1,0 +1,105 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    init: true
+    networks:
+      - homepage_default      # Keep its own network
+      - immich_net            # Connect to Immich
+      - arr_net               # Connect to new Arr stack
+      - proxy
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../.env
+    volumes:
+      - ./config:/app/config
+#      - ./public/background.png:/app/public/background.png
+      - ./public/snapraid.json:/app/public/snapraid.json
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Optional: For Docker stats
+      - /var/snapraid.content:/app/data/snapraid.content:ro
+    environment:
+      PUID: 1000
+      PGID: 988
+      # "*" tells Homepage to accept connections from ANY IP or Hostname
+      HOMEPAGE_ALLOWED_HOSTS: "*"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`home.lan`) || Host(`homepage.home.lan`)"
+      - "traefik.http.routers.homepage.entrypoints=web"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+    restart: unless-stopped
+
+  cosmos-mongo:
+    image: mongo:8
+    container_name: cosmos-mongo-8FZ
+    restart: always
+    ports:
+      - "127.0.0.1:27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=cosmos-Ba28K
+      - MONGO_INITDB_ROOT_PASSWORD=0MyNydcqG144a4zJOCZfozak
+    command:
+      - --wiredTigerCacheSizeGB
+      - "0.25"
+    volumes:
+      - cosmos-mongo-data:/data/db
+      - cosmos-mongo-config:/data/configdb
+
+  cosmos-server:
+    image: azukaar/cosmos-server:latest
+    container_name: cosmos-server
+    hostname: cosmos-server
+    restart: always
+    depends_on:
+      - cosmos-mongo
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /:/mnt/host
+#      - /var/lib/cosmos:/config
+      - ./config:/config:rw
+    environment:
+      - TZ=America/Los_Angeles
+      - COSMOS_MONGODB=mongodb://cosmos-Ba28K:0MyNydcqG144a4zJOCZfozak@127.0.0.1:27017/admin?authSource=admin
+      - COSMOS_HOSTNAME=home.local
+    network_mode: host
+
+  glances:
+    image: nicolargo/glances:latest-full
+    container_name: glances
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - GLANCES_OPT=-w -B 0.0.0.0
+    ports:
+      - "61208:61208"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, video, utility]
+    networks:
+      - homepage_default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.glances.rule=Host(`glances.home.lan`)"
+      - "traefik.http.routers.glances.entrypoints=web"
+      - "traefik.http.services.glances.loadbalancer.server.port=61208"
+
+networks:
+  proxy:
+    external: true
+  homepage_default:
+  immich_net:
+    name: immich_default           # This MUST match the name in your terminal output
+    external: true
+  arr_net:
+    name: arr-stack_default
+    external: true

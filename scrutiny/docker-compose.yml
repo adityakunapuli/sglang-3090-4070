@@ -1,0 +1,35 @@
+services:
+  scrutiny:
+    container_name: scrutiny
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    restart: unless-stopped
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN # Required for NVMe/SSD deep data
+    ports:
+      - "8080:8080"
+      - "8086:8086"
+    volumes:
+      - /run/udev:/run/udev:ro
+      - ./config:/opt/scrutiny/config
+      - ./data:/opt/scrutiny/influxdb
+    devices:
+      - "/dev/sda:/dev/sda" # 18TB WDC WUH721818AL (Ultrastar DC HC550)
+      - "/dev/sdb:/dev/sdb" # 8TB HGST HUS728T8TAL (Ultrastar DC HC320)
+      - "/dev/sdc:/dev/sdc" # 6TB WDC WD60EFRX-68M (WD Red Plus)
+      - "/dev/sdd:/dev/sdd" # 500GB Samsung SSD 840 (OS SSD)
+      - "/dev/sde:/dev/sde" # 6TB ST6000NM0115-1YZ (Seagate Enterprise Capacity)
+      - "/dev/sdf:/dev/sdf" # 8TB WDC WD80EMAZ-00M (VAG2E09L)
+      - "/dev/sdg:/dev/sdg" # 6TB WDC WD60EFRX-68M (WD Red Plus)
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scrutiny.rule=Host(`scrutiny.home.lan`)"
+      - "traefik.http.routers.scrutiny.entrypoints=web"
+      - "traefik.http.services.scrutiny.loadbalancer.server.port=8080"
+
+networks:
+  proxy:
+    external: true

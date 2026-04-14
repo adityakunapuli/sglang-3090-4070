@@ -1,0 +1,25 @@
+services:
+  coolercontrold:
+    image: coolercontrol/coolercontrold
+    container_name: coolercontrold
+    restart: unless-stopped
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "11987:11987"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - ./config:/etc/coolercontrol
+      - /sys:/sys:rw
+      - /dev:/dev
+      - /lib/modules:/lib/modules:ro
+      - /etc/sensors.d:/etc/sensors.d:ro
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
