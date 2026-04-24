@@ -3,12 +3,13 @@ services:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     container_name: llama-server
     # MUST remain disabled to prevent automatic restart loops after OOM-induced system collapse.
-    restart: "no"  # DO NOT CHANGE
+    restart: "unless-stopped"
     ports:
       - "9876:9876"
     volumes:
       - /mnt/data/models/llm:/mnt/data/models/llm
-      - ./qwen35-27b.sh:/app/run_server.sh:ro
+#      - ./qwen35-27b.sh:/app/run_server.sh:ro
+      - ./gemma-4-26b.sh:/app/run_server.sh:ro
 #      - ./gemma-4-31b.sh:/app/run_server.sh:ro
 #      - ./qwen35-9b.sh:/app/run_server.sh:ro
     environment:
