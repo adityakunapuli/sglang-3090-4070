@@ -39,6 +39,14 @@ services:
             - "traefik.http.routers.deluge.rule=Host(`deluge.home.lan`)"
             - "traefik.http.routers.deluge.entrypoints=web"
             - "traefik.http.services.deluge.loadbalancer.server.port=8112"
+            - "homepage.group=Media Automation"
+            - "homepage.name=Deluge"
+            - "homepage.icon=deluge.png"
+            - "homepage.href=http://192.168.254.111:8112"
+            - "homepage.description=Downloads (VPN)"
+            - "homepage.widget.type=deluge"
+            - "homepage.widget.url=http://delugevpn:8112"
+            - "homepage.widget.password=deluge"
 
     # --- 2. ARRRRRRRR ---
     radarr:
@@ -64,6 +72,15 @@ services:
             - "traefik.http.routers.radarr.rule=Host(`radarr.home.lan`)"
             - "traefik.http.routers.radarr.entrypoints=web"
             - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+            - "homepage.group=Media Automation"
+            - "homepage.name=Radarr"
+            - "homepage.icon=radarr.png"
+            - "homepage.href=http://192.168.254.111:7878"
+            - "homepage.description=Movies"
+            - "homepage.widget.type=radarr"
+            - "homepage.widget.url=http://radarr:7878"
+            - "homepage.widget.key=7511ead00cf24242b597f56108ba52d0"
+            - "homepage.widget.showStats=true"
 
     sonarr:
         image: linuxserver/sonarr:latest
@@ -88,6 +105,15 @@ services:
             - "traefik.http.routers.sonarr.rule=Host(`sonarr.home.lan`)"
             - "traefik.http.routers.sonarr.entrypoints=web"
             - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+            - "homepage.group=Media Automation"
+            - "homepage.name=Sonarr"
+            - "homepage.icon=sonarr.png"
+            - "homepage.href=http://192.168.254.111:8989"
+            - "homepage.description=TV Shows"
+            - "homepage.widget.type=sonarr"
+            - "homepage.widget.url=http://sonarr:8989"
+            - "homepage.widget.key=f181490a72c44d998dc7a62271ab88cc"
+            - "homepage.widget.showStats=true"
 
     prowlarr:
         image: lscr.io/linuxserver/prowlarr:latest
@@ -111,6 +137,15 @@ services:
             - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.home.lan`)"
             - "traefik.http.routers.prowlarr.entrypoints=web"
             - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+            - "homepage.group=Media Automation"
+            - "homepage.name=Prowlarr"
+            - "homepage.icon=prowlarr.png"
+            - "homepage.href=http://192.168.254.111:9696"
+            - "homepage.description=Indexer Manager"
+            - "homepage.widget.type=prowlarr"
+            - "homepage.widget.url=http://prowlarr:9696"
+            - "homepage.widget.key=85c0a8ae8e8f4b14a10baaf11703f9fb"
+            - "homepage.widget.showStats=true"
 
     flaresolverr:
         image: flaresolverr/flaresolverr:latest

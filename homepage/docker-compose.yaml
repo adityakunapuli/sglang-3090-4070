@@ -14,13 +14,15 @@ services:
       - ../.env
     volumes:
       - ./config:/app/config
+      - ./public/icons:/app/public/icons
+      - ./public/images:/app/public/images
 #      - ./public/background.png:/app/public/background.png
       - ./public/snapraid.json:/app/public/snapraid.json
       - /var/run/docker.sock:/var/run/docker.sock:ro # Optional: For Docker stats
       - /var/snapraid.content:/app/data/snapraid.content:ro
     environment:
       PUID: 1000
-      PGID: 988
+      PGID: 987
       # "*" tells Homepage to accept connections from ANY IP or Hostname
       HOMEPAGE_ALLOWED_HOSTS: "*"
     labels:
@@ -29,42 +31,6 @@ services:
       - "traefik.http.routers.homepage.entrypoints=web"
       - "traefik.http.services.homepage.loadbalancer.server.port=3000"
     restart: unless-stopped
-
-  cosmos-mongo:
-    image: mongo:8
-    container_name: cosmos-mongo-8FZ
-    restart: always
-    ports:
-      - "127.0.0.1:27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=cosmos-Ba28K
-      - MONGO_INITDB_ROOT_PASSWORD=0MyNydcqG144a4zJOCZfozak
-    command:
-      - --wiredTigerCacheSizeGB
-      - "0.25"
-    volumes:
-      - cosmos-mongo-data:/data/db
-      - cosmos-mongo-config:/data/configdb
-
-  cosmos-server:
-    image: azukaar/cosmos-server:latest
-    container_name: cosmos-server
-    hostname: cosmos-server
-    restart: always
-    depends_on:
-      - cosmos-mongo
-    privileged: true
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
-      - /:/mnt/host
-#      - /var/lib/cosmos:/config
-      - ./config:/config:rw
-    environment:
-      - TZ=America/Los_Angeles
-      - COSMOS_MONGODB=mongodb://cosmos-Ba28K:0MyNydcqG144a4zJOCZfozak@127.0.0.1:27017/admin?authSource=admin
-      - COSMOS_HOSTNAME=home.local
-    network_mode: host
 
   glances:
     image: nicolargo/glances:latest-full
@@ -92,6 +58,11 @@ services:
       - "traefik.http.routers.glances.rule=Host(`glances.home.lan`)"
       - "traefik.http.routers.glances.entrypoints=web"
       - "traefik.http.services.glances.loadbalancer.server.port=61208"
+      - "homepage.group=System"
+      - "homepage.name=Glances"
+      - "homepage.icon=glances.png"
+      - "homepage.href=http://192.168.254.111:61208"
+      - "homepage.description=System Monitoring"
 
 networks:
   proxy:

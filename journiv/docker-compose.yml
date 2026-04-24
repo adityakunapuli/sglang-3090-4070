@@ -16,7 +16,7 @@ services:
     volumes:
       - ./data:/data
     labels:
-      - "homepage.group=System & AI"
+      - "homepage.group=System"
       - "homepage.name=Journiv"
       - "homepage.icon=mdi-notebook-outline"
       - "homepage.href=http://192.168.254.111:8000"

@@ -23,3 +23,9 @@ services:
       - /lib/modules:/lib/modules:ro
       - /etc/sensors.d:/etc/sensors.d:ro
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
+    labels:
+      - "homepage.group=System"
+      - "homepage.name=CoolerControl"
+      - "homepage.icon=/icons/coolercontrol.svg"
+      - "homepage.href=http://192.168.254.111:11987"
+      - "homepage.description=Fan & Cooling Control"

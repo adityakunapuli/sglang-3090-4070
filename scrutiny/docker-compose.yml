@@ -29,6 +29,14 @@ services:
       - "traefik.http.routers.scrutiny.rule=Host(`scrutiny.home.lan`)"
       - "traefik.http.routers.scrutiny.entrypoints=web"
       - "traefik.http.services.scrutiny.loadbalancer.server.port=8080"
+      - "homepage.group=System"
+      - "homepage.name=Scrutiny"
+      - "homepage.icon=scrutiny.png"
+      - "homepage.href=http://192.168.254.111:8080"
+      - "homepage.description=Drive Health Monitoring"
+      - "homepage.widget.type=scrutiny"
+      - "homepage.widget.url=http://scrutiny:8080"
+      - "homepage.widget.showStats=true"
 
 networks:
   proxy:

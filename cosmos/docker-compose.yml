@@ -34,6 +34,12 @@ services:
       - COSMOS_MONGODB=mongodb://cosmos-Ba28K:0MyNydcqG144a4zJOCZfozak@127.0.0.1:27017/admin?authSource=admin
       - COSMOS_HOSTNAME=home.local
     network_mode: host
+    labels:
+      - "homepage.group=System"
+      - "homepage.name=Cosmos"
+      - "homepage.icon=/icons/cosmos.svg"
+      - "homepage.href=http://192.168.254.111"
+      - "homepage.description=Container Stats & Docker Events"
 
 volumes:
   cosmos-mongo-data:

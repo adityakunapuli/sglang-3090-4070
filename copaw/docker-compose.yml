@@ -1,8 +1,8 @@
 services:
   copaw:
-    build:
-      context: .
-      dockerfile: Dockerfile
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
 #    image: copaw-ops:latest
     image: agentscope/qwenpaw:latest
     container_name: copaw
@@ -18,3 +18,9 @@ services:
       - /mnt/data:/mnt/data
       - /var/run/docker.sock:/var/run/docker.sock
 #      - /run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+    labels:
+      - "homepage.group=AI"
+      - "homepage.name=Copaw"
+      - "homepage.icon=/icons/qwen.png"
+      - "homepage.href=http://192.168.254.111:8088"
+      - "homepage.description=AI Agent Workspace (Copaw)"

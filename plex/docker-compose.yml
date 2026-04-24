@@ -12,6 +12,15 @@ services:
       - "traefik.http.routers.plex.rule=Host(`plex.home.lan`)"
       - "traefik.http.routers.plex.entrypoints=web"
       - "traefik.http.services.plex.loadbalancer.server.port=32400"
+      - "homepage.group=Media Automation"
+      - "homepage.name=Plex"
+      - "homepage.icon=plex.png"
+      - "homepage.href=http://192.168.254.111:32400/web"
+      - "homepage.description=Media Server"
+      - "homepage.widget.type=plex"
+      - "homepage.widget.url=http://plex:32400"
+      - "homepage.widget.key=VEbr3vWDZc5bGQipydU8"
+      - 'homepage.widget.fields=["streams", "movies", "tv"]'
     environment:
       - PUID=1000
       - PGID=1000
