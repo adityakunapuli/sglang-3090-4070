@@ -25,7 +25,7 @@ services:
       - gotenberg
       - tika
     ports:
-      - "8000:8000"
+      - "8010:8000"
     healthcheck:
       test: [ "CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000" ]
       interval: 30s
@@ -51,6 +51,15 @@ services:
       - "traefik.http.routers.paperless.rule=Host(`paperless.home.lan`)"
       - "traefik.http.routers.paperless.entrypoints=web"
       - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+      - "homepage.group=Paperless Stack"
+      - "homepage.name=Paperless"
+      - "homepage.icon=paperless.png"
+      - "homepage.href=http://192.168.254.111:8010"
+      - "homepage.description=Document Archive"
+      - "homepage.widget.type=paperlessngx"
+      - "homepage.widget.url=http://paperless_web:8000"
+      - "homepage.widget.key=e693d2ff45965b0d1b35011a6fb042fe9950ca9e"
+      - "homepage.widget.showStats=true"
 
   gotenberg:
     image: docker.io/gotenberg/gotenberg:7.10
@@ -158,6 +167,11 @@ services:
       - "traefik.http.routers.paperless-ai.rule=Host(`paperless-ai.home.lan`)"
       - "traefik.http.routers.paperless-ai.entrypoints=web"
       - "traefik.http.services.paperless-ai.loadbalancer.server.port=3000"
+      - "homepage.group=Paperless Stack"
+      - "homepage.name=Paperless AI"
+      - "homepage.icon=paperless.png"
+      - "homepage.href=http://192.168.254.111:8001"
+      - "homepage.description=Local AI Document Processing (Qwen3.5-9B-GGUF)"
 
   paperless-gpt:
     image: icereed/paperless-gpt:latest
@@ -196,6 +210,11 @@ services:
       - "traefik.http.routers.paperless-gpt.rule=Host(`paperless-gpt.home.lan`)"
       - "traefik.http.routers.paperless-gpt.entrypoints=web"
       - "traefik.http.services.paperless-gpt.loadbalancer.server.port=8080"
+      - "homepage.group=Paperless Stack"
+      - "homepage.name=Paperless GPT"
+      - "homepage.icon=paperless.png"
+      - "homepage.href=http://192.168.254.111:8002"
+      - "homepage.description=AI OCR and Organization"
 
 networks:
   proxy:
