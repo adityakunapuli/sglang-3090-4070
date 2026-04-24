@@ -1,0 +1,53 @@
+FROM debian:12.11 AS builder
+
+ARG OPENRGB_VERSION
+
+WORKDIR /usr/app
+
+RUN apt update && \
+    apt install -y \
+        git \
+        build-essential \
+        qtcreator \
+        qtbase5-dev \
+        qtchooser \
+        qt5-qmake \
+        qtbase5-dev-tools \
+        libusb-1.0-0-dev \
+        libhidapi-dev \
+        pkgconf \
+        libmbedtls-dev \
+        qttools5-dev-tools \
+    && \
+    git clone https://gitlab.com/CalcProgrammer1/OpenRGB /usr/app && \
+    git checkout $OPENRGB_VERSION && \
+    qmake OpenRGB.pro && \
+    make -j8
+
+FROM jlesage/baseimage-gui:debian-12-v4.9.0 AS gui
+
+ARG OPENRGB_VERSION
+
+WORKDIR /usr/app
+
+ENV \
+    APP_NAME="OpenRGB" \
+    APP_VERSION=$OPENRGB_VERSION \
+    KEEP_APP_RUNNING=1 \
+    OPENRGB_SERVER_PORT=6742
+
+# Generate and install favicons
+RUN APP_ICON_URL=https://gitlab.com/uploads/-/system/project/avatar/10582521/OpenRGB.png && \
+    install_app_icon.sh "$APP_ICON_URL"
+
+# Install runtime dependencies
+RUN apt update && \
+    apt install -y i2c-tools libusb-1.0-0 libhidapi-dev libmbedtls-dev libqt5gui5 curl libopenal1 libpipewire-0.3-0 libsndio7.0 libasound2 && \
+    mkdir -p /usr/lib/udev/rules.d && \
+    curl -L https://openrgb.org/releases/release_0.9/60-openrgb.rules -o /usr/lib/udev/rules.d/60-openrgb.rules
+
+COPY --from=builder /usr/app/openrgb .
+COPY --chmod=0755 startapp.sh /startapp.sh
+
+# Expose port for OpenRGB Server
+EXPOSE 6742

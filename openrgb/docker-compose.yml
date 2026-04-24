@@ -1,0 +1,28 @@
+services:
+  openrgb:
+    build:
+      context: .
+      dockerfile: Dockerfile.gui
+      args:
+        OPENRGB_VERSION: release_candidate_1.0rc2
+    container_name: openrgb-web
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "15800:5800" # WebUI
+      - "6742:6742"   # OpenRGB SDK
+    environment:
+      - APP_NAME=OpenRGB
+      - USER_ID=0
+      - GROUP_ID=0
+      - TZ=UTC
+    volumes:
+      - ./config:/config:rw
+      - /dev:/dev:rw
+    labels:
+      - "homepage.group=System"
+      - "homepage.name=OpenRGB"
+      - "homepage.icon=/icons/openrgb.png"
+      - "homepage.href=http://192.168.254.111:15800"
+      - "homepage.description=RGB Lighting Control"
+      - "homepage.tag=RGB"
