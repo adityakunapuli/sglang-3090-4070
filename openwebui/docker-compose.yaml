@@ -1,0 +1,32 @@
+services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    restart: unless-stopped
+    ports:
+      - "3030:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_KEY=sk-password
+      - WEBUI_AUTH=False
+      - ENABLE_PERSISTENT_CONFIG=False
+      - RESET_CONFIG_ON_START=True
+    volumes:
+      - ./config:/app/backend/data
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openwebui.rule=Host(`openwebui.local`) || Host(`openwebui`)"
+      - "traefik.http.routers.openwebui.entrypoints=web"
+      - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
+      - "homepage.group=AI"
+      - "homepage.name=Open WebUI"
+      - "homepage.icon=/icons/openwebui.png"
+      - "homepage.description=LLM Web Interface"
+      - "homepage.href=http://192.168.254.111:3030"
+
+networks:
+  proxy:
+    external: true

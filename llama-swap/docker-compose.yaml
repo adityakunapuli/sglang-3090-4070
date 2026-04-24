@@ -1,0 +1,79 @@
+services:
+  # LiteLLM Router - Unified OpenAI-compatible API
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - ../.env
+    environment:
+      - DISABLE_ADMIN_UI=True
+      - TELEMETRY=False
+      - LITELLM_LOG=ERROR
+      - NUM_WORKERS=1
+      - PYTHONOPTIMIZE=2
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml:ro
+    command: [ "--config", "/app/config.yaml", "--port", "4000" ]
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.litellm.rule=Host(`litellm.home.local`) || Host(`litellm`)"
+      - "traefik.http.routers.litellm.entrypoints=web"
+      - "traefik.http.services.litellm.loadbalancer.server.port=4000"
+      - "homepage.group=AI"
+      - "homepage.name=LiteLLM"
+      - "homepage.icon=/icons/litellm.png"
+      - "homepage.href=http://192.168.254.111:4000"
+      - "homepage.description=LLM Router & API Gateway"
+
+  # llama-swap - Manages llama-server processes for hot-swapping
+  llama-swap:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llama-swap
+    user: root
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - /mnt/data/models/llm:/mnt/data/models/llm
+      - ./llama-swap-config.yaml:/app/llama-swap-config.yaml:ro
+      - ./entrypoint.sh:/app/entrypoint.sh:ro
+    environment:
+      - LLAMA_CACHE=/mnt/data/models/llm
+      - HF_HOME=/mnt/data/models/llm
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    entrypoint: [ "/bin/bash", "/app/entrypoint.sh" ]
+    working_dir: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [
+                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
+                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
+              ]
+              capabilities: [ gpu ]
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.llama-swap.rule=Host(`llama-swap.local`) || Host(`llama-swap`)"
+      - "traefik.http.routers.llama-swap.entrypoints=web"
+      - "traefik.http.services.llama-swap.loadbalancer.server.port=8080"
+      - "homepage.group=AI"
+      - "homepage.name=Llama Swap"
+      - "homepage.icon=/icons/llama.png"
+      - "homepage.href=http://192.168.254.111:8082"
+      - "homepage.description=LLM Hot-Swapper & UI"
+
+networks:
+  proxy:
+    external: true
