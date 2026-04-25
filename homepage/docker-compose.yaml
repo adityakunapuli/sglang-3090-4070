@@ -62,7 +62,7 @@ services:
       - "homepage.name=Glances"
       - "homepage.icon=glances.png"
       - "homepage.href=http://192.168.254.111:61208"
-      - "homepage.description=System Monitoring"
+      # - "homepage.description=System Monitoring"
 
 networks:
   proxy:

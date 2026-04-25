@@ -1,7 +1,7 @@
 services:
   # llama-swap - Manages llama-server processes for hot-swapping
   llama-swap:
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: ghcr.io/mostlygeek/llama-swap:unified-cuda
     container_name: llama-swap
     user: root
     restart: unless-stopped
@@ -10,22 +10,21 @@ services:
     volumes:
       - /mnt/data/models/llm:/mnt/data/models/llm
       - ./llama-swap-config.yaml:/app/llama-swap-config.yaml:ro
-      - ./entrypoint.sh:/app/entrypoint.sh:ro
     environment:
       - LLAMA_CACHE=/mnt/data/models/llm
       - HF_HOME=/mnt/data/models/llm
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-    entrypoint: [ "/bin/bash", "/app/entrypoint.sh" ]
+    command: ["--config", "/app/llama-swap-config.yaml", "--listen", "0.0.0.0:8080"]
     working_dir: /app
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [
-                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
-                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
+              device_ids: ['0','1','2'
+#                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
+#                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
               ]
               capabilities: [ gpu ]
     networks:
@@ -40,7 +39,7 @@ services:
       - "homepage.name=Llama Swap"
       - "homepage.icon=/icons/llama.png"
       - "homepage.href=http://192.168.254.111:8082"
-      - "homepage.description=LLM Hot-Swapper & UI"
+      # - "homepage.description=LLM Hot-Swapper & UI"
 
 volumes:
   litellm_db_data:

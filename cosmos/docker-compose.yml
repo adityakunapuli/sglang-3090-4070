@@ -35,11 +35,11 @@ services:
       - COSMOS_HOSTNAME=home.local
     network_mode: host
     labels:
-      - "homepage.group=System"
+      - "homepage.group=Infrastructure"
       - "homepage.name=Cosmos"
       - "homepage.icon=/icons/cosmos.svg"
       - "homepage.href=http://192.168.254.111"
-      - "homepage.description=Container Stats & Docker Events"
+      # - "homepage.description=Container Stats & Docker Events"
 
 volumes:
   cosmos-mongo-data:

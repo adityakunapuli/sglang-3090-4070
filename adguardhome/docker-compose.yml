@@ -21,11 +21,11 @@ services:
       - "traefik.http.routers.adguard.rule=Host(`adguard.home.lan`)"
       - "traefik.http.routers.adguard.entrypoints=web"
       - "traefik.http.services.adguard.loadbalancer.server.port=80"
-      - "homepage.group=System"
+      - "homepage.group=Home Ops"
       - "homepage.name=AdGuard Home"
       - "homepage.icon=adguard-home.png"
       - "homepage.href=http://192.168.254.111:3001"
-      - "homepage.description=Network-wide Ad Blocker"
+      # - "homepage.description=Network-wide Ad Blocker"
       - "homepage.widget.type=adguard"
       - "homepage.widget.url=http://adguardhome:80"
 

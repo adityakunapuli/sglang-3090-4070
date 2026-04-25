@@ -31,7 +31,7 @@ services:
       - "homepage.name=Immich"
       - "homepage.icon=immich.png"
       - "homepage.href=http://192.168.254.111:2283"
-      - "homepage.description=AI Photo Management"
+      # - "homepage.description=AI Photo Management"
       - "homepage.widget.type=immich"
       - "homepage.widget.url=http://immich_server:2283"
       - "homepage.widget.key=QHLccdD1LH9eROySz6VydymVPBwdYSQIlb1pO0JqU"

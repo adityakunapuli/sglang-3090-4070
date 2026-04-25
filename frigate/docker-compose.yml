@@ -6,9 +6,10 @@ services:
     image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
     shm_size: "1gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
     env_file: .env
+    runtime: nvidia
     environment:
-#      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
-      - NVIDIA_VISIBLE_DEVICES=${GPU_3050}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=2
       - NVIDIA_DRIVER_CAPABILITIES=all
       - OPENAI_BASE_URL=http://llama-server:9876/v1
       - OPENAI_BASE=http://llama-server:9876/v1
@@ -49,16 +50,6 @@ services:
       - "homepage.2.widget.url=http://frigate:5000/api/stats"
       - "homepage.2.widget.refreshInterval=5000"
       - 'homepage.2.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"Quadro P620\"].mem", "label": "GPU Mem"}]'
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: [
-#                            'GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877'
-                '${GPU_3050:?GPU_3050_UUID_NOT_SET}'
-              ]
-              capabilities: [gpu, compute, video, utility]
 
 
 networks:

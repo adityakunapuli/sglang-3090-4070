@@ -23,4 +23,4 @@ services:
       - "homepage.name=Copaw"
       - "homepage.icon=/icons/qwen.png"
       - "homepage.href=http://192.168.254.111:8088"
-      - "homepage.description=AI Agent Workspace (Copaw)"
+      # - "homepage.description=AI Agent Workspace (Copaw)"

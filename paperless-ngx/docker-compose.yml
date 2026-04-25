@@ -55,7 +55,7 @@ services:
       - "homepage.name=Paperless"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8010"
-      - "homepage.description=Document Archive"
+      # - "homepage.description=Document Archive"
       - "homepage.widget.type=paperlessngx"
       - "homepage.widget.url=http://paperless_web:8000"
       - "homepage.widget.key=e693d2ff45965b0d1b35011a6fb042fe9950ca9e"
@@ -171,7 +171,7 @@ services:
       - "homepage.name=Paperless AI"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8001"
-      - "homepage.description=Local AI Document Processing (Qwen3.5-9B-GGUF)"
+      # - "homepage.description=Local AI Document Processing (Qwen3.5-9B-GGUF)"
 
   paperless-gpt:
     image: icereed/paperless-gpt:latest
@@ -214,7 +214,7 @@ services:
       - "homepage.name=Paperless GPT"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8002"
-      - "homepage.description=AI OCR and Organization"
+      # - "homepage.description=AI OCR and Organization"
 
 networks:
   proxy:
