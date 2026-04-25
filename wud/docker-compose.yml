@@ -1,0 +1,28 @@
+services:
+  wud:
+    image: fmartinou/whats-up-docker:latest
+    container_name: wud
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WUD_WATCHER_DOCKER_1_URL=unix:///var/run/docker.sock
+      - TZ=${TZ:-America/Los_Angeles}
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wud.rule=Host(`wud.local`)"
+      - "traefik.http.routers.wud.entrypoints=web"
+      - "traefik.http.services.wud.loadbalancer.server.port=3000"
+      - "homepage.group=Infrastructure"
+      - "homepage.name=WUD"
+      - "homepage.icon=whats-up-docker.png"
+      - "homepage.href=http://wud.home.local"
+      - "homepage.widget.type=wud"
+      - "homepage.widget.url=http://wud:3000"
+
+networks:
+  proxy:
+    external: true
