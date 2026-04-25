@@ -1,36 +1,4 @@
 services:
-  # LiteLLM Router - Unified OpenAI-compatible API
-  litellm:
-    image: ghcr.io/berriai/litellm:main-stable
-    container_name: litellm
-    restart: unless-stopped
-    ports:
-      - "4000:4000"
-    env_file:
-      - ../.env
-    environment:
-      - DISABLE_ADMIN_UI=True
-      - TELEMETRY=False
-      - LITELLM_LOG=ERROR
-      - NUM_WORKERS=1
-      - PYTHONOPTIMIZE=2
-    volumes:
-      - ./litellm_config.yaml:/app/config.yaml:ro
-    command: [ "--config", "/app/config.yaml", "--port", "4000" ]
-    networks:
-      - default
-      - proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.litellm.rule=Host(`litellm.home.local`) || Host(`litellm`)"
-      - "traefik.http.routers.litellm.entrypoints=web"
-      - "traefik.http.services.litellm.loadbalancer.server.port=4000"
-      - "homepage.group=AI"
-      - "homepage.name=LiteLLM"
-      - "homepage.icon=/icons/litellm.png"
-      - "homepage.href=http://192.168.254.111:4000"
-      - "homepage.description=LLM Router & API Gateway"
-
   # llama-swap - Manages llama-server processes for hot-swapping
   llama-swap:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
@@ -73,6 +41,9 @@ services:
       - "homepage.icon=/icons/llama.png"
       - "homepage.href=http://192.168.254.111:8082"
       - "homepage.description=LLM Hot-Swapper & UI"
+
+volumes:
+  litellm_db_data:
 
 networks:
   proxy:

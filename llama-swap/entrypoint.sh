@@ -8,7 +8,7 @@ fi
 
 # Download and extract llama-swap if missing
 if [ ! -f /app/llama-swap ]; then
-    wget -qO /tmp/llama-swap.tar.gz https://github.com/mostlygeek/llama-swap/releases/download/v202/llama-swap_202_linux_amd64.tar.gz
+    wget -qO /tmp/llama-swap.tar.gz https://github.com/mostlygeek/llama-swap/releases/download/v202/llama-swap_206_linux_amd64.tar.gz
     tar -xzf /tmp/llama-swap.tar.gz -C /app
     chmod +x /app/llama-swap
     rm /tmp/llama-swap.tar.gz
