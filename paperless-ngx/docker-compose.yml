@@ -47,6 +47,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.paperless.rule=Host(`paperless.home.lan`)"
       - "traefik.http.routers.paperless.entrypoints=web"
@@ -57,7 +58,8 @@ services:
       - "homepage.href=http://192.168.254.111:8010"
       # - "homepage.description=Document Archive"
       - "homepage.widget.type=paperlessngx"
-      - "homepage.widget.url=http://paperless_web:8000"
+      - "homepage.widget.url=http://192.168.254.111:8010"
+      - "homepage.target=_self"
       - "homepage.widget.key=e693d2ff45965b0d1b35011a6fb042fe9950ca9e"
       - "homepage.widget.showStats=true"
 
@@ -72,6 +74,8 @@ services:
   tika:
     image: docker.io/apache/tika:latest
     container_name: paperless_tika
+    labels:
+      - "wud.watch.digest=true"
     restart: "no"
 
   paperless-ai:
@@ -163,6 +167,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.paperless-ai.rule=Host(`paperless-ai.home.lan`)"
       - "traefik.http.routers.paperless-ai.entrypoints=web"
@@ -206,6 +211,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.paperless-gpt.rule=Host(`paperless-gpt.home.lan`)"
       - "traefik.http.routers.paperless-gpt.entrypoints=web"

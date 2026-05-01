@@ -15,6 +15,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.audiobookshelf.rule=Host(`audiobookshelf.home.lan`)"
       - "traefik.http.routers.audiobookshelf.entrypoints=web"
@@ -25,7 +26,8 @@ services:
       - "homepage.href=http://192.168.254.111:13378"
       # - "homepage.description=Audiobooks & Podcasts"
       - "homepage.widget.type=audiobookshelf"
-      - "homepage.widget.url=http://audiobookshelf:80"
+      - "homepage.widget.url=http://192.168.254.111:13378"
+      - "homepage.target=_self"
       - "homepage.widget.key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlJZCI6Ijk3ZjYwOTAwLTMwMGYtNDQ5MC04OGM2LTQ2NjcxNmM4MDc3NSIsIm5hbWUiOiJob21lcGFnZSIsInR5cGUiOiJhcGkiLCJpYXQiOjE3NzQxMTczNzd9.t6NjBLJov5T84ghYdBsMiOcdE7ZY5lUXnwG0c1JT6ek"
       - "homepage.widget.showStats=true"
 

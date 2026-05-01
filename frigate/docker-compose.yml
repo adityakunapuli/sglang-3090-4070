@@ -11,6 +11,8 @@ services:
       - NVIDIA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
       - NVIDIA_DRIVER_CAPABILITIES=all
       - CUDA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
+      - FFMPEG_DISABLE_GAMMA_EQUALIZER=true
+      - LIBVA_DRIVER_NAME=nvidia
       - OPENAI_BASE_URL=http://llama-server:9876/v1
       - OPENAI_BASE=http://llama-server:9876/v1
       - OPENAI_API_KEY=asddsa

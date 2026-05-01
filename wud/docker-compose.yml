@@ -1,26 +1,46 @@
 services:
   wud:
-    image: fmartinou/whats-up-docker:latest
+    image: getwud/wud
     container_name: wud
     restart: always
+    user: root # Necessary for socket access without GID mapping
+    ports:
+      - "3099:3000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
     environment:
-      - WUD_WATCHER_DOCKER_1_URL=unix:///var/run/docker.sock
-      - TZ=${TZ:-America/Los_Angeles}
+#      - TZ=${TZ:-America/Los_Angeles}
+#      - WUD_AUTH_BASIC_ADMIN_USER=admin
+#      - WUD_AUTH_BASIC_ADMIN_HASH=$$apr1$$dPpVc4un$$NtaZWtoRAds3OFrPqPyGr1
+      - WUD_REGISTRY_HUB_PUBLIC_LOGIN=${DOCKER_HUB_USER}
+      - WUD_REGISTRY_HUB_PUBLIC_PASSWORD=${DOCKER_HUB_TOKEN}
+      - WUD_REGISTRY_HUB_PUBLIC_TOKEN=${DOCKER_HUB_TOKEN}
+      - WUD_WATCHER_DOCKER_SOCKET=/var/run/docker.sock
+      - WUD_WATCHER_DOCKER_WATCHDIGEST=true
+      - WUD_WATCHER_DOCKER_CRON=0 */6 * * *
+      - WUD_TRIGGER_DOCKER_LOCAL_AUTO=true
+      - WUD_TRIGGER_DOCKER_LOCAL_PRUNE=true
+
+      # Use the specific v8 Basic Auth syntax
+#      - WUD_AUTH_BASIC_ADMIN_USER=${WUD_USER}
+#      - WUD_AUTH_BASIC_ADMIN_HASH=${WUD_PASS_HASH}
     networks:
       - default
       - proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.wud.rule=Host(`wud.local`)"
-      - "traefik.http.routers.wud.entrypoints=web"
-      - "traefik.http.services.wud.loadbalancer.server.port=3000"
-      - "homepage.group=Infrastructure"
-      - "homepage.name=WUD"
+      - "wud.watch.digest=true"
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.wud.rule=Host(`wud.local`)"
+#      - "traefik.http.routers.wud.entrypoints=web"
+#      - "traefik.http.services.wud.loadbalancer.server.port=3099"
+      - "homepage.group=System"
+      - "homepage.name=Updates"
       - "homepage.icon=whats-up-docker.png"
-      - "homepage.href=http://wud.home.local"
-      - "homepage.widget.type=wud"
+      # Removed href per user request to disable clickable link
+      - "homepage.href=http://192.168.254.111:3099"
+      - "homepage.widget.type=whatsupdocker"
       - "homepage.widget.url=http://wud:3000"
 
 networks:

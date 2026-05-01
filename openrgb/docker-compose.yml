@@ -20,6 +20,7 @@ services:
       - ./config:/config:rw
       - /dev:/dev:rw
     labels:
+      - "wud.watch=false"
       - "homepage.group=System"
       - "homepage.name=OpenRGB"
       - "homepage.icon=/icons/openrgb.png"

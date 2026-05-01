@@ -31,7 +31,9 @@ go2rtc:
     tapo_sub:
       - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2'
 
-
+ffmpeg:
+  output_args:
+    record: preset-record-generic-audio-aac
 
 cameras:
   front_doorbell:
