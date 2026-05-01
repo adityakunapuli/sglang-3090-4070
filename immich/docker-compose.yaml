@@ -23,6 +23,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.immich.rule=Host(`immich.home.lan`)"
       - "traefik.http.routers.immich.entrypoints=web"
@@ -33,7 +34,8 @@ services:
       - "homepage.href=http://192.168.254.111:2283"
       # - "homepage.description=AI Photo Management"
       - "homepage.widget.type=immich"
-      - "homepage.widget.url=http://immich_server:2283"
+      - "homepage.widget.url=http://192.168.254.111:2283"
+      - "homepage.target=_self"
       - "homepage.widget.key=QHLccdD1LH9eROySz6VydymVPBwdYSQIlb1pO0JqU"
       - "homepage.widget.version=2"
       - "homepage.widget.showStats=true"
@@ -58,6 +60,8 @@ services:
     container_name: immich_machine_learning
     # CUDA tag for your Quadro P620
     image: ghcr.io/immich-app/immich-machine-learning:release-cuda
+    labels:
+      - "wud.watch.digest=true"
     environment:
       # We define the specific UUID in the deploy block, but keeping this
       # can be helpful for internal scripts or debugging within the container.

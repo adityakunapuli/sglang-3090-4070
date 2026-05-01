@@ -22,9 +22,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0','1','2'
-#                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
-#                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
+              device_ids: [
+#                '0','1','2'
+                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
+                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
               ]
               capabilities: [ gpu ]
     networks:

@@ -25,6 +25,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.scrutiny.rule=Host(`scrutiny.home.lan`)"
       - "traefik.http.routers.scrutiny.entrypoints=web"
@@ -35,7 +36,8 @@ services:
       - "homepage.href=http://192.168.254.111:8080"
       # - "homepage.description=Drive Health Monitoring"
       - "homepage.widget.type=scrutiny"
-      - "homepage.widget.url=http://scrutiny:8080"
+      - "homepage.widget.url=http://192.168.254.111:8080"
+      - "homepage.target=_self"
       - "homepage.widget.showStats=true"
 
 networks:

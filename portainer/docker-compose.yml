@@ -16,6 +16,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.portainer.rule=Host(`portainer.home.lan`)"
       - "traefik.http.routers.portainer.entrypoints=web"
@@ -28,7 +29,8 @@ services:
       - "homepage.target=_self"
       # - "homepage.description=Container UI"
       - "homepage.widget.type=portainer"
-      - "homepage.widget.url=https://portainer:9443"
+      - "homepage.widget.url=https://192.168.254.111:9443"
+      - "homepage.target=_self"
       - "homepage.widget.key={{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
       - "homepage.widget.env=3"
       - "homepage.widget.showStats=true"

@@ -2,6 +2,7 @@ services:
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
+    hostname: plex-server
     ports:
       - "32400:32400"
     networks:
@@ -18,7 +19,8 @@ services:
       - "homepage.href=http://192.168.254.111:32400/web"
       # - "homepage.description=Media Server"
       - "homepage.widget.type=plex"
-      - "homepage.widget.url=http://plex:32400"
+      - "homepage.widget.url=http://192.168.254.111:32400"
+      - "homepage.target=_self"
       - "homepage.widget.key=VEbr3vWDZc5bGQipydU8"
       - 'homepage.widget.fields=["streams", "movies", "tv"]'
     environment:
@@ -27,8 +29,6 @@ services:
       - VERSION=docker
       # CLAIM TOKEN: Get one at https://www.plex.tv/claim (valid for 4 minutes)
       - PLEX_CLAIM=claim-wTGzzQYxpzs7Z7kWawyf
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     volumes:
       - /mnt/data/media_cache/plex/config:/config
       # Mapping your existing media pool
@@ -37,13 +37,6 @@ services:
       # If you have low RAM, remove this line.
       - /dev/shm:/transcode
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu, compute, video]
 
 networks:
   proxy:

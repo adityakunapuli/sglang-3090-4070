@@ -132,3 +132,7 @@ immich/.env
 !.env.SAMPLE
 !*.SAMPLE
 !**/EXAMPLE.env
+!frigate/config/
+!frigate/config/config.yml
+
+!llama-swap/llama-swap-config.yaml

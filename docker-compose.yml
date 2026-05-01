@@ -1,0 +1,19 @@
+# /mnt/data/docker/docker-compose.yml
+include:
+  - adguard/docker-compose.yml
+  - ./arr-stack/docker-compose.yml
+  - ./coolercontrol/docker-compose.yml
+  - ./copaw/docker-compose.yml
+  - ./frigate/docker-compose.yml
+  - ./journiv/docker-compose.yml
+  - ./openrgb/docker-compose.yml
+  - ./plex/docker-compose.yml
+  - ./portainer/docker-compose.yml
+  - ./scrutiny/docker-compose.yml
+  - ./wud/docker-compose.yml
+
+  # --- EXCLUSIONS & NOTES ---
+  # Excluded: ./copaw/.backup/docker-compose.yml
+  # Reason: Including a backup file simultaneously with the active one will likely cause port allocations and container name conflicts.
+
+# dc up -d --remove-orphans

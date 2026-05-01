@@ -16,8 +16,11 @@ services:
     networks:
       - default
       - proxy
+    healthcheck:
+      disable: true
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.openwebui.rule=Host(`openwebui.local`) || Host(`openwebui`)"
       - "traefik.http.routers.openwebui.entrypoints=web"
       - "traefik.http.services.openwebui.loadbalancer.server.port=8080"

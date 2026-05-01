@@ -5,19 +5,21 @@ services:
     restart: unless-stopped
     image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
     shm_size: "1gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
-    env_file: .env
     runtime: nvidia
+    env_file: .env
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - CUDA_VISIBLE_DEVICES=2
+      - NVIDIA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
       - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
+      - FFMPEG_DISABLE_GAMMA_EQUALIZER=true
+      - LIBVA_DRIVER_NAME=nvidia
       - OPENAI_BASE_URL=http://llama-server:9876/v1
       - OPENAI_BASE=http://llama-server:9876/v1
       - OPENAI_API_KEY=asddsa
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./config:/config
-      - /mnt/FatMan/frigate_media:/media/frigate
+      - /mnt/data/media_cache/frigate:/media/frigate
       - /mnt/data/models/frigate-detectors:/models
       - type: tmpfs
         target: /tmp/cache
@@ -25,10 +27,20 @@ services:
           size: 1000000000
     ports:
       - "5000:5000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["all"]  # MUST expose all device ids in order for hwaccel to work
+#              device_ids: ['GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877']
+#              device_ids: ["${GPU_3050:?GPU_3050_UUID_NOT_SET}"]
+              capabilities: [all]
     networks:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.frigate.rule=Host(`frigate.home.lan`)"
       - "traefik.http.routers.frigate.entrypoints=web"
@@ -40,7 +52,6 @@ services:
       - "homepage.1.description=NVR & Object Detection"
       - "homepage.1.widget.type=frigate"
       - "homepage.1.widget.url=http://frigate:5000"
-      - "homepage.1.widget.showStats=true"
       - "homepage.2.group=Home Ops"
       - "homepage.2.name=Frigate Stats"
       - "homepage.2.icon=mdi-chart-line"
@@ -49,58 +60,9 @@ services:
       - "homepage.2.widget.type=customapi"
       - "homepage.2.widget.url=http://frigate:5000/api/stats"
       - "homepage.2.widget.refreshInterval=5000"
-      - 'homepage.2.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"Quadro P620\"].mem", "label": "GPU Mem"}]'
+      - 'homepage.2.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
 
 
 networks:
   proxy:
     external: true
-
-
-#services:
-#  frigate:
-#    container_name: frigate
-#    privileged: false # Keep disabled to enforce GPU device constraints
-#    restart: unless-stopped
-#    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
-#    shm_size: "1gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
-#    env_file: .env
-#    environment:
-#      # We define the specific UUID in the deploy block, but keeping this
-#      # can be helpful for internal scripts or debugging within the container.
-#      # To see GPU UUID, use `nvidia-smi -L`
-#      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
-#      - NVIDIA_DRIVER_CAPABILITIES=all
-#      - OPENAI_BASE_URL=http://llama-server:9876/v1
-#      - OPENAI_BASE=http://llama-server:9876/v1
-#      - OPENAI_API_KEY=asddsa
-#    volumes:
-#      - /etc/localtime:/etc/localtime:ro
-#      - ./config:/config
-#      - /mnt/FatMan/frigate_media:/media/frigate
-#      - /mnt/data/models/frigate-detectors:/models
-#      - type: tmpfs
-#        target: /tmp/cache
-#        tmpfs:
-#          size: 1000000000
-#    ports:
-#      - "5000:5000"
-#    networks:
-#      - default
-#      - proxy
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.frigate.rule=Host(`frigate.home.lan`)"
-#      - "traefik.http.routers.frigate.entrypoints=web"
-#      - "traefik.http.services.frigate.loadbalancer.server.port=5000"
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              device_ids: ['GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877']
-#              capabilities: [gpu, compute, video, utility]
-#
-#networks:
-#  proxy:
-#    external: true

@@ -1,0 +1,126 @@
+# llama-swap configuration for PC2
+models:
+  Gemma-4-26B:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Gemma/26B-A4B/gemma-4-26B-A4B-it-UD-IQ4_NL.gguf
+      --alias Gemma-4-26B
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 64
+      --chat-template-kwargs '{"enable_thinking":true}'
+      --flash-attn on
+      --parallel 1
+      --fit on
+      --kv-unified
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --batch-size 512
+      --n-gpu-layers 999
+      --tensor-split 12,12,1
+      --ctx-size 32768
+      --mmproj /mnt/data/models/llm/Gemma/26B-A4B/mmproj-BF16.gguf
+    ttl: 0
+
+  Gemma-4-31B:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Gemma/gemma-4-31B-it-IQ4_NL.gguf
+      --alias Gemma-4-31B
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 64
+      --chat-template-kwargs '{"enable_thinking":true}'
+      --flash-attn on
+      --parallel 1
+      --fit on
+      --kv-unified
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --batch-size 512
+      --n-gpu-layers 999
+      --ctx-size 32768
+      --mmproj /mnt/data/models/llm/Gemma/31B/mmproj-BF16.gguf
+    ttl: 0
+# for qwen 3.6 , don't use swa, use cache type q8_0, and don't excee 65536 for kv,
+  Qwen3.6-27B:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Qwen3.6/27B/Qwen3.6-27B-UD-Q4_K_XL.gguf
+      --mmproj /mnt/data/models/llm/Qwen3.6/27B/mmproj-BF16.gguf
+      --alias Qwen3.6-27B
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 0.7
+      --top-p 0.8
+      --top-k 20
+      --min-p 0.00
+      --reasoning off
+      --flash-attn on
+      --parallel 1
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --batch-size 2048
+      --ubatch-size 1024
+      --n-gpu-layers 999
+      --ctx-size 65536
+      --no-mmap
+    ttl: 0
+
+#  Qwen3.6-27B:
+#    cmd: >
+#      /usr/local/bin/llama-server
+#      --model /mnt/data/models/llm/Qwen3.6/27B/Qwen3.6-27B-UD-Q4_K_XL.gguf
+#      --mmproj /mnt/data/models/llm/Qwen3.6/27B/mmproj-BF16.gguf
+#      --alias Qwen3.6-27B
+#      --host 0.0.0.0
+#      --port ${PORT}
+#      --temp 0.7
+#      --top-p 0.8
+#      --top-k 20
+#      --min-p 0.00
+#      --reasoning off
+#      --chat-template-kwargs '{"enable_thinking":false}'
+#      --presence-penalty 1.5
+#      --flash-attn on
+#      --parallel 1
+#      --fit on
+#      --kv-unified
+#      --cache-type-k q8_0
+#      --cache-type-v q8_0
+#      --batch-size 512
+#      --n-gpu-layers 999
+#      --tensor-split 12,12,1
+#      --ctx-size 32768
+#      --no-mmap
+#      --mlock
+#    ttl: 0
+
+  Qwen3.6-27B-Thinking:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Qwen3.6/27B/Qwen3.6-27B-UD-Q4_K_XL.gguf
+      --mmproj /mnt/data/models/llm/Qwen3.6/27B/mmproj-BF16.gguf
+      --alias Qwen3.6-27B
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 20
+      --min-p 0.00
+      --reasoning on
+      --presence-penalty 1.5
+      --flash-attn on
+      --parallel 1
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --batch-size 2048
+      --ubatch-size 1024
+      --n-gpu-layers 999
+      --ctx-size 65536
+      --no-mmap
+    ttl: 0

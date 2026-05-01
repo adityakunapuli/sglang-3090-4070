@@ -9,7 +9,7 @@ mqtt:
 detectors:
   nvidia:
     type: onnx
-    device: '0'
+#    device: '2'
 
 model:
   path: /models/rfdetr/rfdetr-n-384.onnx
@@ -20,20 +20,20 @@ model:
   input_dtype: float
   labelmap_path: /config/models/coco_80.txt
 
-ffmpeg:
-  hwaccel_args: preset-nvidia-h264
-
 go2rtc:
   streams:
     front_doorbell:
-      - "ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_main.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}#video=copy#audio=copy#audio=opus"
       - "rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_main"
     front_doorbell_sub:
-      - "ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_ext.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}"
+      - "rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_sub"
     tapo_c260:
       - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1'
     tapo_sub:
       - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2'
+
+ffmpeg:
+  output_args:
+    record: preset-record-generic-audio-aac
 
 cameras:
   front_doorbell:
@@ -41,10 +41,12 @@ cameras:
       inputs:
         - path: rtsp://127.0.0.1:8554/front_doorbell
           input_args: preset-rtsp-restream
+          hwaccel_args: preset-nvidia-h265
           roles:
             - record
         - path: rtsp://127.0.0.1:8554/front_doorbell_sub
           input_args: preset-rtsp-restream
+          hwaccel_args: preset-nvidia-h265
           roles:
             - detect
             - audio
@@ -55,7 +57,7 @@ cameras:
     snapshots:
       enabled: true
       retain:
-        default: 30
+        default: 7
       timestamp: true
       bounding_box: true
       crop: true
@@ -64,13 +66,13 @@ cameras:
       enabled: true
       alerts:
         retain:
-          days: 10
+          days: 7
           mode: active_objects
         pre_capture: 5
         post_capture: 5
       detections:
         retain:
-          days: 10
+          days: 7
           mode: active_objects
         pre_capture: 5
         post_capture: 5
@@ -124,6 +126,7 @@ cameras:
             - record
         - path: rtsp://127.0.0.1:8554/tapo_sub
           input_args: preset-rtsp-restream
+          hwaccel_args: preset-nvidia-h264
           roles:
             - detect
     detect:
@@ -136,7 +139,7 @@ cameras:
     snapshots:
       enabled: true
       retain:
-        default: 30
+        default: 7
       timestamp: true
       bounding_box: true
       crop: true
@@ -145,13 +148,13 @@ cameras:
       enabled: true
       alerts:
         retain:
-          days: 10
+          days: 7
           mode: active_objects
         pre_capture: 5
         post_capture: 5
       detections:
         retain:
-          days: 10
+          days: 7
           mode: active_objects
         pre_capture: 5
         post_capture: 5
