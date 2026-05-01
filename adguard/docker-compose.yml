@@ -17,6 +17,7 @@ services:
       - default
       - proxy
     labels:
+      - "wud.watch.digest=true"
       - "traefik.enable=true"
       - "traefik.http.routers.adguard.rule=Host(`adguard.home.lan`)"
       - "traefik.http.routers.adguard.entrypoints=web"
@@ -27,7 +28,8 @@ services:
       - "homepage.href=http://192.168.254.111:3001"
       # - "homepage.description=Network-wide Ad Blocker"
       - "homepage.widget.type=adguard"
-      - "homepage.widget.url=http://adguardhome:80"
+      - "homepage.widget.url=http://192.168.254.111:3001"
+      - "homepage.target=_self"
 
 networks:
   proxy:
