@@ -12,19 +12,40 @@ detectors:
 #    device: '2'
 
 model:
-  path: /models/rfdetr/rfdetr-n-384.onnx
-  model_type: rfdetr
-  width: 384
-  height: 384
+  path: /models/deimv2/deimv2_hgnetv2_n.onnx
+  model_type: dfine
+  width: 640
+  height: 640
   input_tensor: nchw
   input_dtype: float
-  labelmap_path: /config/models/coco_80.txt
+
+#model:
+#  path: /models/rfdetr/rfdetr-n-384.onnx
+#  model_type: rfdetr
+#  width: 384
+#  height: 384
+#  input_tensor: nchw
+#  input_dtype: float
+#  labelmap_path: /config/models/coco_80.txt
+
+record:
+  # Optional: Enable recording (default: shown below)
+  # WARNING: If recording is disabled in the config, turning it on via
+  #          the UI or MQTT later will have no effect.
+  enabled: False
+  # Optional: Number of minutes to wait between cleanup runs (default: shown below)
+  # This can be used to reduce the frequency of deleting recording segments from disk if you want to minimize i/o
+  expire_interval: 60
+  # Optional: Two-way sync recordings database with disk on startup and once a day (default: shown below).
+  sync_recordings: True
 
 go2rtc:
   streams:
     front_doorbell:
+      - "ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_main.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}#video=copy#audio=copy#audio=opus"
       - "rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_main"
     front_doorbell_sub:
+      - "ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_ext.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}"
       - "rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_sub"
     tapo_c260:
       - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1'
@@ -32,6 +53,7 @@ go2rtc:
       - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2'
 
 ffmpeg:
+  hwaccel_args: preset-nvidia-h264
   output_args:
     record: preset-record-generic-audio-aac
 
@@ -41,12 +63,12 @@ cameras:
       inputs:
         - path: rtsp://127.0.0.1:8554/front_doorbell
           input_args: preset-rtsp-restream
-          hwaccel_args: preset-nvidia-h265
+          hwaccel_args: preset-nvidia-h264
           roles:
             - record
         - path: rtsp://127.0.0.1:8554/front_doorbell_sub
           input_args: preset-rtsp-restream
-          hwaccel_args: preset-nvidia-h265
+          hwaccel_args: preset-nvidia-h264
           roles:
             - detect
             - audio
@@ -92,6 +114,9 @@ cameras:
           min_score: 0.40
           threshold: 0.60
           min_area: 1000
+      mask:
+        - 0,0.676,0.197,0.711,0.387,0.712,0.445,0.994,0,1
+        - 0.517,0.702,0.992,0.595,0.997,0.724,0.817,0.82
     review:
       alerts:
         required_zones:
