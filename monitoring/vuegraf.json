@@ -1,0 +1,19 @@
+{
+    "influxDb": {
+        "version": 2,
+        "url": "http://influxdb:8086",
+        "org": "home",
+        "bucket": "telemetry",
+        "token": "telemetry_token_xK9mP2vL7nQ4wR8jF3hY6bT1cA5dS0eU"
+    },
+    "accounts": [
+        {
+            "name": "Main Account",
+            "email": "akunapuli@gmail.com",
+            "password": "rE6jN&TtpaY!HMNX"
+        }
+    ],
+    "detailedDataEnabled": true,
+    "detailedDataSecondsEnabled": true,
+    "detailedDataHoursEnabled": true
+}

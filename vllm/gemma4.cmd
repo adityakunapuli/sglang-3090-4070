@@ -1,0 +1,12 @@
+cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit
+--tensor-parallel-size 2
+--dtype half
+--max-model-len 2048
+--max-num-batched-tokens 4096
+--gpu-memory-utilization 0.95
+--max-num-seqs 1
+--trust-remote-code
+--enforce-eager
+--disable-custom-all-reduce
+--host 0.0.0.0
+--port 7777

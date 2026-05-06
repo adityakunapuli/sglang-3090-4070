@@ -1,0 +1,61 @@
+services:
+  sglang:
+    image: lmsysorg/sglang:latest
+    container_name: sglang
+    volumes:
+      - /mnt/data/models/hf:/root/.cache/huggingface
+      # If you use modelscope, you need mount this directory
+      # - ${HOME}/.cache/modelscope:/root/.cache/modelscope
+    restart: "no"
+#    network_mode: host # required by RDMA
+    privileged: true # required by RDMA
+    # Or you can only publish port 30000
+    ports:
+      - "30000:30000"
+    env_file:
+      .env
+    environment:
+#      - LLAMA_CACHE=/mnt/data/models/llm
+#      - HF_HOME=/mnt/data/models/llm
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - HF_TOKEN=${HF_TOKEN}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      # if you use modelscope to download model, you need set this environment
+      # - SGLANG_USE_MODELSCOPE=true
+#    entrypoint: python3 -m sglang.launch_server
+    entrypoint: sglang serve
+    command: >
+      --model-path Lorbus/Qwen3.6-27B-int4-AutoRound
+      --tp 2
+      --reasoning-parser qwen3
+      --tool-call-parser qwen3_coder
+      --mem-fraction-static 0.08
+      --host 0.0.0.0
+      --port 30000
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ipc: host
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:30000/health || exit 1"]
+    labels:
+      - "homepage.group=AI"
+      - "homepage.name=SGlang"
+      - "homepage.icon=/icons/sglang.png"
+      - "homepage.href=http://192.168.254.111:30000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [
+#                '0','1','2'
+                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
+                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
+              ]
+              capabilities: [ gpu ]
+
+networks:
+  proxy:
+    external: true
