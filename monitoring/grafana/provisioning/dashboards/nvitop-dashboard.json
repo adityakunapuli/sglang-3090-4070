@@ -115,14 +115,7 @@
               }
             ]
           },
-          "unit": "percent",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "opacity"
-          }
+          "unit": "percent"
         }
       },
       "gridPos": {
@@ -156,7 +149,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_cpu_percent_Percentage{hostname=~\"$hostname\"})",
+          "expr": "host_cpu_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -167,7 +160,7 @@
         }
       ],
       "title": "CPU Utilization",
-      "type": "timeseries",
+      "type": "gauge",
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
@@ -199,14 +192,7 @@
               }
             ]
           },
-          "unit": "percent",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "opacity"
-          }
+          "unit": "percent"
         }
       },
       "gridPos": {
@@ -240,7 +226,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename) (gpu_utilization_Percentage{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_utilization_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -251,20 +237,11 @@
         }
       ],
       "title": "GPU Utilization",
-      "type": "timeseries",
+      "type": "gauge",
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "description": "",
@@ -292,14 +269,7 @@
               }
             ]
           },
-          "unit": "percent",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "opacity"
-          }
+          "unit": "percent"
         }
       },
       "gridPos": {
@@ -333,7 +303,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename) (gpu_memory_percent_Percentage{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_memory_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -344,20 +314,11 @@
         }
       ],
       "title": "GPU Memory",
-      "type": "timeseries",
+      "type": "gauge",
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "description": "",
@@ -385,14 +346,7 @@
               }
             ]
           },
-          "unit": "percent",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "opacity"
-          }
+          "unit": "percent"
         }
       },
       "gridPos": {
@@ -426,7 +380,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_virtual_memory_percent_Percentage{hostname=~\"$hostname\"})",
+          "expr": "host_virtual_memory_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -437,7 +391,7 @@
         }
       ],
       "title": "Host Virtual Memory",
-      "type": "timeseries",
+      "type": "gauge",
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
@@ -552,7 +506,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_gpu_memory_MiB{command=~\"${command:regex})",
+          "expr": "count(group by(uuid) (process_gpu_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"}))",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -571,7 +525,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count(gpu_memory_total_MiB{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "count(gpu_memory_total_MiB{hostname=~\"$hostname\"})",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -657,7 +611,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count(count by (index, devicename) (process_info_info{command=~\"${command:regex}\", hostname=~\"$hostname\", username=~\"$username\"}))",
+          "expr": "count by(hostname, index) (process_gpu_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
@@ -672,16 +626,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -749,12 +694,12 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count(count by (index, devicename) (process_info_info{command=~\"${command:regex}\", hostname=~\"$hostname\", username=~\"$username\"}))",
+          "expr": "count by(hostname) (count by(hostname, pid) (process_info_info{hostname=~\"$hostname\", username=~\"$username\"}))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "{{devicename}} ({{index}})",
+          "legendFormat": "__auto",
           "range": false,
           "refId": "number of gpu processes",
           "useBackend": false
@@ -847,10 +792,6 @@
               {
                 "id": "custom.minWidth",
                 "value": 150
-              },
-              {
-                "id": "description",
-                "value": "Resident Set Size: The portion of memory occupied by a process that is held in main memory (RAM)."
               }
             ]
           },
@@ -901,54 +842,6 @@
                 "value": "left"
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "%SM"
-            },
-            "properties": [
-              {
-                "id": "description",
-                "value": "Streaming Multiprocessor utilization: Percentage of time one or more kernels was executing on the GPU."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "%GMBW"
-            },
-            "properties": [
-              {
-                "id": "description",
-                "value": "Global Memory Bandwidth utilization: Percentage of time that the memory controller was reading from or writing to global memory."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "%ENC"
-            },
-            "properties": [
-              {
-                "id": "description",
-                "value": "Encoder utilization: Percentage of time the hardware encoder was in use."
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "%DEC"
-            },
-            "properties": [
-              {
-                "id": "description",
-                "value": "Decoder utilization: Percentage of time the hardware decoder was in use."
-              }
-            ]
           }
         ]
       },
@@ -990,7 +883,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_cpu_percent_Percentage{command=~\"${command:regex})",
+          "expr": "process_cpu_percent_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1010,7 +903,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_rss_memory_MiB{command=~\"${command:regex})",
+          "expr": "process_rss_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1029,7 +922,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_gpu_memory_MiB{command=~\"${command:regex})",
+          "expr": "process_gpu_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1048,7 +941,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_gpu_sm_utilization_Percentage{command=~\"${command:regex})",
+          "expr": "process_gpu_sm_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1067,7 +960,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_gpu_memory_utilization_Percentage{command=~\"${command:regex})",
+          "expr": "process_gpu_memory_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1086,7 +979,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_gpu_encoder_utilization_Percentage{command=~\"${command:regex})",
+          "expr": "process_gpu_encoder_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1105,7 +998,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_gpu_decoder_utilization_Percentage{command=~\"${command:regex})",
+          "expr": "process_gpu_decoder_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1124,7 +1017,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_running_time_Second{command=~\"${command:regex})",
+          "expr": "process_running_time_Second{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1144,7 +1037,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (pid, index, devicename, command, status) (process_info_info{command=~\"${command:regex})",
+          "expr": "process_info_info{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1163,7 +1056,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_virtual_memory_total_MiB{hostname=~\"$hostname\"})",
+          "expr": "host_virtual_memory_total_MiB{hostname=~\"$hostname\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1182,7 +1075,7 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename) (gpu_memory_total_MiB{index=~\"$gpu\", hostname!~\"$hostname\"})",
+          "expr": "gpu_memory_total_MiB{hostname!~\"$hostname\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1330,28 +1223,25 @@
           "id": "organize",
           "options": {
             "excludeByName": {
-              "uuid": true,
-              "username": true,
-              "hostname": true
+              "uuid": true
             },
             "includeByName": {},
             "indexByName": {
-              "Value #cpu percent (lastNotNull)": 5,
-              "Value #gpu decoder utilization (lastNotNull)": 11,
-              "Value #gpu encoder utilization (lastNotNull)": 10,
-              "Value #gpu memory (lastNotNull)": 7,
-              "Value #gpu memory bandwidth utilization (lastNotNull)": 9,
-              "Value #gpu sm utilization (lastNotNull)": 8,
-              "Value #rss memory (lastNotNull)": 6,
-              "Value #running time (lastNotNull)": 12,
-              "command (lastNotNull)": 2,
+              "Value #cpu percent (lastNotNull)": 6,
+              "Value #gpu decoder utilization (lastNotNull)": 12,
+              "Value #gpu encoder utilization (lastNotNull)": 11,
+              "Value #gpu memory (lastNotNull)": 8,
+              "Value #gpu memory bandwidth utilization (lastNotNull)": 10,
+              "Value #gpu sm utilization (lastNotNull)": 9,
+              "Value #rss memory (lastNotNull)": 7,
+              "Value #running time (lastNotNull)": 13,
+              "command (lastNotNull)": 14,
               "hostname": 0,
-              "index": 1,
-              "pid": 3,
-              "status (lastNotNull)": 4,
+              "index": 3,
+              "pid": 1,
+              "status (lastNotNull)": 5,
               "username": 2,
-              "uuid": 4,
-              "devicename": 0
+              "uuid": 4
             },
             "renameByName": {
               "Value #cpu percent (lastNotNull)": "%CPU",
@@ -1473,7 +1363,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_cpu_percent_Percentage{hostname=~\"$hostname\"})",
+          "expr": "host_cpu_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1565,7 +1455,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_load_average_1m_Percentage{hostname=~\"$hostname\"})",
+          "expr": "host_load_average_1m_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1581,7 +1471,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_load_average_5m_Percentage{hostname=~\"$hostname\"})",
+          "expr": "host_load_average_5m_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1598,7 +1488,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_load_average_15m_Percentage{hostname=~\"$hostname\"})",
+          "expr": "host_load_average_15m_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1693,7 +1583,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_virtual_memory_used_MiB{hostname=~\"$hostname\"})",
+          "expr": "host_virtual_memory_used_MiB{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -1788,7 +1678,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_swap_memory_used_MiB{hostname=~\"$hostname\"})",
+          "expr": "host_swap_memory_used_MiB{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -2171,7 +2061,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_utilization_Percentage{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_utilization_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2187,16 +2077,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2276,7 +2157,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_memory_used_MiB{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_memory_used_MiB{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2292,16 +2173,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2381,7 +2253,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_pcie_rx_throughput_MiBps{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_pcie_rx_throughput_MiBps{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2397,16 +2269,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2486,7 +2349,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_pcie_tx_throughput_MiBps{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_pcie_tx_throughput_MiBps{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2502,16 +2365,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2591,7 +2445,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_nvlink_total_rx_throughput_MiBps{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_nvlink_total_rx_throughput_MiBps{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2607,16 +2461,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2696,7 +2541,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_nvlink_total_tx_throughput_MiBps{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_nvlink_total_tx_throughput_MiBps{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2712,16 +2557,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2799,7 +2635,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_power_usage_W{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_power_usage_W{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2815,16 +2651,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     },
     {
       "fieldConfig": {
@@ -2902,7 +2729,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename) (gpu_temperature_C{index=~\"$gpu\", hostname=~\"$hostname\"})",
+          "expr": "gpu_temperature_C{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2918,16 +2745,7 @@
       "datasource": {
         "type": "prometheus",
         "uid": "nvitop-prometheus"
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "NVIDIA (?:GeForce )?(.*)",
-            "renamePattern": "$1"
-          }
-        }
-      ]
+      }
     }
   ],
   "refresh": "5s",
@@ -2944,31 +2762,10 @@
   "templating": {
     "list": [
       {
-        "name": "gpu",
-        "label": "GPU",
-        "type": "query",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "nvitop-prometheus"
-        },
-        "query": "query_result(max by (devicename, index) (gpu_utilization_Percentage))",
-        "includeAll": true,
-        "multi": true,
-        "refresh": 1,
         "current": {
+          "selected": true,
           "text": "All",
-          "value": [
-            "$__all"
-          ]
-        },
-        "regex": "/devicename=\"NVIDIA GeForce (?P<text>.*?)\",.*index=\"(?P<value>.*?)\"/"
-      },
-      {
-        "current": {
-          "text": "All",
-          "value": [
-            "$__all"
-          ]
+          "value": "$__all"
         },
         "definition": "label_values(hostname)",
         "description": "",
@@ -2990,10 +2787,9 @@
       },
       {
         "current": {
+          "selected": true,
           "text": "All",
-          "value": [
-            "$__all"
-          ]
+          "value": "$__all"
         },
         "definition": "label_values(username)",
         "description": "",
@@ -3011,25 +2807,6 @@
         "datasource": {
           "type": "prometheus",
           "uid": "nvitop-prometheus"
-        }
-      },
-      {
-        "name": "command",
-        "label": "Command",
-        "type": "query",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "nvitop-prometheus"
-        },
-        "query": "label_values(process_info_info, command)",
-        "includeAll": true,
-        "multi": true,
-        "refresh": 1,
-        "current": {
-          "text": "All",
-          "value": [
-            "$__all"
-          ]
         }
       }
     ]

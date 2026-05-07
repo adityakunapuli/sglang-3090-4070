@@ -4,38 +4,67 @@ services:
   ####################
   influxdb:
     container_name: influxdb
-    image: influxdb
+    image: influxdb:latest
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     ports:
-      - "${INFLUXDB_PORT:-8888}:8086"
+      - "8888:8086"
     volumes:
       - ./influxdb:/var/lib/influxdb2
     environment:
-      - DOCKER_INFLUXDB_INIT_MODE=${INFLUXDB_INIT_MODE:-setup}
-      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USER:-admin}
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
       - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
       - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG:-home}
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET:-telemetry}
-      # Retention: keep data for 90 days
-      - DOCKER_INFLUXDB_INIT_RETENTION=90d
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
-    networks:
-      - default
-      - proxy
-    labels:
-      - "wud.watch.digest=true"
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.influxdb.rule=Host(`influxdb.home.lan`)"
-#      - "traefik.http.routers.influxdb.entrypoints=web"
-#      - "traefik.http.services.influxdb.loadbalancer.server.port=8086"
-      - "homepage.group=Infrastructure"
-      - "homepage.name=InfluxDB"
-      - "homepage.icon=influxdb.png"
-      - "homepage.href=http://influxdb.home.lan"
-      - "homepage.href=http://192.168.254.111:${INFLUXDB_PORT:-8888}"
-      - "homepage.target=_self"
+
+  ####################
+  # Vuegraf (Emporia)
+  ####################
+  vuegraf:
+    container_name: vuegraf
+    image: jertel/vuegraf:latest
+    restart: unless-stopped
+    volumes:
+      - ./vuegraf.json:/opt/vuegraf/conf/vuegraf.json:ro
+    environment:
+      - TZ=${TZ:-America/Los_Angeles}
+    depends_on:
+      - influxdb
+
+  ####################
+  # nvitop Exporter
+  ####################
+  nvitop-exporter:
+    container_name: nvitop-exporter
+    hostname: nvitop-exporter
+    image: ghcr.io/astral-sh/uv:python3.13-trixie-slim
+    restart: unless-stopped
+    pid: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    command: >
+      bash -c "
+        uv pip install --system nvitop-exporter &&
+        nvitop-exporter --bind-address 0.0.0.0 --port 5050
+      "
+
+  ####################
+  # Prometheus
+  ####################
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - nvitop-exporter
 
   ####################
   # Grafana
@@ -44,89 +73,17 @@ services:
     container_name: grafana
     image: grafana/grafana-oss:latest
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+    user: "472"
     ports:
-      - "${GRAFANA_PORT:-3002}:3000"
-    volumes:
-      - ./grafana-data:/var/lib/grafana
-      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana-datasources:/etc/grafana/provisioning/datasources:ro
+      - "${GRAFANA_PORT:-3333}:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://grafana.home.lan
-      # Auto-provision InfluxDB datasource
-      - GF_INSTALL_PLUGINS=
-    depends_on:
-      - influxdb
-    networks:
-      - default
-      - proxy
-    labels:
-      - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.home.lan`)"
-      - "traefik.http.routers.grafana.entrypoints=web"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-      - "homepage.group=Infrastructure"
-      - "homepage.name=Grafana"
-      - "homepage.icon=grafana.png"
-      - "homepage.href=http://192.168.254.111:${GRAFANA_PORT:-3333}"
-      - "homepage.target=_self"
-      - "homepage.widget.type=grafana"
-      - "homepage.widget.url=http://192.168.254.111:${GRAFANA_PORT:-3333}"
-      - "homepage.widget.showVersion=false"
-
-  ####################
-  # GPU + Emporia Collector
-  ####################
-  collector:
-    container_name: telemetry-collector
-    image: ghcr.io/astral-sh/uv:python3.13-trixie-slim
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     volumes:
-      - ./collectors:/app:ro
-      - /proc:/proc:ro
-      - /sys:/sys:ro
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
-    environment:
-      - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_ORG=${INFLUXDB_ORG:-home}
-      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET:-telemetry}
-      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
-      - EMPORIA_VUE_IP=${EMPORIA_VUE_IP:-192.168.254.25}
-      - EMPORIA_VUE_TOKEN=${EMPORIA_VUE_TOKEN}
-      - EMPORIA_VUE_SERIAL=${EMPORIA_VUE_SERIAL}
-      - GPU_POLL_INTERVAL=${GPU_POLL_INTERVAL:-15}
-      - EMPORIA_POLL_INTERVAL=${EMPORIA_POLL_INTERVAL:-15}
-      - TZ=${TZ:-America/Los_Angeles}
-    command: >
-      bash -c "
-        uv pip install --system influxdb-client nvidia-ml-py requests &&
-        uv run python /app/collector.py
-      "
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
+      - prometheus
       - influxdb
-    networks:
-      - default
-
-#    labels:
-#      - "homepage.group=Infrastructure"
-#      - "homepage.name=Telemetry Collector"
-#      - "homepage.icon=database.png"
-#      - "homepage.href=http://grafana.home.lan"
-#      - "homepage.target=_self"
-
-networks:
-  proxy:
-    external: true
