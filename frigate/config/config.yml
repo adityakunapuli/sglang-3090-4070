@@ -32,25 +32,25 @@ record:
   # Optional: Enable recording (default: shown below)
   # WARNING: If recording is disabled in the config, turning it on via
   #          the UI or MQTT later will have no effect.
-  enabled: False
+  enabled: false
   # Optional: Number of minutes to wait between cleanup runs (default: shown below)
   # This can be used to reduce the frequency of deleting recording segments from disk if you want to minimize i/o
   expire_interval: 60
   # Optional: Two-way sync recordings database with disk on startup and once a day (default: shown below).
-  sync_recordings: True
+  sync_recordings: true
 
 go2rtc:
   streams:
     front_doorbell:
-      - "ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_main.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}#video=copy#audio=copy#audio=opus"
-      - "rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_main"
+      - ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_main.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}#video=copy#audio=copy#audio=opus
+      - rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_main
     front_doorbell_sub:
-      - "ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_ext.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}"
-      - "rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_sub"
+      - ffmpeg:http://{FRIGATE_DOORBELL_IP}/flv?port=1935&app=bcs&stream=channel0_ext.bcs&user={FRIGATE_DOORBELL_USER}&password={FRIGATE_DOORBELL_PASSWORD}
+      - rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/h264Preview_01_sub
     tapo_c260:
-      - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1'
+      - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1
     tapo_sub:
-      - 'rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2'
+      - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2
 
 ffmpeg:
   hwaccel_args: preset-nvidia-h264
@@ -124,10 +124,10 @@ cameras:
           - Front_Entry
     zones:
       Front_Entry:
-        coordinates:
+        coordinates: 
           0.453,1,1,1,0.828,0.865,0.756,0.937,0.507,0.7,0.45,0.71,0.393,0.71
       Sidewalk-Street:
-        coordinates:
+        coordinates: 
           0,0.486,0.359,0.489,0.522,0.5,0.699,0.487,0.851,0.487,1,0.459,1,0.594,0.604,0.685,0.455,0.705,0.197,0.706,0,0.667
     motion:
       mask:
@@ -184,6 +184,8 @@ cameras:
         pre_capture: 5
         post_capture: 5
 
+    motion:
+      mask: 0.396,0.05,0,0.058,0,0,0.396,0
 detect:
   enabled: true
 

@@ -11,6 +11,7 @@ homepage/public/
 # Global generic ignores (Data, Logs, Caches, Backups, Sensitive)
 **/.lib/
 **/*.db
+**/*.wal
 **/*.db-wal
 **/*.db-shm
 **/*.sqlite
