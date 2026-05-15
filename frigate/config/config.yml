@@ -13,8 +13,9 @@ mqtt:
   password: '{FRIGATE_MQTT_PASSWORD}'
 
 detectors:
-  nvidia:
+  cpu:
     type: onnx
+    device: cpu
 
 model:
   path: /models/deimv2/deimv2_hgnetv2_n.onnx
@@ -41,7 +42,7 @@ go2rtc:
       - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2
 
 ffmpeg:
-  hwaccel_args: preset-nvidia-h264
+  #hwaccel_args: preset-nvidia-h264
   output_args:
     record: preset-record-generic-audio-aac
 
@@ -51,12 +52,12 @@ cameras:
       inputs:
         - path: rtsp://127.0.0.1:8554/front_doorbell
           input_args: preset-rtsp-restream
-          hwaccel_args: preset-nvidia-h264
+          #hwaccel_args: preset-nvidia-h264
           roles:
             - record
         - path: rtsp://127.0.0.1:8554/front_doorbell_sub
           input_args: preset-rtsp-restream
-          hwaccel_args: preset-nvidia-h264
+          #hwaccel_args: preset-nvidia-h264
           roles:
             - detect
             - audio
@@ -120,7 +121,7 @@ cameras:
             - record
         - path: rtsp://127.0.0.1:8554/tapo_sub
           input_args: preset-rtsp-restream
-          hwaccel_args: preset-nvidia-h264
+          #hwaccel_args: preset-nvidia-h264
           roles:
             - detect
             - audio
