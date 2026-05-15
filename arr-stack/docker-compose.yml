@@ -2,6 +2,11 @@ services:
     # --- 1. DOWNLOADER & VPN (All-in-one) ---
     delugevpn:
         image: binhex/arch-delugevpn
+        mem_swappiness: 0
+        deploy:
+          resources:
+            limits:
+              memory: 1gb
         container_name: delugevpn
         privileged: true
         cap_add:

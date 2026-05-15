@@ -1,0 +1,44 @@
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    hostname: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - NVIDIA_VISIBLE_DEVICES=${GPU_3050}
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - /mnt/data/media_cache/jellyfin:/config
+      - /mnt/storage/media:/data
+    ports:
+      - "8096:8096"
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.home.lan`)"
+      - "traefik.http.routers.jellyfin.entrypoints=web"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "homepage.group=Media Automation"
+      - "homepage.name=Jellyfin"
+      - "homepage.icon=jellyfin.png"
+      - "homepage.href=http://192.168.254.111:8096"
+      - "homepage.widget.type=jellyfin"
+      - "homepage.widget.url=http://192.168.254.111:8096"
+      - "homepage.widget.key=VEbr3vWDZc5bGQipydU8" # Reusing Plex key as placeholder, user should update if Jellyfin has its own
+      - "homepage.target=_self"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_3050}']
+              capabilities: [gpu, compute, video, utility]
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true

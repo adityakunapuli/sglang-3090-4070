@@ -1,0 +1,41 @@
+services:
+  llama-cpp:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llama-cpp
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - /mnt/data/models/llm:/mnt/data/models/llm
+      - ./models.ini:/app/models.ini:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    # Start in router mode using the models.ini preset
+    command: ["--models-preset", "/app/models.ini", "--port", "8080", "--host", "0.0.0.0", "--models-max", "1", "--sleep-idle-seconds", "-1"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [
+                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
+                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
+              ]
+              capabilities: [ gpu ]
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.llama-cpp.rule=Host(`llama-cpp.local`) || Host(`llama-cpp`)"
+      - "traefik.http.routers.llama-cpp.entrypoints=web"
+      - "traefik.http.services.llama-cpp.loadbalancer.server.port=8080"
+      - "homepage.group=AI"
+      - "homepage.name=Llama CPP Native"
+      - "homepage.icon=/icons/llama.png"
+      - "homepage.href=http://192.168.254.111:8082"
+
+networks:
+  proxy:
+    external: true

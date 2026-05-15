@@ -66,9 +66,14 @@ services:
       # We define the specific UUID in the deploy block, but keeping this
       # can be helpful for internal scripts or debugging within the container.
       # To see GPU UUID, use `nvidia-smi -L`
-      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+      - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
 #      - MACHINE_LEARNING_MODEL_TTL=0
+#      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-B-16-SigLIP2__webli
+#      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-B-16-SigLIP2__webli
+#      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-L-16-SigLIP2-256__webli
+#      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-L-16-SigLIP2-256__webli
+      # the following doesn't play with frigate
 #      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-SO400M-16-SigLIP2-384__webli
 #      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-SO400M-16-SigLIP2-384__webli
     volumes:

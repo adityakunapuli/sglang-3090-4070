@@ -46,7 +46,7 @@ models:
       --ctx-size 32768
       --mmproj /mnt/data/models/llm/Gemma/31B/mmproj-BF16.gguf
     ttl: 0
-# for qwen 3.6 , don't use swa, use cache type q8_0, and don't excee 65536 for kv,
+
   Qwen3.6-27B:
     cmd: >
       /usr/local/bin/llama-server
@@ -64,12 +64,35 @@ models:
       --parallel 1
       --cache-type-k q4_0
       --cache-type-v q4_0
-      --batch-size 2048
-      --ubatch-size 1024
       --n-gpu-layers 999
       --ctx-size 65536
-      --no-mmap
     ttl: 0
+
+
+# for qwen 3.6 , don't use swa, use cache type q8_0, and don't excee 65536 for kv,
+#  Qwen3.6-27B:
+#    cmd: >
+#      /usr/local/bin/llama-server
+#      --model /mnt/data/models/llm/Qwen3.6/27B/Qwen3.6-27B-UD-Q4_K_XL.gguf
+#      --mmproj /mnt/data/models/llm/Qwen3.6/27B/mmproj-BF16.gguf
+#      --alias Qwen3.6-27B
+#      --host 0.0.0.0
+#      --port ${PORT}
+#      --temp 0.7
+#      --top-p 0.8
+#      --top-k 20
+#      --min-p 0.00
+#      --reasoning off
+#      --flash-attn on
+#      --parallel 1
+#      --cache-type-k q4_0
+#      --cache-type-v q4_0
+#      --batch-size 2048
+#      --ubatch-size 1024
+#      --n-gpu-layers 999
+#      --ctx-size 65536
+#      --no-mmap
+#    ttl: 0
 
 #  Qwen3.6-27B:
 #    cmd: >
