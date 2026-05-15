@@ -19,7 +19,8 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./config:/config
-      - /mnt/data/media_cache/frigate:/media/frigate
+      - /mnt/disk5/frigate_media:/media/frigate
+#      - /mnt/data/media_cache/frigate:/media/frigate
       - /mnt/data/models/frigate-detectors:/models
       - type: tmpfs
         target: /tmp/cache
@@ -29,6 +30,8 @@ services:
       - "5000:5000"
     deploy:
       resources:
+        limits:
+          memory: 4gb
         reservations:
           devices:
             - driver: nvidia
