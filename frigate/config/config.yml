@@ -37,9 +37,9 @@ go2rtc:
       # - ffmpeg:front_doorbell#video=h264#vf=scale=640:480
       - rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/Preview_01_sub#backchannel=0&transport=tcp
     tapo_c260:
-      - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1
+      - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1#backchannel=0&transport=tcp
     tapo_sub:
-      - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2
+      - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream2#backchannel=0&transport=tcp
 
 ffmpeg:
   hwaccel_args: preset-nvidia-h264
@@ -126,8 +126,8 @@ cameras:
             - detect
             - audio
     detect:
-      width: 640
-      height: 360
+      width: 1280
+      height: 720
       fps: 5
     audio:
       enabled: true
