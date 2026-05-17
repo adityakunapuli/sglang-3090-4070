@@ -46,6 +46,10 @@ ffmpeg:
   output_args:
     record: preset-record-generic-audio-aac
 
+review:
+  genai:
+    enabled: True
+
 cameras:
   front_doorbell:
     ffmpeg:
@@ -84,6 +88,8 @@ cameras:
         pre_capture: 5
         post_capture: 5
     objects:
+      genai:
+        enabled: True
       track:
         - person
         - car
@@ -155,6 +161,9 @@ cameras:
           mode: active_objects
         pre_capture: 5
         post_capture: 5
+    objects:
+      genai:
+        enabled: True
     motion:
       mask: 0.396,0.05,0,0.058,0,0,0.396,0
 
@@ -165,7 +174,7 @@ genai:
   provider: openai
   api_key: '{FRIGATE_GENAI_API_KEY}'
   base_url: '{FRIGATE_GENAI_BASE_URL}'
-  model: Gemma-4
+  model: Qwen3.6-27B
 
 semantic_search:
   enabled: true

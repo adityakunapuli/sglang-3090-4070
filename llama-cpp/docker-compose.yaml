@@ -13,6 +13,12 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
     # Start in router mode using the models.ini preset
     command: ["--models-preset", "/app/models.ini", "--port", "8080", "--host", "0.0.0.0", "--models-max", "1", "--sleep-idle-seconds", "-1"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/v1/chat/completions", "-H", "Content-Type: application/json", "-d", "{\"model\": \"Qwen3.6-27B\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}], \"max_tokens\": 1}"]
+      interval: 5m
+      timeout: 60s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         reservations:
