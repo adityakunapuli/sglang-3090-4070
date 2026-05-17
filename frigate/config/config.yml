@@ -32,9 +32,10 @@ record:
 go2rtc:
   streams:
     front_doorbell:
-      - rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/Preview_01_main
+      - rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/Preview_01_main#backchannel=0&transport=tcp
     front_doorbell_sub:
-      - ffmpeg:front_doorbell#video=h264#vf=scale=640:480
+      # - ffmpeg:front_doorbell#video=h264#vf=scale=640:480
+      - rtsp://{FRIGATE_DOORBELL_USER}:{FRIGATE_DOORBELL_PASSWORD}@{FRIGATE_DOORBELL_IP}:554/Preview_01_sub#backchannel=0&transport=tcp
     tapo_c260:
       - rtsp://{FRIGATE_TAPO_USER}:{FRIGATE_TAPO_PASSWORD}@{FRIGATE_TAPO_IP}:554/stream1
     tapo_sub:
