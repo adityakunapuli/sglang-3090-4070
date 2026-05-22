@@ -2,7 +2,7 @@ services:
   adguardhome:
     image: adguard/adguardhome:latest
     container_name: adguardhome
-    restart: unless-stopped
+#    restart: unless-stopped
     ports:
       # Bind DNS specifically to Local and Tailscale IPs to avoid libvirt conflict
       - "192.168.254.111:53:53/tcp"

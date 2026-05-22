@@ -1,0 +1,25 @@
+services:
+  litellm:
+    image: litellm/litellm:latest
+    container_name: litellm
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    env_file:
+      - .env
+    command: [ "--config", "/app/config.yaml", "--port", "4000", "--num_workers", "8" ]
+    networks:
+      - proxy
+      - default
+    labels:
+      - "homepage.group=AI"
+      - "homepage.name=LiteLLM Proxy"
+      - "homepage.icon=/icons/litellm.png"
+      - "homepage.href=http://192.168.254.111:4000"
+      - "homepage.description=LLM Gateway & Temperature Overrides"
+
+networks:
+  proxy:
+    external: true

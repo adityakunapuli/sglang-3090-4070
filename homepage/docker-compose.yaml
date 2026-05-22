@@ -54,17 +54,16 @@ services:
     networks:
       - homepage_default
       - proxy
-    # Glances removed from homepage layout per user request
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.http.routers.glances.rule=Host(`glances.home.lan`)"
-    #   - "traefik.http.routers.glances.entrypoints=web"
-    #   - "traefik.http.services.glances.loadbalancer.server.port=61208"
-    #   - "homepage.group=System"
-    #   - "homepage.name=Glances"
-    #   - "homepage.icon=glances.png"
-    #   - "homepage.href=http://192.168.254.111:61208"
-    #   # - "homepage.description=System Monitoring"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.glances.rule=Host(`glances.home.lan`)"
+      - "traefik.http.routers.glances.entrypoints=web"
+      - "traefik.http.services.glances.loadbalancer.server.port=61208"
+      - "homepage.group=System"
+      - "homepage.name=Glances"
+      - "homepage.icon=glances.png"
+      - "homepage.href=http://192.168.254.111:61208"
+      # - "homepage.description=System Monitoring"
 
 networks:
   proxy:

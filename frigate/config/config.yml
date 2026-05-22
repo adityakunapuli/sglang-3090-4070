@@ -90,6 +90,12 @@ cameras:
     objects:
       genai:
         enabled: True
+        prompt: >
+          This description is for a Frigate camera pipeline monitoring the Front Doorbell ({camera}).
+          Identify the people as follows: man is Dad, woman is Mom.
+          Analyze the actions and intent of the {label} ({sub_label}) naturally, starting the description directly without any "Based on the image" preambles.
+          Provide a detailed and thorough description. Focus on behavior: are they approaching the door, lingering, leaving a package, or appearing suspicious?
+          Highlight anything unusual. Do not describe the background or static surroundings.
       track:
         - person
         - car
@@ -162,8 +168,17 @@ cameras:
         pre_capture: 5
         post_capture: 5
     objects:
+      track:
+        - person
       genai:
         enabled: True
+        prompt: >
+          This description is for a Frigate camera pipeline monitoring the Master Bedroom. 
+          Identify the people as follows: man is Dad, baby is Dani, woman is Mom. 
+          Describe the activity of {sub_label} (or {label}) naturally, starting the description directly without any "Based on the image" preambles.
+          For trivial sleep movements or stirring, provide only a single concise sentence.
+          For significant activity, unusual events (e.g. falling), or ANY instance of someone speaking while the camera is in black and white (nightvision), provide a thorough and detailed description.
+          Focus on actions and behavior. Be proportional: simple movements get simple summaries; emergencies or nightvision speech get full detail.
     motion:
       mask: 0.396,0.05,0,0.058,0,0,0.396,0
 
