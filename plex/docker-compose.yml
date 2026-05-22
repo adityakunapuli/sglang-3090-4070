@@ -1,6 +1,6 @@
 services:
   plex:
-    image: lscr.io/linuxserver/plex:latest
+    image: linuxserver/plex:latest
     container_name: plex
     hostname: plex-server
     ports:
@@ -21,14 +21,12 @@ services:
       - "homepage.widget.type=plex"
       - "homepage.widget.url=http://192.168.254.111:32400"
       - "homepage.target=_self"
-      - "homepage.widget.key=VEbr3vWDZc5bGQipydU8"
+      - "homepage.widget.key=${PLEX_TOKEN}"
       - 'homepage.widget.fields=["streams", "movies", "tv"]'
     environment:
       - PUID=1000
       - PGID=1000
       - VERSION=docker
-      # CLAIM TOKEN: Get one at https://www.plex.tv/claim (valid for 4 minutes)
-      - PLEX_CLAIM=claim-wTGzzQYxpzs7Z7kWawyf
     volumes:
       - /mnt/data/media_cache/plex/config:/config
       # Mapping your existing media pool

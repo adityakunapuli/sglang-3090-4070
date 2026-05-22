@@ -60,7 +60,7 @@ services:
       - "homepage.widget.type=paperlessngx"
       - "homepage.widget.url=http://192.168.254.111:8010"
       - "homepage.target=_self"
-      - "homepage.widget.key=e693d2ff45965b0d1b35011a6fb042fe9950ca9e"
+      - "homepage.widget.key=${HOMEPAGE_VAR_PAPERLESS_KEY}"
       - "homepage.widget.showStats=true"
 
   gotenberg:
@@ -94,7 +94,7 @@ services:
       - AI_MODEL=Qwen3.5-9B-GGUF
       - OPENAI_API_KEY=local
       - OPENAI_API_BASE=http://llama-server:9876/v1
-      - API_KEY=327727dddd63ce06901455aa4c0eee0d31e5d79cf83d51f7faa46f40b759cfb2
+      - API_KEY=${PAPERLESS_AI_API_KEY}
       - DISABLE_AUTOMATIC_PROCESSING=no
       - USE_LOCAL_LLM=true
       - PAPERLESS_AI_INITIAL_SETUP=no

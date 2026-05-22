@@ -86,7 +86,7 @@ services:
       # - "homepage.description=Movies"
             - "homepage.widget.type=radarr"
             - "homepage.widget.url=http://radarr:7878"
-            - "homepage.widget.key=7511ead00cf24242b597f56108ba52d0"
+            - "homepage.widget.key=${HOMEPAGE_VAR_RADARR_KEY}"
             - "homepage.widget.showStats=true"
 
     sonarr:
@@ -120,7 +120,7 @@ services:
       # - "homepage.description=TV Shows"
             - "homepage.widget.type=sonarr"
             - "homepage.widget.url=http://sonarr:8989"
-            - "homepage.widget.key=f181490a72c44d998dc7a62271ab88cc"
+            - "homepage.widget.key=${HOMEPAGE_VAR_SONARR_KEY}"
             - "homepage.widget.showStats=true"
 
     prowlarr:
@@ -154,7 +154,7 @@ services:
             - "homepage.widget.type=prowlarr"
             - "homepage.widget.url=http://192.168.254.111:9696"
             - "homepage.target=_self"
-            - "homepage.widget.key=85c0a8ae8e8f4b14a10baaf11703f9fb"
+            - "homepage.widget.key=${HOMEPAGE_VAR_PROWLARR_KEY}"
             - "homepage.widget.showStats=true"
 
     flaresolverr:

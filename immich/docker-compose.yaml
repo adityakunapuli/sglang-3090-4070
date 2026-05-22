@@ -36,7 +36,7 @@ services:
       - "homepage.widget.type=immich"
       - "homepage.widget.url=http://192.168.254.111:2283"
       - "homepage.target=_self"
-      - "homepage.widget.key=QHLccdD1LH9eROySz6VydymVPBwdYSQIlb1pO0JqU"
+      - "homepage.widget.key=${HOMEPAGE_VAR_IMMICH_KEY}"
       - "homepage.widget.version=2"
       - "homepage.widget.showStats=true"
     depends_on:

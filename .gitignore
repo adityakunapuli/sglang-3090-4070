@@ -139,3 +139,8 @@ immich/.env
 
 
 !llama-swap/llama-swap-config.yaml
+
+*.bolt
+*.csv
+*.dbmonitoring/keys.json
+monitoring/archive_backup/keys.json

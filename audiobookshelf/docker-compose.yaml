@@ -28,7 +28,7 @@ services:
       - "homepage.widget.type=audiobookshelf"
       - "homepage.widget.url=http://192.168.254.111:13378"
       - "homepage.target=_self"
-      - "homepage.widget.key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlJZCI6Ijk3ZjYwOTAwLTMwMGYtNDQ5MC04OGM2LTQ2NjcxNmM4MDc3NSIsIm5hbWUiOiJob21lcGFnZSIsInR5cGUiOiJhcGkiLCJpYXQiOjE3NzQxMTczNzd9.t6NjBLJov5T84ghYdBsMiOcdE7ZY5lUXnwG0c1JT6ek"
+      - "homepage.widget.key=${HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}"
       - "homepage.widget.showStats=true"
 
   # abs-tract is primarily used to sync an Audible library to Audiobookshelf.

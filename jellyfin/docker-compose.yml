@@ -28,7 +28,7 @@ services:
       - "homepage.href=http://192.168.254.111:8096"
       - "homepage.widget.type=jellyfin"
       - "homepage.widget.url=http://192.168.254.111:8096"
-      - "homepage.widget.key=VEbr3vWDZc5bGQipydU8" # Reusing Plex key as placeholder, user should update if Jellyfin has its own
+      - "homepage.widget.key=${JELLYFIN_API_KEY}"
       - "homepage.target=_self"
     deploy:
       resources:
