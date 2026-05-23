@@ -4,7 +4,7 @@ services:
     privileged: false # Keep disabled to enforce GPU device constraints
     restart: unless-stopped
     image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
-    shm_size: "2gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
+    shm_size: "4gb" # Sufficient for ~4-6 1080p cameras. Increase if you see bus errors.
     runtime: nvidia
     env_file: .env
     environment:

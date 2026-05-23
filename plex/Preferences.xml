@@ -1,0 +1,21 @@
+<!-- 
+  PLEX PREFERENCES TEMPLATE 
+  Reference: /mnt/data/docker/plex/README.md for recovery steps.
+  
+  This file contains the "Magic" network settings discovered during the May 2026 recovery.
+  To use: Copy this to your Config directory and use a PLEX_CLAIM token to re-bind your account.
+  
+  NOTE: Do NOT include MachineIdentifier, ProcessedMachineIdentifier, or 
+  AnonymousMachineIdentifier in this file. Plex will automatically generate 
+  fresh ones on first boot if they are missing.
+-->
+<Preferences 
+  IPNetworkType="v4only" 
+  allowedNetworks="192.168.0.0/16,172.16.0.0/12,10.0.0.0/8,192.168.254.0/24" 
+  AcceptedEULA="1" 
+  PublishServerOnPlexOnlineKey="0" 
+  DlnaEnabled="0" 
+  secureConnections="1" 
+  customConnections="http://192.168.254.111:32400,http://100.90.25.88:32400" 
+  lanNetworks="192.168.0.0/16,192.168.254.0/24"
+/>

@@ -76,4 +76,4 @@ if __name__ == "__main__":
     console.print("A woman with gray hair lies on her back in bed, propped up slightly by pillows, wearing a colorful floral pajama top. She is holding a smartphone in both hands and appears to be actively using it — possibly scrolling or typing — while partially covered by a light-colored quilted blanket. Her arms are raised, revealing tattoos on her forearms. In the background, another person is sleeping on the same bed, face turned away, under blue bedding. The scene is calm and domestic; no signs of distress, urgency, or unusual activity. Lighting suggests daytime (camera timestamp shows 09:24 PM, but image is in color, not nightvision). No speech or emergency detected. Simple summary: A woman lies in bed using her phone while someone else sleeps beside her.")
     
     test_vision_model("qwen-27b", image_file)
-    test_vision_model("qwen-27b-storyteller", image_file)
+    test_vision_model("qwen-27b-frigate", image_file)

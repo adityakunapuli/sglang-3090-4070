@@ -21,7 +21,7 @@ services:
       - WUD_WATCHER_DOCKER_SOCKET=/var/run/docker.sock
       - WUD_WATCHER_DOCKER_WATCHDIGEST=true
       - WUD_WATCHER_DOCKER_CRON=0 0,12 * * *
-      - WUD_TRIGGER_DOCKER_LOCAL_AUTO=true
+      - WUD_TRIGGER_DOCKER_LOCAL_AUTO=false
       - WUD_TRIGGER_DOCKER_LOCAL_PRUNE=true
 
       # Use the specific v8 Basic Auth syntax

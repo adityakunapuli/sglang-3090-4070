@@ -48,4 +48,4 @@ def test_model(model_name, prompt="Say 'LiteLLM Test Successful' and nothing els
 if __name__ == "__main__":
     test_prompt = "Describe a baby girl laughing in her sleep."
     test_model("qwen-27b", test_prompt)
-    test_model("qwen-27b-storyteller", test_prompt)
+    test_model("qwen-27b-frigate", test_prompt)

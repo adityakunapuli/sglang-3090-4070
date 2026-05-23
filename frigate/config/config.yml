@@ -189,7 +189,7 @@ genai:
   provider: openai
   api_key: '{FRIGATE_GENAI_API_KEY}'
   base_url: '{FRIGATE_GENAI_BASE_URL}'
-  model: Qwen3.6-27B
+  model: qwen-27b-frigate
 
 semantic_search:
   enabled: true

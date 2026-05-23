@@ -142,5 +142,6 @@ immich/.env
 
 *.bolt
 *.csv
-*.dbmonitoring/keys.json
+*.dbm
+keys.json
 monitoring/archive_backup/keys.json
