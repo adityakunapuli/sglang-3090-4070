@@ -7,6 +7,7 @@ services:
           resources:
             limits:
               memory: 1gb
+              cpus: '0.5'
         container_name: delugevpn
         privileged: true
         cap_add:

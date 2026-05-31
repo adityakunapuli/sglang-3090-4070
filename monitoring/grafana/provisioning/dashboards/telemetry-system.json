@@ -1,53 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "12.0.2"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -64,7 +15,7 @@
       }
     ]
   },
-  "description": "Grafana Dashboard built by `nvitop-exporter`.",
+  "description": "HAOS System Telemetry (InfluxDB/Flux)",
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -85,8 +36,8 @@
       "title": "Overview",
       "type": "row",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -143,27 +94,27 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_cpu_percent_Percentage{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "Host CPU",
+          "legendFormat": "CPU",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_user\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "CPU Utilization",
       "type": "gauge",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -220,27 +171,27 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (gpu_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "legendFormat": "{{gpu_info}}",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"utilization_gpu\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Utilization",
       "type": "gauge",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -297,27 +248,27 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (gpu_memory_percent_Percentage{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "legendFormat": "{{gpu_info}}",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"utilization_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Memory",
       "type": "gauge",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -346,7 +297,7 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "percent"
         }
       },
       "gridPos": {
@@ -374,27 +325,27 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_virtual_memory_used_MiB{job=\"nvitop-exporter\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "RAM Used",
+          "legendFormat": "MEM",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"used_percent\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
-      "title": "Host RAM Usage",
+      "title": "Host Virtual Memory",
       "type": "gauge",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -410,8 +361,8 @@
       "title": "Process",
       "type": "row",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -500,13 +451,12 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"}(group by(uuid) (process_gpu_memory_MiB))",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -515,17 +465,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "number of occupied gpus",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"}(gpu_memory_total_MiB)",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -534,14 +484,15 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "number of gpus",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"memory_total\") |> group(columns: [\"uuid\"]) |> last() |> group() |> count()"
         }
       ],
       "title": "Number of GPUs",
       "type": "stat",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -605,27 +556,27 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"} by(hostname, index) (process_gpu_memory_MiB)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
           "legendFormat": "{{gpu_info}}",
           "range": false,
           "refId": "number of gpu processes",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "Number of Running GPU Processes",
       "type": "stat",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -688,13 +639,12 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"} by(hostname) (count by(hostname, pid) (process_info_info))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -702,14 +652,15 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "number of gpu processes",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "Number of Running GPU Processes",
       "type": "stat",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -877,13 +828,12 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "process_cpu_percent_Percentage{job=\\\"nvitop-exporter\\\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -893,17 +843,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "cpu percent",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "process_rss_memory_MiB{job=\\\"nvitop-exporter\\\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -912,17 +862,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "rss memory",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_memory_MiB{job=\\\"nvitop-exporter\\\"})",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -931,17 +881,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "gpu memory",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_sm_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -950,94 +900,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "gpu sm utilization",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_memory_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
-          "format": "table",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "gpu memory bandwidth utilization",
-          "useBackend": false
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_encoder_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
-          "format": "table",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "gpu encoder utilization",
-          "useBackend": false
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_decoder_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
-          "format": "table",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "gpu decoder utilization",
-          "useBackend": false
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "exemplar": false,
-          "expr": "process_running_time_Second{job=\\\"nvitop-exporter\\\"}",
-          "format": "table",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": true,
-          "interval": "",
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "running time",
-          "useBackend": false
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "exemplar": false,
-          "expr": "process_info_info{job=\\\"nvitop-exporter\\\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1046,17 +919,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "command",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_virtual_memory_total_MiB{job=\\\"nvitop-exporter\\\"})",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1065,17 +938,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "host memory total",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"total\") |> map(fn: (r) => ({r with _value: r._value / 1024 / 1024})) |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (gpu_memory_total_MiB{job=\\\"nvitop-exporter\\\"})",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1084,7 +957,8 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "gpu memory total",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"memory_total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Processes",
@@ -1250,8 +1124,8 @@
       ],
       "type": "table",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1267,8 +1141,8 @@
       "title": "System",
       "type": "row",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1344,26 +1218,26 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_cpu_percent_Percentage{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "Host CPU",
+          "legendFormat": "",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_user\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "CPU Utilization",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1436,28 +1310,27 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_load_average_1m_Percentage{job=\\\"nvitop-exporter\\\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "legendFormat": " (1m)",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_system\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_load_average_5m_Percentage{job=\\\"nvitop-exporter\\\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1465,16 +1338,16 @@
           "legendFormat": " (5m)",
           "range": true,
           "refId": "B",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_system\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_load_average_15m_Percentage{job=\\\"nvitop-exporter\\\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1482,14 +1355,15 @@
           "legendFormat": " (15m)",
           "range": true,
           "refId": "C",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_system\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "CPU Load Average",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1532,7 +1406,7 @@
               "mode": "off"
             }
           },
-          "unit": "bytes"
+          "unit": "mbytes"
         }
       },
       "gridPos": {
@@ -1564,26 +1438,26 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_virtual_memory_used_MiB{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "legendFormat": "",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"used\") |> map(fn: (r) => ({r with _value: r._value / 1024 / 1024})) |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
-      "title": "Host RAM Usage",
+      "title": "Host Virtual Memory",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1659,26 +1533,26 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_swap_memory_used_MiB{job=\\\"nvitop-exporter\\\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
           "legendFormat": "",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"swap_total\" or r[\"_field\"] == \"swap_free\") |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\") |> map(fn: (r) => ({r with _value: (r.swap_total - r.swap_free) / 1024 / 1024})) |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "Host Swap Memory",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1694,8 +1568,8 @@
       "title": "System I/O",
       "type": "row",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1785,12 +1659,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_net_io_rx_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1798,16 +1671,16 @@
           "legendFormat": " RX",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"net\") |> filter(fn: (r) => r[\"_field\"] == \"bytes_recv\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_net_io_tx_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1815,14 +1688,15 @@
           "legendFormat": " TX",
           "range": true,
           "refId": "B",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"net\") |> filter(fn: (r) => r[\"_field\"] == \"bytes_sent\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
         }
       ],
       "title": "Host Network I/O",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1912,12 +1786,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_disk_io_read_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1925,16 +1798,16 @@
           "legendFormat": " Read",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"diskio\") |> filter(fn: (r) => r[\"_field\"] == \"read_bytes\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_disk_io_write_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -1942,14 +1815,15 @@
           "legendFormat": " Write",
           "range": true,
           "refId": "B",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"diskio\") |> filter(fn: (r) => r[\"_field\"] == \"write_bytes\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
         }
       ],
       "title": "Host Disk I/O",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -1965,8 +1839,8 @@
       "title": "Device",
       "type": "row",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -2042,12 +1916,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2055,14 +1928,15 @@
           "legendFormat": "{{gpu_info}}",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"utilization_gpu\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Utilization",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -2138,12 +2012,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_memory_used_MiB{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2151,398 +2024,15 @@
           "legendFormat": "{{gpu_info}}",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"memory_used\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Memory",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 0,
-        "y": 100
-      },
-      "id": 22,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_pcie_rx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU PCIe RX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 100
-      },
-      "id": 23,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_pcie_tx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU PCIe TX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 0,
-        "y": 114
-      },
-      "id": 24,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_nvlink_total_rx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU NVLink RX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 114
-      },
-      "id": 25,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_nvlink_total_tx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU NVLink TX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -2593,7 +2083,7 @@
         "x": 0,
         "y": 128
       },
-      "id": 26,
+      "id": 22,
       "options": {
         "legend": {
           "calcs": [
@@ -2616,12 +2106,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_power_usage_W{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2629,14 +2118,15 @@
           "legendFormat": "{{gpu_info}}",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"power_draw\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Power Usage",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     },
     {
@@ -2687,7 +2177,7 @@
         "x": 12,
         "y": 128
       },
-      "id": 27,
+      "id": 23,
       "options": {
         "legend": {
           "calcs": [
@@ -2710,12 +2200,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "type": "influxdb",
+            "uid": "InfluxDB"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_temperature_C{job=\\\"nvitop-exporter\\\"})",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2723,14 +2212,15 @@
           "legendFormat": "{{gpu_info}}",
           "range": true,
           "refId": "A",
-          "useBackend": false
+          "useBackend": false,
+          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"temperature_gpu\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
         }
       ],
       "title": "GPU Temperature",
       "type": "timeseries",
       "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
+        "type": "influxdb",
+        "uid": "InfluxDB"
       }
     }
   ],
@@ -2754,8 +2244,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "nvitop-dashboard",
-  "uid": "bdl3vqwxprhtsa",
+  "title": "System Telemetry (InfluxDB)",
+  "uid": "telemetry-system-dashboard",
   "version": 1,
   "weekStart": ""
 }

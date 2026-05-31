@@ -145,3 +145,12 @@ immich/.env
 *.dbm
 keys.json
 monitoring/archive_backup/keys.json
+
+# Development artifacts and temporary scripts
+.playwright-mcp/
+clean_dash*.py
+update_dash.py
+update_final.py
+upload_dash.py
+screenshot.png
+monitoring/archive_backup/

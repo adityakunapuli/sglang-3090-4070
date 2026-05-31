@@ -17,7 +17,7 @@ services:
               "--port", "8080",
               "--host", "0.0.0.0",
               "--models-max", "1",
-              "--sleep-idle-seconds", "-1"]
+              "--sleep-idle-seconds", "3600"]
     healthcheck:
       test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/v1/chat/completions", "-H", "Content-Type: application/json", "-d", "{\"model\": \"Qwen3.6-27B\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}], \"max_tokens\": 1}"]
       interval: 5m

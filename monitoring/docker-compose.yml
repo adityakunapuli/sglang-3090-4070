@@ -25,3 +25,57 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu, utility]
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - 9090:9090
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - 9100:9100
+
+  nvitop-exporter:
+    container_name: nvitop-exporter
+    image: ghcr.io/xuehaipan/nvitop-exporter:latest
+    restart: unless-stopped
+    runtime: nvidia
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+    command:
+      - '--port'
+      - '5050'
+      - '--bind-address'
+      - '0.0.0.0'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility]
+    ports:
+      - 5050:5050
+
+volumes:
+  prometheus_data:

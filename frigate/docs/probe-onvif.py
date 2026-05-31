@@ -17,6 +17,9 @@ from onvif import ONVIFDiscovery, ONVIFClient
 from rich.console import Console
 from zeep import helpers
 
+if '__file__' not in globals():
+    os.chdir('docker/frigate/docs')
+
 console = Console()
 
 if env_path := find_dotenv('.env'):
