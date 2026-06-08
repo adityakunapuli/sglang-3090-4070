@@ -3,6 +3,7 @@ services:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     container_name: llama-cpp
     restart: unless-stopped
+    ipc: host # CRITICAL: Gives NCCL access to shared memory segments for P2P/AllReduce
     ports:
       - "8082:8080"
     volumes:
@@ -12,6 +13,9 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
       - LD_LIBRARY_PATH=/app:/usr/local/cuda/lib64
+      - NCCL_DEBUG=WARN
+      # If NCCL still chokes on networking setups, uncomment the line below to force it to use local P2P:
+      # - NCCL_NET_PLUGIN=none
     # Start in router mode using the models.ini preset
     command: ["--models-preset", "/app/models.ini",
               "--port", "8080",

@@ -17,7 +17,7 @@ services:
       - ./copaw-secrets:/app/working.secret
       - /mnt/data:/mnt/data
       - /var/run/docker.sock:/var/run/docker.sock
-#      - /run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+      - /run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
     labels:
       - "homepage.group=AI"
       - "homepage.name=Copaw"

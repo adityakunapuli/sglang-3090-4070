@@ -101,6 +101,8 @@ cameras:
         - car
         - dog
         - cat
+        - suitcase
+        - backpack
       filters:
         person:
           min_score: 0.40
@@ -210,4 +212,13 @@ classification:
       object_config:
         objects:
           - dog
+        classification_type: sub_label
+    package_delivery:
+      enabled: true
+      name: Package
+      threshold: 0.8
+      object_config:
+        objects:
+          - suitcase
+          - backpack
         classification_type: sub_label
