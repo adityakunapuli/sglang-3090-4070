@@ -1,0 +1,1 @@
+NEVER make blind edits to the config/config.yml without first reviewing the config.yml spec here: http://192.168.254.111:5000/api/config/schema.json

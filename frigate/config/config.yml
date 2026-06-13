@@ -91,11 +91,15 @@ cameras:
       genai:
         enabled: True
         prompt: >
-          This description is for a Frigate camera pipeline monitoring the Front Doorbell ({camera}).
-          Identify the people as follows: man is Dad, woman is Mom.
-          Analyze the actions and intent of the {label} ({sub_label}) naturally, starting the description directly without any "Based on the image" preambles.
-          Provide a detailed and thorough description. Focus on behavior: are they approaching the door, lingering, leaving a package, or appearing suspicious?
-          Highlight anything unusual. Do not describe the background or static surroundings.
+          This description is for a Frigate security pipeline ({camera}).
+          Analyze the intent and actions of the {label} naturally. 
+          Start the description directly.
+          CRITICAL: DO NOT identify or mention "license plates". DO NOT use "license plate" as a sub-label or description. 
+          Focus on:
+          1. Behavior: (e.g., approaching, lingering, appearing suspicious). NOTE: Any person approaching the door past 12 AM (midnight) should be flagged as suspicious.
+          2. Appearance: Describe clothing (e.g., mask/balaclava, colors) and items carried (e.g., backpack, tools/crowbar).
+          3. Context: Note if the activity is unusual for the time of day.
+          Highlight anything unusual. Do not describe static surroundings.
       track:
         - person
         - car
@@ -190,8 +194,8 @@ detect:
 genai:
   provider: openai
   api_key: '{FRIGATE_GENAI_API_KEY}'
-  base_url: '{FRIGATE_GENAI_BASE_URL}'
-  model: qwen-27b-frigate
+  base_url: http://litellm:4000/v1
+  model: gemma-12b-mtp
 
 semantic_search:
   enabled: true

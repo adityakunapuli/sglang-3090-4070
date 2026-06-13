@@ -1,5 +1,6 @@
 services:
   llama-cpp:
+  #  image: llama-cpp-local:server-cuda
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     container_name: llama-cpp
     restart: unless-stopped
@@ -20,10 +21,10 @@ services:
     command: ["--models-preset", "/app/models.ini",
               "--port", "8080",
               "--host", "0.0.0.0",
-              "--models-max", "1",
+              "--models-max", "2",
               "--sleep-idle-seconds", "3600"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/v1/chat/completions", "-H", "Content-Type: application/json", "-d", "{\"model\": \"Qwen3.6-27B\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}], \"max_tokens\": 1}"]
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/v1/chat/completions", "-H", "Content-Type: application/json", "-d", "{\"model\": \"Gemma-4-12B-MTP\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}], \"max_tokens\": 1}"]
       interval: 5m
       timeout: 60s
       retries: 5
