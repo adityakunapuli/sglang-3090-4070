@@ -1,0 +1,12 @@
+cyankiwi/gemma-4-12B-it-qat-AWQ-INT4
+--tensor-parallel-size 1
+--dtype bfloat16
+--max-model-len 16384
+--max-num-batched-tokens 4096
+--gpu-memory-utilization 0.90
+--max-num-seqs 1
+--trust-remote-code
+--enforce-eager
+--disable-custom-all-reduce
+--host 0.0.0.0
+--port 7777

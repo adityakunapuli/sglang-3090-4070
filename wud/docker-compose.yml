@@ -32,10 +32,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.wud.rule=Host(`wud.local`)"
-#      - "traefik.http.routers.wud.entrypoints=web"
-#      - "traefik.http.services.wud.loadbalancer.server.port=3099"
       - "homepage.group=System"
       - "homepage.name=Updates"
       - "homepage.icon=whats-up-docker.png"

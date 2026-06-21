@@ -4,6 +4,10 @@ services:
     container_name: vllm
     volumes:
       - /mnt/data/models/hf:/root/.cache/huggingface
+      # Swap the .cmd file below to switch models quickly.
+      # Options in this directory: gemma4-12b-awq-single-gpu.cmd, gemma4-12b-awq-pp2.cmd, qwen.cmd, gemma4.cmd
+      - ./gemma4-12b-awq-pp2.cmd:/app/args.txt:ro
+      - ./entrypoint.sh:/app/entrypoint.sh:ro
     restart: "no"
     privileged: true
     ports:
@@ -16,22 +20,7 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-    command: >
-      --model Lorbus/Qwen3.6-27B-int4-AutoRound
-      --tensor-parallel-size 2
-      --dtype half
-      --max-model-len 4096
-      --gpu-memory-utilization 0.85
-      --kv-cache-dtype fp8
-      --max-num-seqs 1
-      --reasoning-parser qwen3
-      --enable-auto-tool-choice
-      --tool-call-parser qwen3_xml
-      --trust-remote-code
-      --compilation-config.cudagraph_mode none
-      --disable-custom-all-reduce
-      --host 0.0.0.0
-      --port 7777
+    entrypoint: ["/app/entrypoint.sh"]
     labels:
       - "homepage.group=AI"
       - "homepage.name=vLLM"
@@ -50,4 +39,4 @@ services:
 
 networks:
   proxy:
-    external: true
+    external: tr

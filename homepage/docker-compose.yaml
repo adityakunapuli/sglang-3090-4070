@@ -27,10 +27,6 @@ services:
       HOMEPAGE_ALLOWED_HOSTS: "*"
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.homepage.rule=Host(`home.lan`) || Host(`homepage.home.lan`)"
-      - "traefik.http.routers.homepage.entrypoints=web"
-      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
     restart: unless-stopped
 
   glances:
@@ -55,10 +51,6 @@ services:
       - homepage_default
       - proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.glances.rule=Host(`glances.home.lan`)"
-      - "traefik.http.routers.glances.entrypoints=web"
-      - "traefik.http.services.glances.loadbalancer.server.port=61208"
       - "homepage.group=System"
       - "homepage.name=Glances"
       - "homepage.icon=glances.png"

@@ -13,9 +13,9 @@ from rich.console import Console
 from rich.pretty import pprint
 from dotenv import load_dotenv, find_dotenv
 
-assert load_dotenv(find_dotenv()), 'missing env file'
+load_dotenv(find_dotenv())
 api_key = os.getenv("LITELLM_API_KEY", "sk")
-base_url = "http://localhost:4000/v1"
+base_url = "http://localhost:4001/v1"
 
 console = Console()
 
@@ -32,7 +32,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def test_vision_model(model_name, image_path):
-    console.print(f"\n[bold blue]Testing model:[/bold blue] {model_name}")
+    console.print(f"\n[bold blue]Testing model {model_name} on {base_url}:[/bold blue]")
     base64_image = encode_image(image_path)
     
     payload = {
@@ -70,10 +70,13 @@ def test_vision_model(model_name, image_path):
             console.print(e.response.text)
 
 if __name__ == "__main__":
-    image_file = "/mnt/data/docker/litellm/tests/assets/laughter_snapshot.jpg"
+    image_file = "/mnt/data/docker/.archive/litellm/tests/assets/laughter_snapshot.jpg"
 
     console.print("[bold yellow]Original Frigate Description (Event 1779164646.659747-5wng6m):[/bold yellow]")
     console.print("A woman with gray hair lies on her back in bed, propped up slightly by pillows, wearing a colorful floral pajama top. She is holding a smartphone in both hands and appears to be actively using it — possibly scrolling or typing — while partially covered by a light-colored quilted blanket. Her arms are raised, revealing tattoos on her forearms. In the background, another person is sleeping on the same bed, face turned away, under blue bedding. The scene is calm and domestic; no signs of distress, urgency, or unusual activity. Lighting suggests daytime (camera timestamp shows 09:24 PM, but image is in color, not nightvision). No speech or emergency detected. Simple summary: A woman lies in bed using her phone while someone else sleeps beside her.")
     
-    test_vision_model("qwen-27b", image_file)
-    test_vision_model("qwen-27b-frigate", image_file)
+    # Test model that is not mapped (passes through, reasoning ON)
+    test_vision_model("Gemma-4-12B-MTP", image_file)
+    
+    # Test model that is mapped (frigate proxy, reasoning OFF)
+    test_vision_model("frigate", image_file)

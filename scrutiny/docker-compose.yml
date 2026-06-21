@@ -26,10 +26,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.scrutiny.rule=Host(`scrutiny.home.lan`)"
-      - "traefik.http.routers.scrutiny.entrypoints=web"
-      - "traefik.http.services.scrutiny.loadbalancer.server.port=8080"
       - "homepage.group=Home Ops"
       - "homepage.name=Scrutiny"
       - "homepage.icon=scrutiny.png"

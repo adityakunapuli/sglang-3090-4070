@@ -17,11 +17,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.home.lan`)"
-      - "traefik.http.routers.portainer.entrypoints=web"
-      - "traefik.http.services.portainer.loadbalancer.server.port=9443"
-      - "traefik.http.services.portainer.loadbalancer.server.scheme=https"
       - "homepage.group=Infrastructure"
       - "homepage.name=Portainer"
       - "homepage.icon=portainer.png"

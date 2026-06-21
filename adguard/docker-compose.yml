@@ -4,12 +4,18 @@ services:
     container_name: adguardhome
 #    restart: unless-stopped
     ports:
-      # Bind DNS specifically to Local and Tailscale IPs to avoid libvirt conflict
+      # Bind to static LAN IP to prevent libvirt conflicts and survive TS tunnel resets
       - "192.168.254.111:53:53/tcp"
       - "192.168.254.111:53:53/udp"
+      # Bind to Tailscale interface so off-LAN clients (e.g. S24 over cellular) can
+      # reach AdGuard directly over the mesh without relying on subnet-route DNS.
       - "100.124.95.75:53:53/tcp"
       - "100.124.95.75:53:53/udp"
       - "3001:80/tcp"     # Web UI (Post-setup)
+    dns:
+      # Pin container DNS to prevent container resolver loop
+      - 1.1.1.1
+      - 9.9.9.9
 #      - "53:53/tcp" # Critical for DNS
 #      - "53:53/udp" # Critical for DNS
 
@@ -21,10 +27,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.adguard.rule=Host(`adguard.home.lan`)"
-      - "traefik.http.routers.adguard.entrypoints=web"
-      - "traefik.http.services.adguard.loadbalancer.server.port=80"
       - "homepage.group=Home Ops"
       - "homepage.name=AdGuard Home"
       - "homepage.icon=adguard-home.png"

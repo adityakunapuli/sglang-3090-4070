@@ -24,10 +24,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.immich.rule=Host(`immich.home.lan`)"
-      - "traefik.http.routers.immich.entrypoints=web"
-      - "traefik.http.services.immich.loadbalancer.server.port=2283"
       - "homepage.group=Home Ops"
       - "homepage.name=Immich"
       - "homepage.icon=immich.png"

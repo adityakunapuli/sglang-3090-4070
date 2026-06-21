@@ -1,7 +1,7 @@
 services:
   llama-cpp:
-  #  image: llama-cpp-local:server-cuda
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    image: llama-cpp-local:server-cuda
+#    image: ghcr.io/ggml-org/llama.cpp:server-cuda-june-08
     container_name: llama-cpp
     restart: unless-stopped
     ipc: host # CRITICAL: Gives NCCL access to shared memory segments for P2P/AllReduce
@@ -21,13 +21,12 @@ services:
     command: ["--models-preset", "/app/models.ini",
               "--port", "8080",
               "--host", "0.0.0.0",
-              "--models-max", "2",
-              "--sleep-idle-seconds", "3600"]
+    ]
     healthcheck:
-      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/v1/chat/completions", "-H", "Content-Type: application/json", "-d", "{\"model\": \"Gemma-4-12B-MTP\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}], \"max_tokens\": 1}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/models"]
       interval: 5m
-      timeout: 60s
-      retries: 5
+      timeout: 10s
+      retries: 3
       start_period: 30s
     deploy:
       resources:
@@ -44,10 +43,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.llama-cpp.rule=Host(`llama-cpp.local`) || Host(`llama-cpp`)"
-      - "traefik.http.routers.llama-cpp.entrypoints=web"
-      - "traefik.http.services.llama-cpp.loadbalancer.server.port=8080"
       - "homepage.group=AI"
       - "homepage.name=Llama CPP Native"
       - "homepage.icon=/icons/llama.png"

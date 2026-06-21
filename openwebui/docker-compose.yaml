@@ -19,11 +19,6 @@ services:
     healthcheck:
       disable: true
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.openwebui.rule=Host(`openwebui.local`) || Host(`openwebui`)"
-      - "traefik.http.routers.openwebui.entrypoints=web"
-      - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
       - "homepage.group=AI"
       - "homepage.name=Open WebUI"
       - "homepage.icon=/icons/openwebui.png"

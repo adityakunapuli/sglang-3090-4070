@@ -1,0 +1,17 @@
+services:
+  gateway:
+    build: .
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "4001:4000"
+    networks:
+      - proxy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./app.py:/app/app.py
+    labels: {}
+
+networks:
+  proxy:
+    external: true

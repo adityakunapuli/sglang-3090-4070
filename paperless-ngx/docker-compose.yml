@@ -38,20 +38,11 @@ services:
       - /mnt/storage/documents/consume:/usr/src/paperless/consume
     env_file:
       - .env
-    environment:
-      PAPERLESS_REDIS: redis://broker:6379
-      PAPERLESS_DBHOST: db
-      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
-      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
     networks:
       - default
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.paperless.rule=Host(`paperless.home.lan`)"
-      - "traefik.http.routers.paperless.entrypoints=web"
-      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
       - "homepage.group=Paperless Stack"
       - "homepage.name=Paperless"
       - "homepage.icon=paperless.png"
@@ -78,26 +69,20 @@ services:
       - "wud.watch.digest=true"
     restart: "no"
 
-  paperless-ai:
-    image: clusterzx/paperless-ai:latest
-    container_name: paperless_ai
-    restart: "no"
+  paperless-ainext:
+    image: admonstrator/paperless-ai-next:latest
+    container_name: paperless_ainext
+    restart: unless-stopped
     ports:
       - "8001:3000"
     depends_on:
       webserver:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      - PAPERLESS_URL=http://webserver:8000/api
-      - PAPERLESS_TOKEN=${PAPERLESS_API_TOKEN}
-      - AI_PROVIDER=custom
-      - AI_MODEL=Qwen3.5-9B-GGUF
-      - OPENAI_API_KEY=local
-      - OPENAI_API_BASE=http://llama-server:9876/v1
-      - API_KEY=${PAPERLESS_AI_API_KEY}
-      - DISABLE_AUTOMATIC_PROCESSING=no
-      - USE_LOCAL_LLM=true
-      - PAPERLESS_AI_INITIAL_SETUP=no
+      - PAPERLESS_URL=http://192.168.254.111:8010
+      - PAPERLESS_API_URL=http://192.168.254.111:8010
       - >-
         SYSTEM_PROMPT=You are a personalized document analyzer. Your task is to analyze documents and extract relevant information.
 
@@ -108,8 +93,7 @@ services:
                       3. tags: Select up to 4 relevant thematic tags
                       4. document_date: Extract the document date (format: YYYY-MM-DD).
                       5. document_type: Determine a precise type that classifies the document (e.g., Invoice, Tax Form, Medical Superbill, Contract)
-                      6. language: Determine the document language (e.g. "de" or "en")
-                      7. healthcare_metadata: If and ONLY IF the document is a medical invoice or superbill, populate this nested object with the fields listed below. Otherwise, return null.
+                      6. language: ALWAYS set this to "en" (English) regardless of the document content
 
                       Important rules for the analysis:
 
@@ -118,13 +102,11 @@ services:
                       - Use only relevant categories. Maximum 4 tags per document.
                       - TAX DOCUMENTS: If the document is tax-related, you MUST include a tag with the specific tax year in the format "Tax YYYY" (e.g., "Tax 2024", "Tax 2025").
                       - MEDICAL DOCUMENTS: If the document is a medical invoice, tag it with "Medical". If the document specifically relates to fertility, embryology, FET, or IVF procedures, you MUST include the tag "IVF".
-                      - The output language is the one used in the document! IMPORTANT!
 
                       For the title:
                       - Short and concise, NO ADDRESSES.
                       - Contains the most important identification features.
                       - For invoices/orders, mention invoice/order number if available.
-                      - The output language is the one used in the document! IMPORTANT!
 
                       For the correspondent:
                       - Identify the sender or institution.
@@ -138,89 +120,56 @@ services:
                       - Ensure that the tag says "Tax <YEAR>"--e.g., "Tax 2025" which would indicate that a given form should be filed with my 2025 taxes.  The most common types of tax forms include 1099s (Int/Div/etc) and W-2s, though may include other types as well.
 
                       For the language:
-                      - ALWAYS default to English.
-
-                      For healthcare_metadata (Populate ONLY for medical invoices/superbills):
-                      Extract the following into a nested JSON object. Use null if a specific field cannot be found on the document:
-                      - provider_name: Name of the medical provider or clinic.
-                      - provider_address: Full address of the provider.
-                      - tax_id: The provider's Tax ID (TIN/EIN).
-                      - procedure_codes: Array of strings containing CPT or HCPC codes.
-                      - procedure_units: Array or mapping of the units for each corresponding procedure code.
-                      - diagnosis_codes: Array of strings containing Diagnosis (ICD-10) codes.
-                      - patient_name: Name of the patient receiving the service.
-                      - service_location: Location where the service was rendered.
-                      - date_of_service: Date the procedure/service took place (YYYY-MM-DD).
-                      - billed_amounts: Array or mapping of the billed amount in USD for each procedure code.
-                      - total_amount_paid: The total amount paid in USD by the patient.
-                      - npi: The National Provider ID (NPI).
-    volumes:
-      - ./paperless-ai-data:/app/data
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59']
-              capabilities: [gpu]
+                      - ALWAYS set to "en" (English). Never use any other language value.
     networks:
       - default
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.paperless-ai.rule=Host(`paperless-ai.home.lan`)"
-      - "traefik.http.routers.paperless-ai.entrypoints=web"
-      - "traefik.http.services.paperless-ai.loadbalancer.server.port=3000"
       - "homepage.group=Paperless Stack"
       - "homepage.name=Paperless AI"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8001"
-      # - "homepage.description=Local AI Document Processing (Qwen3.5-9B-GGUF)"
 
-  paperless-gpt:
-    image: icereed/paperless-gpt:latest
-    container_name: paperless_gpt
+
+  surya-llama:
+    image: ghcr.io/mostlygeek/llama-swap:cpu
+    container_name: surya_llama
+    restart: unless-stopped
+    entrypoint: >
+      /app/llama-server
+      --model /models/llm/OCR/surya-2.gguf
+      --mmproj /models/llm/OCR/surya-2-mmproj.gguf
+      --alias datalab-to/surya-ocr-2
+      --host 0.0.0.0
+      --port 5804
+      --temp 0.0
+      --top-p 0.1
+      --ctx-size 32768
+      --flash-attn on
+      --parallel 1
+    volumes:
+      - /mnt/data/models:/models
+    env_file:
+      - .env
+    networks:
+      - default
+
+  surya-ocr:
+    build:
+      context: ./surya-ocr
+    container_name: surya_ocr
     restart: unless-stopped
     ports:
-      - "8002:8080"
+      - "8020:8000"
+    env_file:
+      - .env
     depends_on:
-      webserver:
-        condition: service_healthy
-    environment:
-      - PAPERLESS_BASE_URL=http://webserver:8000
-      - PAPERLESS_API_TOKEN=${PAPERLESS_API_TOKEN}
-      - LLM_PROVIDER=openai
-      - LLM_MODEL=Qwen3.5-9B-GGUF
-      - OPENAI_API_KEY=local
-      - OPENAI_BASE_URL=http://llama-server:9876/v1
-      - OCR_PROVIDER=llm
-      - VISION_LLM_PROVIDER=openai
-      - VISION_LLM_MODEL=Qwen3.5-9B-GGUF
-      - VISION_LLM_MAX_TOKENS=4096
-      - VISION_LLM_TEMPERATURE=0.0
-      - IMAGE_MAX_PIXEL_DIMENSION=2000
-      - IMAGE_MAX_TOTAL_PIXELS=4000000
-      - IMAGE_MAX_RENDER_DPI=300
-      - AUTO_PROCESS=true
-      - PROCESS_INTERVAL=300
-      - PROMPT=Analyze document and return JSON with keys title, correspondent, and created_date (YYYY-MM-DD). No other text.
-    volumes:
-      - ./gpt-data:/app/data
+      - surya-llama
     networks:
       - default
       - proxy
-    labels:
-      - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.paperless-gpt.rule=Host(`paperless-gpt.home.lan`)"
-      - "traefik.http.routers.paperless-gpt.entrypoints=web"
-      - "traefik.http.services.paperless-gpt.loadbalancer.server.port=8080"
-      - "homepage.group=Paperless Stack"
-      - "homepage.name=Paperless GPT"
-      - "homepage.icon=paperless.png"
-      - "homepage.href=http://192.168.254.111:8002"
-      # - "homepage.description=AI OCR and Organization"
+
 
 networks:
   proxy:

@@ -15,8 +15,8 @@ services:
       - CUDA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
       - FFMPEG_DISABLE_GAMMA_EQUALIZER=true
       - LIBVA_DRIVER_NAME=nvidia
-      - OPENAI_BASE_URL=http://litellm:4000/v1
-      - OPENAI_BASE=http://litellm:4000/v1
+      - OPENAI_BASE_URL=http://gateway:4000/v1
+      - OPENAI_BASE=http://gateway:4000/v1
       - OPENAI_API_KEY=${FRIGATE_GENAI_API_KEY}
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -46,10 +46,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.frigate.rule=Host(`frigate.home.lan`)"
-      - "traefik.http.routers.frigate.entrypoints=web"
-      - "traefik.http.services.frigate.loadbalancer.server.port=5000"
       - "homepage.1.group=Home Ops"
       - "homepage.1.name=Frigate"
       - "homepage.1.icon=frigate.png"

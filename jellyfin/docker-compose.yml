@@ -18,10 +18,6 @@ services:
       - default
       - proxy
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.home.lan`)"
-      - "traefik.http.routers.jellyfin.entrypoints=web"
-      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
       - "homepage.group=Media Automation"
       - "homepage.name=Jellyfin"
       - "homepage.icon=jellyfin.png"

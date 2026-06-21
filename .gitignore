@@ -1,5 +1,7 @@
 # Services
 
+**/*.env
+
 .archive/
 bifrost/
 blocky/

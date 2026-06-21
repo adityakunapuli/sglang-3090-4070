@@ -16,10 +16,6 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "traefik.enable=true"
-      - "traefik.http.routers.audiobookshelf.rule=Host(`audiobookshelf.home.lan`)"
-      - "traefik.http.routers.audiobookshelf.entrypoints=web"
-      - "traefik.http.services.audiobookshelf.loadbalancer.server.port=80"
       - "homepage.group=Media Automation"
       - "homepage.name=Audiobookshelf"
       - "homepage.icon=audiobookshelf.png"

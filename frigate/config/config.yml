@@ -194,8 +194,8 @@ detect:
 genai:
   provider: openai
   api_key: '{FRIGATE_GENAI_API_KEY}'
-  base_url: http://litellm:4000/v1
-  model: gemma-12b-mtp
+  base_url: http://gateway:4000/v1
+  model: frigate
 
 semantic_search:
   enabled: true

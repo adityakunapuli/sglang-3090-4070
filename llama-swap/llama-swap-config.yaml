@@ -1,0 +1,101 @@
+# llama-swap configuration for PC2
+models:
+  Gemma-4-12B-MTP:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
+      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
+      --alias Gemma-4-12B-MTP
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 64
+      --min-p 0.01
+      --n-predict 2048
+      --reasoning on
+      --chat-template-kwargs '{"enable_thinking": true}'
+      --split-mode layer
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --flash-attn on
+      --parallel 2
+      --ctx-size 262144
+    ttl: 0
+
+  Qwen3.6-27B:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Qwen3.6/27B-MTB/Qwen3.6-27B-Q4_K_S.gguf
+      --mmproj /mnt/data/models/llm/Qwen3.6/27B-MTB/mmproj-BF16.gguf
+      --alias Qwen3.6-27B
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 20
+      --min-p 0.0
+      --presence-penalty 1.5
+      --repeat-penalty 1.0
+      --flash-attn on
+      --parallel 1
+      --reasoning on
+      --chat-template-kwargs '{"preserve_thinking":false}'
+      --split-mode tensor
+      --n-gpu-layers 99
+      --ctx-size 65536
+    ttl: 0
+
+  Gemma4-26B-A4B-QAT:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Gemma/26B-A4B/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+      --mmproj /mnt/data/models/llm/Gemma/26B-A4B/mmproj-BF16.gguf
+      --model-draft /mnt/data/models/llm/Gemma/26B-A4B/mtp-gemma-4-26B-A4B-it.gguf
+      --alias Gemma4-26B-A4B-QAT
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 64
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --n-predict 2048
+      --reasoning on
+      --chat-template-kwargs '{"enable_thinking": true}'
+      --split-mode layer
+      --n-gpu-layers 99
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --flash-attn on
+      --parallel 1
+      --ctx-size 65536
+    ttl: 0
+
+  Gemma4-31B-QAT:
+    cmd: >
+      /usr/local/bin/llama-server
+      --model /mnt/data/models/llm/Gemma/31B/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf
+      --mmproj /mnt/data/models/llm/Gemma/31B/mmproj-BF16.gguf
+      --model-draft /mnt/data/models/llm/Gemma/31B/mtp-gemma-4-31B-it.gguf
+      --alias Gemma4-31B-QAT
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 1.0
+      --top-p 0.95
+      --top-k 64
+      --min-p 0.01
+      --repeat-penalty 1.0
+      --n-predict 2048
+      --reasoning on
+      --chat-template-kwargs '{"enable_thinking": true}'
+      --split-mode layer
+      --n-gpu-layers 99
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --flash-attn on
+      --parallel 1
+      --ctx-size 65536
+      --fit
+    ttl: 0

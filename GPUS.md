@@ -1,6 +1,7 @@
 # GPU Identification & Docker Mapping
 
-In systems with multiple NVIDIA GPUs, identifying which physical card maps to which UUID is critical for consistent deployment.
+In systems with multiple NVIDIA GPUs, identifying which physical card maps to which UUID is critical for consistent
+deployment.
 
 ## GPU Identification Script
 
@@ -52,12 +53,16 @@ echo "$SEP"
 
 ## Why use both `NVIDIA_VISIBLE_DEVICES` and `device_ids`?
 
-Docker Compose (and the underlying Docker runtime) does not always consistently respect the simple integer-based schema (`gpu: 0`, `gpu: 1`, etc.). Indices can shift based on driver versions, PCIe bus order, or host reboots.
+Docker Compose (and the underlying Docker runtime) does not always consistently respect the simple integer-based schema
+(`gpu: 0`, `gpu: 1`, etc.). Indices can shift based on driver versions, PCIe bus order, or host reboots.
 
 To ensure a service **always** gets the correct physical hardware, we use a dual-layer approach:
 
-1.  **`deploy.resources.reservations.devices.device_ids`**: This tells the Docker Engine exactly which hardware UUID to reserve and pass through to the container.
-2.  **`NVIDIA_VISIBLE_DEVICES` (Environment Variable)**: Many containerized applications (like Frigate, Immich, or Llama-cpp) use this variable to initialize their internal libraries. Setting this explicitly prevents the application from "seeing" other GPUs that might have been accidentally leaked or misindexed by the runtime.
+1. **`deploy.resources.reservations.devices.device_ids`**: This tells the Docker Engine exactly which hardware UUID to
+   reserve and pass through to the container.
+2. **`NVIDIA_VISIBLE_DEVICES` (Environment Variable)**: Many containerized applications (like Frigate, Immich, or
+   Llama-cpp) use this variable to initialize their internal libraries. Setting this explicitly prevents the application
+   from "seeing" other GPUs that might have been accidentally leaked or misindexed by the runtime.
 
 ## Environment Variable Usage
 
@@ -81,6 +86,28 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${GPU_3050}']
-              capabilities: [gpu, compute, video, utility]
-```
+              device_ids: [ '${GPU_3050}' ]
+              capabilities: [ gpu, compute, video, utility ]
+```              
+
+## PCIe Slot Bandwidth Analysis
+
+The system runs an **ASRock Z690 Steel Legend** motherboard. Below is the mapping of each GPU's slot location, its
+theoretical maximum PCIe slot capabilities, and its peak historical bandwidth usage (measured over the last 30 days):
+
+### Motherboard PCIe Slot Configuration & Maximum Capabilities
+
+* **Slot 1 (PCIE2)**: PCIe 5.0 x16 (physical). Runs at **PCIe 4.0 x16** speeds when populated with an RTX 3060.
+    * *Theoretical Bandwidth Limit:* **~31.50 GB/s** (29.3 GiB/s)
+* **Slot 3 (PCIE3)**: PCIe 4.0 x16 (physical). Runs at **PCIe 4.0 x4** speeds.
+    * *Theoretical Bandwidth Limit:* **~7.87 GB/s** (7.3 GiB/s)
+* **Slot 5 (PCIE5)**: PCIe 3.0 x16 (physical). Runs at **PCIe 3.0 x4** speeds.
+    * *Theoretical Bandwidth Limit:* **~3.94 GB/s** (3.67 GiB/s)
+
+### GPU Bandwidth Usage (Last 30 Days Peak)
+
+| GPU                           | Physical Location  | PCIe Link Speed | Slot Max Limit | Historical Peak RX            | Historical Peak TX            |
+|:------------------------------|:-------------------|:----------------|:---------------|:------------------------------|:------------------------------|
+| **RTX 3060 (0)**<br>*(Long)*  | **Slot 1** (PCIE2) | PCIe 4.0 x16    | 31.50 GB/s     | **9.20 GB/s** *(8,778 MiB/s)* | **5.69 GB/s** *(5,423 MiB/s)* |
+| **RTX 3060 (1)**<br>*(Short)* | **Slot 3** (PCIE3) | PCIe 4.0 x4     | 7.87 GB/s      | **6.77 GB/s** *(6,455 MiB/s)* | **5.04 GB/s** *(4,805 MiB/s)* |
+| **RTX 3050 (2)**              | **Slot 5** (PCIE5) | PCIe 3.0 x4     | 3.94 GB/s      | **2.76 GB/s** *(2,630 MiB/s)* | **1.56 GB/s** *(1,485 MiB/s)* |
