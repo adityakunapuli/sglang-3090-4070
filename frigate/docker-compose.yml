@@ -45,22 +45,22 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.1.group=Home Ops"
-      - "homepage.1.name=Frigate"
-      - "homepage.1.icon=frigate.png"
-      - "homepage.1.href=http://192.168.254.111:5000"
-      - "homepage.1.description=NVR & Object Detection"
-      - "homepage.1.widget.type=frigate"
-      - "homepage.1.widget.url=http://frigate:5000"
-      - "homepage.2.group=Home Ops"
-      - "homepage.2.name=Frigate Stats"
-      - "homepage.2.icon=mdi-chart-line"
-      - "homepage.2.href=http://192.168.254.111:5000"
-      - "homepage.2.description=Inference & GPU"
-      - "homepage.2.widget.type=customapi"
-      - "homepage.2.widget.url=http://frigate:5000/api/stats"
-      - "homepage.2.widget.refreshInterval=5000"
-      - 'homepage.2.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
+        # - "homepage.group=Home Ops"
+        # - "homepage.name=Frigate"
+        # - "homepage.icon=frigate.png"
+        # - "homepage.href=http://192.168.254.111:5000"
+        # - "homepage.description=NVR & Object Detection"
+        # - "homepage.widget.type=frigate"
+        # - "homepage.widget.url=http://frigate:5000"
+        # - "homepage.group=Home Ops"
+        # - "homepage.name=Frigate Stats"
+        # - "homepage.icon=mdi-chart-line"
+        # - "homepage.href=http://192.168.254.111:5000"
+        # - "homepage.description=Inference & GPU"
+        # - "homepage.widget.type=customapi"
+        # - "homepage.widget.url=http://frigate:5000/api/stats"
+        # - "homepage.widget.refreshInterval=5000"
+      - 'homepage.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
 
 
 networks:

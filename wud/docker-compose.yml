@@ -32,13 +32,13 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=System"
-      - "homepage.name=Updates"
-      - "homepage.icon=whats-up-docker.png"
+        # - "homepage.group=System"
+        # - "homepage.name=Updates"
+        # - "homepage.icon=whats-up-docker.png"
       # Removed href per user request to disable clickable link
-      - "homepage.href=http://192.168.254.111:3099"
-      - "homepage.widget.type=whatsupdocker"
-      - "homepage.widget.url=http://wud:3000"
+        # - "homepage.href=http://192.168.254.111:3099"
+        # - "homepage.widget.type=whatsupdocker"
+        # - "homepage.widget.url=http://wud:3000"
 
 networks:
   proxy:

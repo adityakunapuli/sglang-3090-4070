@@ -16,9 +16,9 @@ services:
     volumes:
       - ./data:/data
     labels:
-      - "homepage.group=Home Ops"
-      - "homepage.name=Journiv"
-      - "homepage.icon=mdi-notebook-outline"
-      - "homepage.href=http://192.168.254.111:8000"
-      - "homepage.target=_self"
+        # - "homepage.group=Home Ops"
+        # - "homepage.name=Journiv"
+        # - "homepage.icon=mdi-notebook-outline"
+        # - "homepage.href=http://192.168.254.111:8000"
+        # - "homepage.target=_self"
       # - "homepage.description=Self-hosted journal and milestone tracker"

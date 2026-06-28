@@ -27,11 +27,11 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Home Ops"
-      - "homepage.name=AdGuard Home"
-      - "homepage.icon=adguard-home.png"
-      - "homepage.href=http://192.168.254.111:3001"
-      - "homepage.target=_self"
+        # - "homepage.group=Home Ops"
+        # - "homepage.name=AdGuard Home"
+        # - "homepage.icon=adguard-home.png"
+        # - "homepage.href=http://192.168.254.111:3001"
+        # - "homepage.target=_self"
 
 networks:
   proxy:

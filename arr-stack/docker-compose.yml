@@ -42,14 +42,14 @@ services:
             - proxy
         labels:
             - "wud.watch.digest=true"
-            - "homepage.group=Media Automation"
-            - "homepage.name=Deluge"
-            - "homepage.icon=deluge.png"
-            - "homepage.href=http://192.168.254.111:8112"
+        # - "homepage.group=Media Automation"
+        # - "homepage.name=Deluge"
+        # - "homepage.icon=deluge.png"
+        # - "homepage.href=http://192.168.254.111:8112"
       # - "homepage.description=Downloads (VPN)"
-            - "homepage.widget.type=deluge"
-            - "homepage.widget.url=http://delugevpn:8112"
-            - "homepage.widget.password=deluge"
+        # - "homepage.widget.type=deluge"
+        # - "homepage.widget.url=http://delugevpn:8112"
+        # - "homepage.widget.password=deluge"
 
     # --- 2. ARRRRRRRR ---
     radarr:
@@ -72,7 +72,7 @@ services:
             - "wud.watch.digest=true"
             - "auto.arr=true"
             - "auto.arr.port=7878"
-            - "homepage.group=Media Automation"
+        # - "homepage.group=Media Automation"
             - "homepage.name=Radarr"
             - "homepage.icon=radarr.png"
             - "homepage.href=http://192.168.254.111:7878"
@@ -102,7 +102,7 @@ services:
             - "wud.watch.digest=true"
             - "auto.arr=true"
             - "auto.arr.port=8989"
-            - "homepage.group=Media Automation"
+        # - "homepage.group=Media Automation"
             - "homepage.name=Sonarr"
             - "homepage.icon=sonarr.png"
             - "homepage.href=http://192.168.254.111:8989"
@@ -131,7 +131,7 @@ services:
             - "wud.watch.digest=true"
             - "auto.arr=true"
             - "auto.arr.port=9696"
-            - "homepage.group=Media Automation"
+        # - "homepage.group=Media Automation"
             - "homepage.name=Prowlarr"
             - "homepage.icon=prowlarr.png"
             - "homepage.href=http://192.168.254.111:9696"

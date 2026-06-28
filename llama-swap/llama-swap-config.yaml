@@ -17,7 +17,7 @@ models:
       --flash-attn on
       --batch-size 512
       --ubatch-size 512
-      --parallel 2
+      --parallel 1
       --threads 4
       --threads-batch 4
       --jinja
@@ -67,7 +67,7 @@ models:
       --top-k 20
       --min-p 0.0
       --flash-attn on
-      --parallel 2
+      --parallel 1
       --reasoning on
       --chat-template-kwargs '{"enable_thinking":true}'
       --split-mode layer

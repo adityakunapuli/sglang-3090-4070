@@ -80,6 +80,7 @@ class GatewayConfig:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     rate_limit_rpm: int | None = None
     consumer_priorities: dict[str, int] = field(default_factory=dict)
+    consumer_cooldown: dict[str, int] = field(default_factory=dict)
 
     @property
     def has_auth(self) -> bool:
@@ -88,8 +89,8 @@ class GatewayConfig:
 
     @property
     def has_qos(self) -> bool:
-        """True when at least one consumer priority is configured."""
-        return len(self.consumer_priorities) > 0
+        """True when any QoS constraint (priority or cooldown) is active."""
+        return len(self.consumer_priorities) > 0 or len(self.consumer_cooldown) > 0
 
 
 def _parse_logging(raw: dict[str, Any] | None) -> LoggingConfig:
@@ -148,6 +149,9 @@ def load_config(path: str | None = None) -> GatewayConfig:
     consumer_priorities = {
         k: int(v) for k, v in (qos_section.get("priorities") or {}).items()
     }
+    consumer_cooldown = {
+        k: int(v) for k, v in (qos_section.get("cooldown") or {}).items()
+    }
 
     return GatewayConfig(
         api_base=str(raw.get("api_base", "http://192.168.254.111:8082/v1/chat/completions")),
@@ -157,4 +161,5 @@ def load_config(path: str | None = None) -> GatewayConfig:
         logging=_parse_logging(raw.get("logging")),
         rate_limit_rpm=(raw.get("rate_limit") or {}).get("requests_per_minute"),
         consumer_priorities=consumer_priorities,
+        consumer_cooldown=consumer_cooldown,
     )

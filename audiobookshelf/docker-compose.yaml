@@ -16,16 +16,16 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Media Automation"
-      - "homepage.name=Audiobookshelf"
-      - "homepage.icon=audiobookshelf.png"
-      - "homepage.href=http://192.168.254.111:13378"
+        # - "homepage.group=Media Automation"
+        # - "homepage.name=Audiobookshelf"
+        # - "homepage.icon=audiobookshelf.png"
+        # - "homepage.href=http://192.168.254.111:13378"
       # - "homepage.description=Audiobooks & Podcasts"
-      - "homepage.widget.type=audiobookshelf"
-      - "homepage.widget.url=http://192.168.254.111:13378"
-      - "homepage.target=_self"
-      - "homepage.widget.key=${HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}"
-      - "homepage.widget.showStats=true"
+        # - "homepage.widget.type=audiobookshelf"
+        # - "homepage.widget.url=http://192.168.254.111:13378"
+        # - "homepage.target=_self"
+        # - "homepage.widget.key=${HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}"
+        # - "homepage.widget.showStats=true"
 
   # abs-tract is primarily used to sync an Audible library to Audiobookshelf.
   # Since you mentioned you might have only needed it once for migration, 

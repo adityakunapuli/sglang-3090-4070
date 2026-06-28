@@ -33,15 +33,30 @@ _request_timestamps: list[float] = []
 _active_requests: dict[str, int] = {}
 _active_lock = asyncio.Lock()
 
+# ── Consumer cooldown tracking (e.g. prevent frigate from starting
+#     within N seconds after any other request completes) ────────────────
+_last_activity_finish: float = 0.0
+
 
 async def _admit_request(consumer: str, config) -> bool:
     """Check if *consumer* may proceed.
 
     Returns ``True`` to admit, ``False`` to reject with 503.
-    A consumer is rejected when a **higher-priority** consumer (lower number)
-    has an active in-flight request.
+    A consumer is rejected when:
+    1. A **higher-priority** consumer (lower number) has an active
+       in-flight request.
+    2. The consumer has a **cooldown** configured and a request from
+       any consumer finished within the cooldown window.
     """
     async with _active_lock:
+        # Cooldown check: reject if this consumer is in a quiet period
+        # following any recent request completion.
+        cooldown = config.consumer_cooldown.get(consumer, 0)
+        if cooldown > 0:
+            elapsed = time.time() - _last_activity_finish
+            if elapsed < cooldown:
+                return False
+
         incoming = config.consumer_priorities.get(consumer, 0)
         for active_consumer, count in _active_requests.items():
             if count > 0:
@@ -54,12 +69,16 @@ async def _admit_request(consumer: str, config) -> bool:
 
 async def _release_request(consumer: str) -> None:
     """Decrement the active-request counter for *consumer*."""
+    global _last_activity_finish
     async with _active_lock:
         current = _active_requests.get(consumer, 0)
         if current > 1:
             _active_requests[consumer] = current - 1
         else:
             _active_requests.pop(consumer, None)
+    # Any request completion resets the cooldown timer so low-priority
+    # consumers (e.g. frigate) wait a full cooldown window before starting.
+    _last_activity_finish = time.time()
 # ─────────────────────────────────────────────────────────────────────────
 
 

@@ -43,10 +43,10 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=AI"
-      - "homepage.name=Llama CPP Native"
-      - "homepage.icon=/icons/llama.png"
-      - "homepage.href=http://192.168.254.111:8082"
+        # - "homepage.group=AI"
+        # - "homepage.name=Llama CPP Native"
+        # - "homepage.icon=/icons/llama.png"
+        # - "homepage.href=http://192.168.254.111:8082"
 
 networks:
   proxy:
