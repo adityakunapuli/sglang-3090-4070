@@ -38,6 +38,11 @@ services:
       - /mnt/storage/documents/consume:/usr/src/paperless/consume
     env_file:
       - .env
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
     networks:
       - default
       - proxy
@@ -47,11 +52,11 @@ services:
       - "homepage.name=Paperless"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8010"
-      # - "homepage.description=Document Archive"
       - "homepage.widget.type=paperlessngx"
       - "homepage.widget.url=http://192.168.254.111:8010"
       - "homepage.target=_self"
-      - "homepage.widget.key=${HOMEPAGE_VAR_PAPERLESS_KEY}"
+      - "homepage.widget.key=${HOMEPAGE_VAR_PAPERLESS_TOKEN}"
+#      - "homepage.widget.key=${HOMEPAGE_VAR_PAPERLESS_KEY}"
       - "homepage.widget.showStats=true"
 
   gotenberg:
@@ -75,12 +80,17 @@ services:
     restart: unless-stopped
     ports:
       - "8001:3000"
+    volumes:
+      - ./paperless-ai-next-data:/app/data
     depends_on:
       webserver:
         condition: service_healthy
     env_file:
       - .env
+      - ../genai.env
     environment:
+      - COOKIE_SECURE_MODE=never
+      - ALLOW_REMOTE_SETUP=yes
       - PAPERLESS_URL=http://192.168.254.111:8010
       - PAPERLESS_API_URL=http://192.168.254.111:8010
       - >-
@@ -121,6 +131,50 @@ services:
 
                       For the language:
                       - ALWAYS set to "en" (English). Never use any other language value.
+
+                      7. AI_Summary: Write a rich markdown-formatted summary of the document using the full extent of markdown features. Include headings (##), subheadings (###), bullet lists, numbered lists, bold (**text**) for emphasis, and horizontal rules (---) to separate sections. Structure the summary with these sections:
+
+                      ## Document Overview
+                      A 2-3 sentence high-level summary of what this document is about.
+
+                      ## Key Points
+                      - **Key Item 1**: Brief explanation
+                      - **Key Item 2**: Brief explanation
+                      - Continue with all important points using bold for the label
+
+                      ## Important Dates and Figures
+                      - **Date**: Description
+                      - **Amount**: Description
+                      - Use bold for labels, regular text for values
+
+                      ## Action Items (if applicable)
+                      1. First required action
+                      2. Second required action
+                      Use numbered lists for sequential steps.
+
+                      | Category | Detail | Notes |
+                      |---|---|---|
+                      | Type | Value | Context |
+                      Create a markdown table with the most important document metadata. Use real data from the document.
+
+                      8. AI_KeyDetails: Create a detailed markdown table or multiple tables capturing ALL key document details. Use tables with proper headers, bold in cells where needed. Include rows for:
+                      - Document type and category
+                      - Parties involved (sender, recipient)
+                      - Dates (issue date, due date, service dates)
+                      - Monetary amounts (subtotal, tax, total, currency)
+                      - Reference numbers (invoice #, PO #, account #, case #)
+                      - Any other document-specific fields
+                      
+                      Example format:
+                      | Field | Value |
+                      |---|---|
+                      | **Invoice Number** | INV-2024-001 |
+                      | **Issue Date** | 2024-01-15 |
+                      | **Due Date** | 2024-02-15 |
+                      | **Total Amount** | $1,234.56 |
+                      | **Vendor** | Acme Corp |
+
+                      For complex documents, use multiple tables separated by ### subheadings.
     networks:
       - default
       - proxy
@@ -130,46 +184,6 @@ services:
       - "homepage.name=Paperless AI"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8001"
-
-
-  surya-llama:
-    image: ghcr.io/mostlygeek/llama-swap:cpu
-    container_name: surya_llama
-    restart: unless-stopped
-    entrypoint: >
-      /app/llama-server
-      --model /models/llm/OCR/surya-2.gguf
-      --mmproj /models/llm/OCR/surya-2-mmproj.gguf
-      --alias datalab-to/surya-ocr-2
-      --host 0.0.0.0
-      --port 5804
-      --temp 0.0
-      --top-p 0.1
-      --ctx-size 32768
-      --flash-attn on
-      --parallel 1
-    volumes:
-      - /mnt/data/models:/models
-    env_file:
-      - .env
-    networks:
-      - default
-
-  surya-ocr:
-    build:
-      context: ./surya-ocr
-    container_name: surya_ocr
-    restart: unless-stopped
-    ports:
-      - "8020:8000"
-    env_file:
-      - .env
-    depends_on:
-      - surya-llama
-    networks:
-      - default
-      - proxy
-
 
 networks:
   proxy:

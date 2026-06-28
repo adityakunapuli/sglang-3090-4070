@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gateway Logs</title>
+<link rel="icon" href="/static/assets/favicon.ico">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    height: 100%;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  #toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    flex-shrink: 0;
+    position: relative;
+  }
+  #toolbar h1 {
+    font-size: 14px; font-weight: 600; color: #58a6ff;
+    margin-right: auto;
+  }
+  #toolbar .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 12px;
+    background: #21262d; color: #8b949e;
+    white-space: nowrap;
+  }
+  #toolbar .badge.connected { background: #1f6feb; color: #fff; }
+  #toolbar .badge.disconnected { background: #da3633; color: #fff; }
+
+  #m-panel { display: flex; align-items: center; gap: 6px; }
+  #m-panel .m-item { font-size: 11px; padding: 2px 8px; border-radius: 12px;
+    background: #0d1117; color: #8b949e; white-space: nowrap;
+    border: 1px solid #21262d;
+  }
+  #m-panel .m-item .m-val { font-weight: 600; }
+  #m-panel .m-item .m-val.pp { color: #3fb950; }
+  #m-panel .m-item .m-val.tps { color: #79c0ff; }
+  #toolbar button {
+    background: #21262d; color: #c9d1d9; border: 1px solid #30363d;
+    padding: 4px 12px; border-radius: 6px; cursor: pointer;
+    font-family: inherit; font-size: 12px;
+    white-space: nowrap;
+  }
+  #toolbar button:hover { background: #30363d; }
+  #toolbar button.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+
+  #hamburger {
+    display: none;
+    background: none; border: 1px solid #30363d; color: #c9d1d9;
+    font-size: 18px; cursor: pointer; padding: 2px 8px;
+    border-radius: 6px; line-height: 1.4;
+  }
+  #hamburger:hover { background: #30363d; }
+
+  #menu-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 98;
+  }
+  #menu-overlay.open { display: block; }
+
+  #menu-dropdown {
+    display: none;
+    position: absolute; top: 100%; right: 8px; z-index: 99;
+    background: #161b22; border: 1px solid #30363d;
+    border-radius: 8px; padding: 8px; min-width: 180px;
+    flex-direction: column; gap: 6px;
+  }
+  #menu-dropdown.open { display: flex; }
+  #menu-dropdown button {
+    width: 100%; text-align: left; padding: 8px 12px;
+    background: none; border: none; color: #c9d1d9;
+    font-family: inherit; font-size: 13px; cursor: pointer;
+    border-radius: 6px;
+  }
+  #menu-dropdown button:hover { background: #21262d; }
+  #menu-dropdown button.active { background: #1f6feb; color: #fff; }
+  #menu-dropdown hr {
+    border: none; border-top: 1px solid #30363d; margin: 4px 0;
+  }
+
+  .tb-btns { display: flex; align-items: center; gap: 6px; }
+
+  #main-wrap {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #log-container {
+    flex: 1;
+    max-width: 80vw;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .log-entry {
+    padding: 2px 16px; cursor: pointer; white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .log-entry:hover { background: #161b22; }
+  .log-entry .ts { color: #484f58; }
+  .log-entry .caller { color: #58a6ff; }
+  .log-entry .consumer { color: #79c0ff; font-weight: 600; }
+  .log-entry .model { color: #d29922; font-weight: 600; }
+  .log-entry .model-via { color: #8b949e; font-size: 0.85em; }
+  .log-entry .tokens { color: #d29922; font-weight: 600; }
+  .log-entry .rate { color: #79c0ff; font-weight: 600; }
+  .log-entry .pp { color: #3fb950; font-weight: 600; }
+  .log-entry .ttft { color: #bc8cff; font-weight: 600; }
+  .log-entry .latency { color: #ff7b72; font-weight: 600; }
+  .log-entry .status-err { color: #da3633; font-weight: 600; }
+  .log-entry .error { color: #da3633; }
+  .log-entry .detail {
+    display: none; margin: 4px 0 4px 16px; padding: 8px 12px;
+    background: #161b22; border-radius: 6px; font-size: 12px;
+    border-left: 3px solid #30363d; color: #8b949e;
+  }
+  .log-entry .detail pre { margin: 4px 0 0; overflow-x: auto; }
+  .log-entry.expanded .detail { display: block; }
+  #status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 12px; background: #161b22; border-top: 1px solid #30363d;
+    font-size: 11px; color: #8b949e; flex-shrink: 0;
+  }
+  #status-bar .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #3fb950;
+  }
+  #status-bar .dot.disconnected { background: #da3633; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .loading { animation: pulse 1.5s ease-in-out infinite; }
+  #empty-msg {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; color: #30363d;
+    font-size: 14px; gap: 8px;
+  }
+  #empty-msg .key { color: #484f58; font-size: 48px; }
+
+  @media (max-width: 700px) {
+    .tb-btns { display: none; }
+    #hamburger { display: block; }
+    #log-container {
+      max-width: 100vw;
+    }
+    .log-entry { padding: 2px 8px; }
+    #toolbar { padding: 6px 8px; gap: 4px; }
+    #toolbar .badge { font-size: 10px; padding: 1px 6px; }
+    #toolbar h1 { font-size: 13px; }
+    #entry-count { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <h1>&#x25B6; Gateway Logs</h1>
+  <span id="conn-badge" class="badge loading">connecting...</span>
+  <span class="badge" id="entry-count">0 entries</span>
+  <span id="m-panel">
+    <span class="m-item">PP <span class="m-val pp" id="mv-pp">--</span> t/s</span>
+    <span class="m-item">TPS <span class="m-val tps" id="mv-tps">--</span></span>
+  </span>
+  <span class="badge" id="sse-badge" style="background:#21262d;color:#8b949e">SSE: --</span>
+  <div class="tb-btns">
+    <button id="btn-pause">Pause</button>
+    <button id="btn-clear">Clear</button>
+    <button id="btn-filter-err">Errors only</button>
+  </div>
+  <button id="hamburger">&#x2630;</button>
+  <div id="menu-dropdown">
+    <button id="m-btn-pause">Pause</button>
+    <button id="m-btn-filter-err">Errors only</button>
+    <hr>
+    <button id="m-btn-clear">Clear all entries</button>
+  </div>
+</div>
+<div id="menu-overlay"></div>
+<div id="main-wrap">
+  <div id="log-container">
+    <div id="empty-msg">
+      <div class="key">&#x25B6;</div>
+      <div>Waiting for requests...</div>
+      <div style="font-size:11px">(entries appear here as they arrive)</div>
+    </div>
+  </div>
+</div>
+<div id="status-bar">
+  <span id="status-dot" class="dot"></span>
+  <span id="status-text">initializing...</span>
+  <span id="status-entry" style="margin-left:auto">ready</span>
+</div>
+
+<script>
+(function() {
+  const container = document.getElementById('log-container');
+  const emptyMsg = document.getElementById('empty-msg');
+  const connBadge = document.getElementById('conn-badge');
+  const entryCount = document.getElementById('entry-count');
+  const sseBadge = document.getElementById('sse-badge');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  const statusEntry = document.getElementById('status-entry');
+  const btnPause = document.getElementById('btn-pause');
+  const btnClear = document.getElementById('btn-clear');
+  const btnFilter = document.getElementById('btn-filter-err');
+  const mBtnPause = document.getElementById('m-btn-pause');
+  const mBtnClear = document.getElementById('m-btn-clear');
+  const mBtnFilter = document.getElementById('m-btn-filter-err');
+  const hamburger = document.getElementById('hamburger');
+  const menuDropdown = document.getElementById('menu-dropdown');
+  const menuOverlay = document.getElementById('menu-overlay');
+
+  let paused = false;
+  let errorFilter = false;
+  let entryCountNum = 0;
+  let autoScroll = true;
+  let eventSource = null;
+  let hbCount = 0;
+
+  // Rolling window for avg PP speed and TPS
+  const METRICS_WINDOW = 20;
+  const recentPp = [];
+  const recentTps = [];
+  const mvPp = document.getElementById('mv-pp');
+  const mvTps = document.getElementById('mv-tps');
+
+  function updateMetrics() {
+    if (recentPp.length === 0) { mvPp.textContent = '--'; } else {
+      const avg = recentPp.reduce((a, b) => a + b, 0) / recentPp.length;
+      mvPp.textContent = avg.toFixed(1);
+    }
+    if (recentTps.length === 0) { mvTps.textContent = '--'; } else {
+      const avg = recentTps.reduce((a, b) => a + b, 0) / recentTps.length;
+      mvTps.textContent = avg.toFixed(1);
+    }
+  }
+
+  // Update sse-badge to show last event time
+  function updateSseBadge(label) {
+    sseBadge.textContent = 'SSE: ' + label;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  function formatTimestamp(ts) {
+    if (!ts) return '--';
+    try {
+      const d = new Date(ts);
+      return d.toLocaleString('en-US', {
+        month: '2-digit', day: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: true, timeZone: 'America/Los_Angeles'
+      });
+    } catch { return ts; }
+  }
+
+  function formatDuration(ms) {
+    if (ms == null) return '--';
+    if (ms < 1000) return ms.toFixed(0) + 'ms';
+    return (ms / 1000).toFixed(2) + 's';
+  }
+
+  function setConnected(connected) {
+    connBadge.textContent = connected ? 'connected' : 'disconnected';
+    connBadge.className = 'badge ' + (connected ? 'connected' : 'disconnected');
+    statusDot.className = 'dot' + (connected ? '' : ' disconnected');
+    statusText.textContent = connected ? 'connected' : 'disconnected';
+  }
+
+  function updateCount() {
+    entryCount.textContent = entryCountNum + ' entries';
+  }
+
+  function hideEmptyMsg() {
+    if (emptyMsg && emptyMsg.parentNode) {
+      emptyMsg.style.display = 'none';
+    }
+  }
+
+  function restoreEmptyMsg() {
+    if (emptyMsg) {
+      emptyMsg.style.display = '';
+    }
+  }
+
+  function createLogEntry(data) {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+
+    const ts = formatTimestamp(data.timestamp);
+
+    let html = '<span class="ts">[' + escapeHtml(ts) + ']</span> ';
+    if (data.consumer && data.consumer !== '*anonymous*') {
+      html += ' <span class="consumer">' + escapeHtml(data.consumer) + '</span>';
+    }
+    html += ' <span class="model">' + escapeHtml(data.model || data.upstream_model || '?') + '</span>';
+    if (data.upstream_model && data.upstream_model !== data.model) {
+      html += ' <span class="model-via">via ' + escapeHtml(data.upstream_model) + '</span>';
+    }
+
+    if (data.error) {
+      html += ' <span class="status-err">FAILED</span> <span class="error">' + escapeHtml(data.error) + '</span>';
+    } else {
+      html += ' <span class="tokens">tokens=' + (data.prompt_tokens || 0) + '\u2197' + (data.completion_tokens || 0) + '</span>';
+      html += ' <span class="pp">pp=' + (data.pp_speed != null ? data.pp_speed.toFixed(1) : '--') + 't/s</span>';
+      html += ' <span class="rate">tok/s=' + (data.tokens_per_sec != null ? data.tokens_per_sec.toFixed(2) : '--') + '</span>';
+      html += ' <span class="ttft">ttft=' + formatDuration(data.ttft_ms) + '</span>';
+      html += ' <span class="latency">total=' + formatDuration(data.latency_ms) + '</span>';
+    }
+
+    html += '<div class="detail">';
+    if (data.upstream_model) {
+      html += '<div><strong>Upstream model:</strong> ' + escapeHtml(data.upstream_model) + '</div>';
+    }
+    if (data.request_id) {
+      html += '<div><strong>Request ID:</strong> ' + escapeHtml(data.request_id) + '</div>';
+    }
+    html += '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+    html += '</div>';
+
+    div.innerHTML = html;
+
+    div.addEventListener('click', function(e) {
+      if (e.target.closest('.detail')) return;
+      this.classList.toggle('expanded');
+    });
+
+    return div;
+  }
+
+  function appendLog(data) {
+    hideEmptyMsg();
+    const el = createLogEntry(data);
+    if (errorFilter && !data.error) {
+      el.style.display = 'none';
+    }
+    container.appendChild(el);
+    entryCountNum++;
+    updateCount();
+    if (autoScroll && !paused) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  function handleSSEEvent(event) {
+    try {
+      const data = JSON.parse(event.data);
+      appendLog(data);
+
+      // Update rolling metrics (non-error entries only)
+      if (!data.error && data.pp_speed != null) {
+        recentPp.push(data.pp_speed);
+        if (recentPp.length > METRICS_WINDOW) recentPp.shift();
+      }
+      if (!data.error && data.tokens_per_sec != null) {
+        recentTps.push(data.tokens_per_sec);
+        if (recentTps.length > METRICS_WINDOW) recentTps.shift();
+      }
+      updateMetrics();
+
+      statusEntry.textContent = 'last: ' + (data.model || data.upstream_model) + ' ' + (data.prompt_tokens||0) + 'tok';
+    } catch (e) {
+      console.warn('SSE parse error:', e, event.data);
+      statusEntry.textContent = 'parse error';
+    }
+  }
+
+  function connect() {
+    if (eventSource) eventSource.close();
+    setConnected(false);
+    updateSseBadge('connecting');
+    statusText.textContent = 'connecting...';
+
+    eventSource = new EventSource('/logs/stream');
+
+    eventSource.addEventListener('log', function(e) {
+      updateSseBadge('log');
+      handleSSEEvent(e);
+    });
+
+    eventSource.addEventListener('heartbeat', function() {
+      hbCount++;
+      updateSseBadge('hb#' + hbCount);
+      statusEntry.textContent = 'hb ' + new Date().toLocaleTimeString();
+    });
+
+    eventSource.onopen = function() {
+      setConnected(true);
+      updateSseBadge('open');
+      statusEntry.textContent = 'SSE opened';
+    };
+
+    eventSource.onerror = function(e) {
+      setConnected(false);
+      updateSseBadge('err');
+      statusEntry.textContent = 'SSE error (reconnecting)';
+    };
+  }
+
+  // --- Init ---
+  connect();
+
+  function togglePause() {
+    paused = !paused;
+    btnPause.textContent = paused ? 'Resume' : 'Pause';
+    btnPause.classList.toggle('active', paused);
+    mBtnPause.textContent = paused ? 'Resume' : 'Pause';
+    mBtnPause.classList.toggle('active', paused);
+    if (!paused) {
+      autoScroll = true;
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  function clearEntries() {
+    container.querySelectorAll('.log-entry').forEach(function(el) { el.remove(); });
+    entryCountNum = 0;
+    updateCount();
+    restoreEmptyMsg();
+  }
+
+  function toggleFilter() {
+    errorFilter = !errorFilter;
+    btnFilter.classList.toggle('active', errorFilter);
+    mBtnFilter.classList.toggle('active', errorFilter);
+    const entries = container.querySelectorAll('.log-entry');
+    for (const el of entries) {
+      if (errorFilter) {
+        el.style.display = el.querySelector('.error') ? '' : 'none';
+      } else {
+        el.style.display = '';
+      }
+    }
+  }
+
+  function closeMenu() {
+    menuDropdown.classList.remove('open');
+    menuOverlay.classList.remove('open');
+  }
+
+  function toggleMenu() {
+    menuDropdown.classList.toggle('open');
+    menuOverlay.classList.toggle('open');
+  }
+
+  btnPause.addEventListener('click', togglePause);
+  mBtnPause.addEventListener('click', function() { closeMenu(); togglePause(); });
+  btnClear.addEventListener('click', clearEntries);
+  mBtnClear.addEventListener('click', function() { closeMenu(); clearEntries(); });
+  btnFilter.addEventListener('click', toggleFilter);
+  mBtnFilter.addEventListener('click', function() { closeMenu(); toggleFilter(); });
+  hamburger.addEventListener('click', toggleMenu);
+  menuOverlay.addEventListener('click', closeMenu);
+
+  container.addEventListener('scroll', function() {
+    if (paused) return;
+    const threshold = 30;
+    autoScroll = (container.scrollHeight - container.scrollTop - container.clientHeight) < threshold;
+  });
+
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && (!eventSource || eventSource.readyState === EventSource.CLOSED)) {
+      connect();
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@ include:
   - adguard/docker-compose.yml
   - ./arr-stack/docker-compose.yml
   - ./coolercontrol/docker-compose.yml
-  - ./copaw/docker-compose.yml
+  - ./qwenpaw/docker-compose.yml
   - ./frigate/docker-compose.yml
   - ./journiv/docker-compose.yml
   - ./openrgb/docker-compose.yml
@@ -13,7 +13,7 @@ include:
   - ./wud/docker-compose.yml
 
   # --- EXCLUSIONS & NOTES ---
-  # Excluded: ./copaw/.backup/docker-compose.yml
+  # Excluded: ./qwenpaw/.backup/docker-compose.yml
   # Reason: Including a backup file simultaneously with the active one will likely cause port allocations and container name conflicts.
 
 # dc up -d --remove-orphans

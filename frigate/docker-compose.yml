@@ -16,7 +16,6 @@ services:
       - FFMPEG_DISABLE_GAMMA_EQUALIZER=true
       - LIBVA_DRIVER_NAME=nvidia
       - OPENAI_BASE_URL=http://gateway:4000/v1
-      - OPENAI_BASE=http://gateway:4000/v1
       - OPENAI_API_KEY=${FRIGATE_GENAI_API_KEY}
     volumes:
       - /etc/localtime:/etc/localtime:ro

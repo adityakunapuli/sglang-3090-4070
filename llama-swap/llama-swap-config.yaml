@@ -1,29 +1,7 @@
 # llama-swap configuration for PC2
+logToStdout: "upstream"
+includeAliasesInList: true
 models:
-  Gemma-4-12B-MTP:
-    cmd: >
-      /usr/local/bin/llama-server
-      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
-      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
-      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
-      --alias Gemma-4-12B-MTP
-      --host 0.0.0.0
-      --port ${PORT}
-      --temp 1.0
-      --top-p 0.95
-      --top-k 64
-      --min-p 0.01
-      --n-predict 2048
-      --reasoning on
-      --chat-template-kwargs '{"enable_thinking": true}'
-      --split-mode layer
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
-      --flash-attn on
-      --parallel 2
-      --ctx-size 262144
-    ttl: 0
-
   Qwen3.6-27B:
     cmd: >
       /usr/local/bin/llama-server
@@ -36,66 +14,210 @@ models:
       --top-p 0.95
       --top-k 20
       --min-p 0.0
-      --presence-penalty 1.5
-      --repeat-penalty 1.0
       --flash-attn on
-      --parallel 1
+      --batch-size 512
+      --ubatch-size 512
+      --parallel 2
+      --threads 4
+      --threads-batch 4
+      --jinja
       --reasoning on
-      --chat-template-kwargs '{"preserve_thinking":false}'
+      --reasoning-budget -1
+      --reasoning-budget-message "Thinking budget exceeded, let's answer now." 
+      --chat-template-kwargs '{"preserve_thinking":true}'
       --split-mode tensor
+      --fit off
       --n-gpu-layers 99
-      --ctx-size 65536
+      --ctx-size 131072
+      --tensor-split 1,1.09
+      --cache-type-k q4_0
+      --cache-type-v q4_0
+      --spec-default
+      --spec-type ngram-map-k4v
+      --spec-ngram-map-k4v-size-n 16
+      --spec-ngram-map-k4v-size-m 24
+      --spec-ngram-map-k4v-min-hits 1
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:fast":
+          chat_template_kwargs:
+            enable_thinking: false
+        "${MODEL_ID}:low":
+          chat_template_kwargs:
+            reasoning_effort: low
+        "${MODEL_ID}:high":
+          chat_template_kwargs:
+            reasoning_effort: high
+    aliases:
+      - "Qwen3.6-27B:fast"
+      - "Qwen3.6-27B:low"
+      - "Qwen3.6-27B:high"
     ttl: 0
-
-  Gemma4-26B-A4B-QAT:
+##
+  Qwen3.6-36B-A3B-MTB:
     cmd: >
       /usr/local/bin/llama-server
-      --model /mnt/data/models/llm/Gemma/26B-A4B/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
-      --mmproj /mnt/data/models/llm/Gemma/26B-A4B/mmproj-BF16.gguf
-      --model-draft /mnt/data/models/llm/Gemma/26B-A4B/mtp-gemma-4-26B-A4B-it.gguf
-      --alias Gemma4-26B-A4B-QAT
+      --model /mnt/data/models/llm/Qwen3.6/35B-A3B-MTB/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf
+      --mmproj /mnt/data/models/llm/Qwen3.6/35B-A3B-MTB/mmproj-BF16.gguf
+      --alias Qwen3.6-36B-A3B
       --host 0.0.0.0
       --port ${PORT}
-      --temp 1.0
+      --temp 0.6
       --top-p 0.95
-      --top-k 64
-      --min-p 0.01
-      --repeat-penalty 1.0
-      --n-predict 2048
-      --reasoning on
-      --chat-template-kwargs '{"enable_thinking": true}'
-      --split-mode layer
-      --n-gpu-layers 99
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
+      --top-k 20
+      --min-p 0.0
       --flash-attn on
-      --parallel 1
-      --ctx-size 65536
-    ttl: 0
-
-  Gemma4-31B-QAT:
-    cmd: >
-      /usr/local/bin/llama-server
-      --model /mnt/data/models/llm/Gemma/31B/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf
-      --mmproj /mnt/data/models/llm/Gemma/31B/mmproj-BF16.gguf
-      --model-draft /mnt/data/models/llm/Gemma/31B/mtp-gemma-4-31B-it.gguf
-      --alias Gemma4-31B-QAT
-      --host 0.0.0.0
-      --port ${PORT}
-      --temp 1.0
-      --top-p 0.95
-      --top-k 64
-      --min-p 0.01
-      --repeat-penalty 1.0
-      --n-predict 2048
+      --parallel 2
       --reasoning on
-      --chat-template-kwargs '{"enable_thinking": true}'
+      --chat-template-kwargs '{"enable_thinking":true}'
       --split-mode layer
-      --n-gpu-layers 99
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
-      --flash-attn on
-      --parallel 1
-      --ctx-size 65536
-      --fit
+      --n-gpu-layers 95
+      --fit on
+      --ctx-size 131072
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:fast":
+          chat_template_kwargs:
+            enable_thinking: false
+        "${MODEL_ID}:low":
+          chat_template_kwargs:
+            reasoning_effort: low
+        "${MODEL_ID}:high":
+          chat_template_kwargs:
+            reasoning_effort: high
+    aliases:
+      - "Qwen3.6-36B:fast"
+      - "Qwen3.6-36B:low"
+      - "Qwen3.6-36B:high"
     ttl: 0
+#
+##
+##  Gemma-4-12B-MTP:
+##    cmd: >
+##      /usr/local/bin/llama-server
+##      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+##      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
+##      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
+##      --alias Gemma-4-12B-MTP
+##      --host 0.0.0.0
+##      --port ${PORT}
+##      --temp 1.0
+##      --top-p 0.95
+##      --top-k 64
+##      --min-p 0.01
+##      --n-predict 2048
+##      --reasoning on
+##      --chat-template-kwargs '{"enable_thinking": true}'
+##      --split-mode layer
+##      --spec-type draft-mtp
+##      --spec-draft-n-max 2
+##      --flash-attn on
+##      --parallel 2
+##      --ctx-size 262144
+##    ttl: 0
+##
+##  Gemma-4-12B-v2-Agentic:
+##    cmd: >
+##      /usr/local/bin/llama-server
+##      --model /mnt/data/models/llm/Gemma/v2-agentic/gemma4-v2-Q8_0.gguf
+##      --model-draft /mnt/data/models/llm/Gemma/v2-agentic/gemma-4-12B-it-MTP-Q8_0.gguf
+##      --alias Gemma-4-12B-v2-Agentic
+##      --host 0.0.0.0
+##      --port ${PORT}
+##      --temp 1.0
+##      --top-p 0.95
+##      --top-k 64
+##      --jinja
+##      --n-predict 2048
+##      --reasoning on
+##      --chat-template-kwargs '{"enable_thinking": true}'
+##      --split-mode layer
+##      --spec-type draft-mtp
+##      --spec-draft-n-max 2
+##      --flash-attn on
+##      --parallel 2
+##      --ctx-size 262144
+##    ttl: 0
+##  Gemma4-26B-A4B-QAT:
+##    cmd: >
+##      /usr/local/bin/llama-server
+##      --model /mnt/data/models/llm/Gemma/26B-A4B/gemma-4-26B-A4B-it-qat-UD-Q4_K_XL.gguf
+##      --mmproj /mnt/data/models/llm/Gemma/26B-A4B/mmproj-BF16.gguf
+##      --model-draft /mnt/data/models/llm/Gemma/26B-A4B/mtp-gemma-4-26B-A4B-it.gguf
+##      --alias Gemma4-26B-A4B-QAT
+##      --host 0.0.0.0
+##      --port ${PORT}
+##      --temp 1.0
+##      --top-p 0.95
+##      --top-k 64
+##      --min-p 0.01
+##      --repeat-penalty 1.0
+##      --n-predict 2048
+##      --reasoning on
+##      --chat-template-kwargs '{"enable_thinking": true}'
+##      --split-mode layer
+##      --n-gpu-layers 99
+##      --spec-type draft-mtp
+##      --spec-draft-n-max 2
+##      --flash-attn on
+##      --parallel 1
+##      --ctx-size 65536
+##    ttl: 0
+#
+##  Gemma4-31B-QAT:
+##    cmd: >
+##      /usr/local/bin/llama-server
+##      --model /mnt/data/models/llm/Gemma/31B/gemma-4-31B-it-qat-UD-Q4_K_XL.gguf
+##      --mmproj /mnt/data/models/llm/Gemma/31B/mmproj-BF16.gguf
+##      --model-draft /mnt/data/models/llm/Gemma/31B/mtp-gemma-4-31B-it.gguf
+##      --alias Gemma4-31B-QAT
+##      --host 0.0.0.0
+##      --port ${PORT}
+##      --temp 1.0
+##      --top-p 0.95
+##      --top-k 64
+##      --min-p 0.01
+##      --repeat-penalty 1.0
+##      --n-predict 2048
+##      --reasoning on
+##      --chat-template-kwargs '{"enable_thinking": true}'
+##      --split-mode layer
+##      --n-gpu-layers 99
+##      --spec-type draft-mtp
+##      --spec-draft-n-max 2
+##      --flash-attn on
+##      --parallel 1
+##      --ctx-size 65536
+##      --fit
+##    ttl: 0
+#
+##  Surya-OCR-2:
+##    cmd: >
+##      /usr/local/bin/llama-server
+##      --model /mnt/data/models/llm/OCR/surya-2.gguf
+##      --mmproj /mnt/data/models/llm/OCR/surya-2-mmproj.gguf
+##      --alias Surya-OCR-2
+##      --host 0.0.0.0
+##      --port ${PORT}
+##      --temp 0.0
+##      --top-p 0.1
+##      --ctx-size 32768
+##      --flash-attn on
+##      --parallel 1
+##    aliases:
+##      - "datalab-to/surya-ocr-2"
+##    env:
+##      - "CUDA_VISIBLE_DEVICES="
+##    ttl: 300
+#
+## =============================================================================
+## matrix: concurrent model combinations (Surya on CPU + Gemma 26B on GPU)
+## A model not in any set can still run alone by default.
+## =============================================================================
+#matrix:
+#  vars:
+#    g26: Gemma4-26B-A4B-QAT
+#    s: Surya-OCR-2
+#
+#  sets:
+#    ocr_combo: "g26 & s"
