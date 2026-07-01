@@ -1,0 +1,155 @@
+
+{
+  "test": "01-tensor-q4_0-65k",
+  "extra_args": "split-mode=tensor|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=65536|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 63230,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 157465
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 63229,
+      "completion_tokens": 128,
+      "cached_tokens": 62714,
+      "total_ms": 8318
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "90.0"
+}
+{
+  "test": "02-layer-q4_0-65k",
+  "extra_args": "split-mode=layer|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=65536|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 63230,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 119162
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 63229,
+      "completion_tokens": 128,
+      "cached_tokens": 62714,
+      "total_ms": 12174
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "80.0"
+}
+{
+  "test": "03-tensor-f16-65k",
+  "extra_args": "split-mode=tensor|cache-type-k=f16|cache-type-v=f16|ctx-size=65536|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 63230,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 142761
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 63229,
+      "completion_tokens": 128,
+      "cached_tokens": 62714,
+      "total_ms": 6953
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "90.0"
+}
+{
+  "test": "04-layer-f16-65k",
+  "extra_args": "split-mode=layer|cache-type-k=f16|cache-type-v=f16|ctx-size=65536|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 63230,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 106507
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 63229,
+      "completion_tokens": 128,
+      "cached_tokens": 62714,
+      "total_ms": 10160
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "90.0"
+}
+{
+  "test": "05-tensor-q4_0-131k",
+  "extra_args": "split-mode=tensor|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=131072|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 128476,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 344383
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 128475,
+      "completion_tokens": 128,
+      "cached_tokens": 127960,
+      "total_ms": 11239
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "90.0"
+}
+{
+  "test": "06-layer-q4_0-131k",
+  "extra_args": "split-mode=layer|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=131072|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 128476,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 269078
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 128475,
+      "completion_tokens": 128,
+      "cached_tokens": 127960,
+      "total_ms": 16634
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "90.0"
+}
+{
+  "test": "07-tensor-q4_0-65k-bs2048",
+  "extra_args": "split-mode=tensor|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=65536|batch-size=2048|ubatch-size=512|tensor-split=1,1.09",
+  "results": [
+    {
+      "request": 0,
+      "prompt_tokens": 63230,
+      "completion_tokens": 128,
+      "cached_tokens": 0,
+      "total_ms": 145033
+    },
+    {
+      "request": 1,
+      "prompt_tokens": 63229,
+      "completion_tokens": 128,
+      "cached_tokens": 62714,
+      "total_ms": 8286
+    }
+  ],
+  "gen_speed_tps": "",
+  "cache_speedup_pct": "90.0"
+}

@@ -16,14 +16,12 @@ services:
     networks:
       - default
       - proxy
-    healthcheck:
-      disable: true
     labels:
-        # - "homepage.group=AI"
-        # - "homepage.name=Open WebUI"
-        # - "homepage.icon=/icons/openwebui.png"
-      # - "homepage.description=LLM Web Interface"
-        # - "homepage.href=http://192.168.254.111:3030"
+        - "homepage.group=AI"
+        - "homepage.name=Open WebUI"
+        - "homepage.icon=/icons/openwebui.png"
+        - "homepage.description=LLM Web Interface"
+        - "homepage.href=http://192.168.254.111:3030"
 
 networks:
   proxy:

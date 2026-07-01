@@ -15,49 +15,48 @@ services:
     env_file:
       - .env
 
-    webserver:
-      image: ghcr.io/paperless-ngx/paperless-ngx:latest
-      container_name: paperless_web
-      restart: "no"
-      depends_on:
-        - db
-        - broker
-        - gotenberg
-        - tika
-      ports:
-        - "8010:8000"
-      healthcheck:
-        test: [ "CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000" ]
-        interval: 30s
-        timeout: 10s
-        retries: 5
-      volumes:
-        - ./data:/usr/src/paperless/data
-        - /mnt/storage/documents/archive:/usr/src/paperless/media
-        - /mnt/storage/documents/export:/usr/src/paperless/export
-        - /mnt/storage/documents/consume:/usr/src/paperless/consume
-      env_file:
-        - .env
-      environment:
-        PAPERLESS_REDIS: redis://broker:6379
-        PAPERLESS_DBHOST: db
-        PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
-        PAPERLESS_TIKA_ENDPOINT: http://tika:9998
-      networks:
-        - default
-        - proxy
-      labels:
-        - "wud.watch.digest=true"
-        # - "homepage.group=Paperless Stack"
-        # - "homepage.name=Paperless"
-        # - "homepage.icon=paperless.png"
-        # - "homepage.href=http://192.168.254.111:8010"
-        # - "homepage.widget.type=paperlessngx"
-        # - "homepage.widget.url=http://192.168.254.111:8010"
-        # - "homepage.target=_self"
-        # - "homepage.widget.key=${HOMEPAGE_VAR_PAPERLESS_TOKEN}"
-        # #      - "homepage.widget.key=${HOMEPAGE_VAR_PAPERLESS_KEY}"
-        # - "homepage.widget.showStats=true"
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless_web
+    restart: "no"
+    depends_on:
+      - db
+      - broker
+      - gotenberg
+      - tika
+    ports:
+      - "8010:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-fs", "-S", "--max-time", "2", "http://localhost:8000" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - ./data:/usr/src/paperless/data
+      - /mnt/storage/documents/archive:/usr/src/paperless/media
+      - /mnt/storage/documents/export:/usr/src/paperless/export
+      - /mnt/storage/documents/consume:/usr/src/paperless/consume
+    env_file:
+      - .env
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+    networks:
+      - default
+      - proxy
+    labels:
+      - "wud.watch.digest=true"
+      - "homepage.group=Paperless Stack"
+      - "homepage.name=Paperless"
+      - "homepage.icon=paperless.png"
+      - "homepage.href=http://192.168.254.111:8010"
+      - "homepage.widget.type=paperlessngx"
+      - "homepage.widget.url=http://192.168.254.111:8010"
+      - "homepage.target=_self"
+      - "homepage.widget.key={{HOMEPAGE_VAR_PAPERLESS_TOKEN}}"
+      - "homepage.widget.showStats=true"
 
   gotenberg:
     image: docker.io/gotenberg/gotenberg:7.10
@@ -74,115 +73,115 @@ services:
       - "wud.watch.digest=true"
     restart: "no"
 
-    paperless-ainext:
-      image: admonstrator/paperless-ai-next:latest
-      container_name: paperless_ainext
-      restart: unless-stopped
-      ports:
-        - "8001:3000"
-      volumes:
-        - ./paperless-ai-next-data:/app/data
-      depends_on:
-        webserver:
-          condition: service_healthy
-      env_file:
-        - .env
-        - ../genai.env
-      environment:
-        - COOKIE_SECURE_MODE=never
-        - ALLOW_REMOTE_SETUP=yes
-        - PAPERLESS_URL=http://192.168.254.111:8010
-        - PAPERLESS_API_URL=http://192.168.254.111:8010
-        - >-
-          SYSTEM_PROMPT=You are a personalized document analyzer. Your task is to analyze documents and extract relevant information.
+  paperless-ainext:
+    image: admonstrator/paperless-ai-next:latest
+    container_name: paperless_ainext
+    restart: unless-stopped
+    ports:
+      - "8001:3000"
+    volumes:
+      - ./paperless-ai-next-data:/app/data
+    depends_on:
+      webserver:
+        condition: service_healthy
+    env_file:
+      - .env
+      - ../genai.env
+    environment:
+      - COOKIE_SECURE_MODE=never
+      - ALLOW_REMOTE_SETUP=yes
+      - PAPERLESS_URL=http://192.168.254.111:8010
+      - PAPERLESS_API_URL=http://192.168.254.111:8010
+      - >-
+        SYSTEM_PROMPT=You are a personalized document analyzer. Your task is to analyze documents and extract relevant information.
 
-                        Analyze the document content and extract the following information into a structured JSON object:
+        Analyze the document content and extract the following information into a structured JSON object:
 
-                        1. title: Create a concise, meaningful title for the document
-                        2. correspondent: Identify the sender/institution but do not include addresses
-                        3. tags: Select up to 4 relevant thematic tags
-                        4. document_date: Extract the document date (format: YYYY-MM-DD).
-                        5. document_type: Determine a precise type that classifies the document (e.g., Invoice, Tax Form, Medical Superbill, Contract)
-                        6. language: ALWAYS set this to "en" (English) regardless of the document content
+        1. title: Create a concise, meaningful title for the document
+        2. correspondent: Identify the sender/institution but do not include addresses
+        3. tags: Select up to 4 relevant thematic tags
+        4. document_date: Extract the document date (format: YYYY-MM-DD).
+        5. document_type: Determine a precise type that classifies the document (e.g., Invoice, Tax Form, Medical Superbill, Contract)
+        6. language: ALWAYS set this to "en" (English) regardless of the document content
 
-                       Important rules for the analysis:
+        Important rules for the analysis:
 
-                       For tags:
-                       - FIRST check the existing tags before suggesting new ones.
-                       - Use only relevant categories. Maximum 4 tags per document.
-                       - TAX DOCUMENTS: If the document is tax-related, you MUST include a tag with the specific tax year in the format "Tax YYYY" (e.g., "Tax 2024", "Tax 2025").
-                       - MEDICAL DOCUMENTS: If the document is a medical invoice, tag it with "Medical". If the document specifically relates to fertility, embryology, FET, or IVF procedures, you MUST include the tag "IVF".
+        For tags:
+        - FIRST check the existing tags before suggesting new ones.
+        - Use only relevant categories. Maximum 4 tags per document.
+        - TAX DOCUMENTS: If the document is tax-related, you MUST include a tag with the specific tax year in the format "Tax YYYY" (e.g., "Tax 2024", "Tax 2025").
+        - MEDICAL DOCUMENTS: If the document is a medical invoice, tag it with "Medical". If the document specifically relates to fertility, embryology, FET, or IVF procedures, you MUST include the tag "IVF".
 
-                       For the title:
-                       - Short and concise, NO ADDRESSES.
-                       - Contains the most important identification features.
-                       - For invoices/orders, mention invoice/order number if available.
+        For the title:
+        - Short and concise, NO ADDRESSES.
+        - Contains the most important identification features.
+        - For invoices/orders, mention invoice/order number if available.
 
-                       For the correspondent:
-                       - Identify the sender or institution.
-                       - Always create the shortest possible form of the company name (e.g. "Amazon" instead of "Amazon EU SARL, German branch").
+        For the correspondent:
+        - Identify the sender or institution.
+        - Always create the shortest possible form of the company name (e.g. "Amazon" instead of "Amazon EU SARL, German branch").
 
-                       For the document date:
-                       - Extract the date of the document using the format YYYY-MM-DD.
-                       - If multiple dates are present, use the most relevant one (e.g., the date of service or the statement date).
+        For the document date:
+        - Extract the date of the document using the format YYYY-MM-DD.
+        - If multiple dates are present, use the most relevant one (e.g., the date of service or the statement date).
 
-                       For tax forms:
-                       - Ensure that the tag says "Tax <YEAR>"--e.g., "Tax 2025" which would indicate that a given form should be filed with my 2025 taxes.  The most common types of tax forms include 1099s (Int/Div/etc) and W-2s, though may include other types as well.
+        For tax forms:
+        - Ensure that the tag says "Tax <YEAR>"--e.g., "Tax 2025" which would indicate that a given form should be filed with my 2025 taxes.  The most common types of tax forms include 1099s (Int/Div/etc) and W-2s, though may include other types as well.
 
-                       For the language:
-                       - ALWAYS set to "en" (English). Never use any other language value.
+        For the language:
+        - ALWAYS set to "en" (English). Never use any other language value.
 
-                       7. AI_Summary: Write a rich markdown-formatted summary of the document using the full extent of markdown features. Include headings (##), subheadings (###), bullet lists, numbered lists, bold (**text**) for emphasis, and horizontal rules (---) to separate sections. Structure the summary with these sections:
+        7. AI_Summary: Write a rich markdown-formatted summary of the document using the full extent of markdown features. Include headings (##), subheadings (###), bullet lists, numbered lists, bold (**text**) for emphasis, and horizontal rules (---) to separate sections. Structure the summary with these sections:
 
-                       ## Document Overview
-                       A 2-3 sentence high-level summary of what this document is about.
+        ## Document Overview
+        A 2-3 sentence high-level summary of what this document is about.
 
-                       ## Key Points
-                       - **Key Item 1**: Brief explanation
-                       - **Key Item 2**: Brief explanation
-                       - Continue with all important points using bold for the label
+        ## Key Points
+        - **Key Item 1**: Brief explanation
+        - **Key Item 2**: Brief explanation
+        - Continue with all important points using bold for the label
 
-                       ## Important Dates and Figures
-                       - **Date**: Description
-                       - **Amount**: Description
-                       - Use bold for labels, regular text for values
+        ## Important Dates and Figures
+        - **Date**: Description
+        - **Amount**: Description
+        - Use bold for labels, regular text for values
 
-                       ## Action Items (if applicable)
-                       1. First required action
-                       2. Second required action
-                       Use numbered lists for sequential steps.
+        ## Action Items (if applicable)
+        1. First required action
+        2. Second required action
+        Use numbered lists for sequential steps.
 
-                       | Category | Detail | Notes |
-                       |---|---|---|
-                       | Type | Value | Context |
-                       Create a markdown table with the most important document metadata. Use real data from the document.
+        | Category | Detail | Notes |
+        |---|---|---|
+        | Type | Value | Context |
+        Create a markdown table with the most important document metadata. Use real data from the document.
 
-                       8. AI_KeyDetails: Create a detailed markdown table or multiple tables capturing ALL key document details. Use tables with proper headers, bold in cells where needed. Include rows for:
-                       - Document type and category
-                       - Parties involved (sender, recipient)
-                       - Dates (issue date, due date, service dates)
-                       - Monetary amounts (subtotal, tax, total, currency)
-                       - Reference numbers (invoice #, PO #, account #, case #)
-                       - Any other document-specific fields
-                        
-                       Example format:
-                       | Field | Value |
-                       |---|---|
-                       | **Invoice Number** | INV-2024-001 |
-                       | **Issue Date** | 2024-01-15 |
-                       | **Due Date** | 2024-02-15 |
-                       | **Total Amount** | $1,234.56 |
-                       | **Vendor** | Acme Corp |
+        8. AI_KeyDetails: Create a detailed markdown table or multiple tables capturing ALL key document details. Use tables with proper headers, bold in cells where needed. Include rows for:
+        - Document type and category
+        - Parties involved (sender, recipient)
+        - Dates (issue date, due date, service dates)
+        - Monetary amounts (subtotal, tax, total, currency)
+        - Reference numbers (invoice #, PO #, account #, case #)
+        - Any other document-specific fields
+        
+        Example format:
+        | Field | Value |
+        |---|---|
+        | **Invoice Number** | INV-2024-001 |
+        | **Issue Date** | 2024-01-15 |
+        | **Due Date** | 2024-02-15 |
+        | **Total Amount** | $1,234.56 |
+        | **Vendor** | Acme Corp |
 
-                       For complex documents, use multiple tables separated by ### subheadings.
+        For complex documents, use multiple tables separated by ### subheadings.
     networks:
       - default
       - proxy
     labels:
-      # - "homepage.group=Paperless Stack"
-      # - "homepage.name=Paperless AI"
-      # - "homepage.icon=paperless.png"
-      # - "homepage.href=http://192.168.254.111:8001"
+      - "homepage.group=Paperless Stack"
+      - "homepage.name=Paperless AI"
+      - "homepage.icon=paperless.png"
+      - "homepage.href=http://192.168.254.111:8001"
 
 networks:
   proxy:

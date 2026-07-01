@@ -19,13 +19,13 @@ services:
     # No --reload (unstable in container). Restart with `docker compose restart`
     # after code changes to pick up volume-mounted file changes.
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "4000", "--log-level", "warning"]
-#    labels:
-        # - "homepage.group=AI"
-        # - "homepage.name=Gateway"
-        # - "homepage.icon=mdi-web"
-        # - "homepage.href=http://192.168.254.111:4001"
-        # - "homepage.description=LLM Request Gateway & Telemetry"
-        # - "homepage.target=_self"
+    labels:
+        - "homepage.group=AI"
+        - "homepage.name=Gateway"
+        - "homepage.icon=mdi-web"
+        - "homepage.href=http://192.168.254.111:4001"
+        - "homepage.description=LLM Request Gateway & Telemetry"
+        - "homepage.target=_self"
 
 networks:
   proxy:

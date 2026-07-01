@@ -21,9 +21,9 @@ services:
       - /dev:/dev:rw
     labels:
       - "wud.watch=false"
-        # - "homepage.group=System"
-        # - "homepage.name=OpenRGB"
-        # - "homepage.icon=/icons/openrgb.png"
-        # - "homepage.href=http://192.168.254.111:15800"
-      # - "homepage.description=RGB Lighting Control"
-        # - "homepage.tag=RGB"
+      - "homepage.group=System"
+      - "homepage.name=OpenRGB"
+      - "homepage.icon=/icons/openrgb.png"
+      - "homepage.href=http://192.168.254.111:15800"
+      - "homepage.description=RGB Lighting Control"
+      - "homepage.tag=RGB"

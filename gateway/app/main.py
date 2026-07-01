@@ -43,7 +43,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
     upstream = UpstreamClient(
         api_base=config.api_base,
-        timeout=120.0,
+        timeout=300.0,
         max_connections=50,
     )
 

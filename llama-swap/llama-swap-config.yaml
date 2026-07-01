@@ -5,6 +5,7 @@ models:
   Qwen3.6-27B:
     cmd: >
       /usr/local/bin/llama-server
+      --log-colors auto
       --model /mnt/data/models/llm/Qwen3.6/27B-MTB/Qwen3.6-27B-Q4_K_S.gguf
       --mmproj /mnt/data/models/llm/Qwen3.6/27B-MTB/mmproj-BF16.gguf
       --alias Qwen3.6-27B
@@ -15,106 +16,139 @@ models:
       --top-k 20
       --min-p 0.0
       --flash-attn on
-      --batch-size 512
-      --ubatch-size 512
-      --parallel 1
-      --threads 4
-      --threads-batch 4
       --jinja
       --reasoning on
-      --reasoning-budget -1
-      --reasoning-budget-message "Thinking budget exceeded, let's answer now." 
       --chat-template-kwargs '{"preserve_thinking":true}'
       --split-mode tensor
       --fit off
       --n-gpu-layers 99
-      --ctx-size 131072
-      --tensor-split 1,1.09
-      --cache-type-k q4_0
-      --cache-type-v q4_0
-      --spec-default
-      --spec-type ngram-map-k4v
-      --spec-ngram-map-k4v-size-n 16
-      --spec-ngram-map-k4v-size-m 24
-      --spec-ngram-map-k4v-min-hits 1
+      --ctx-size 65536
+      --cache-type-k  q8_0
+      --cache-type-v q8_0
+      --batch-size 2048
+      --ubatch-size 1024
+#      --parallel 2
+#      --threads 4
+#      --threads-batch 4
+#      --tensor-split 1,1.09
+#      --defrag-thold 0.1
+#      --spec-default
+#      --spec-type ngram-map-k4v
+#      --spec-ngram-map-k4v-size-n 16
+#      --spec-ngram-map-k4v-size-m 24
+#      --spec-ngram-map-k4v-min-hits 1
     filters:
       setParamsByID:
         "${MODEL_ID}:fast":
+          reasoning: "off"
           chat_template_kwargs:
             enable_thinking: false
         "${MODEL_ID}:low":
+          reasoning_budget_message: "Thinking budget exceeded answer now."
+          thinking_budget_tokens: 1024
           chat_template_kwargs:
-            reasoning_effort: low
+            enable_thinking: true
+            preserve_thinking: false
         "${MODEL_ID}:high":
+          thinking_budget_tokens: -1
           chat_template_kwargs:
-            reasoning_effort: high
+            enable_thinking: true
+            preserve_thinking: true
     aliases:
       - "Qwen3.6-27B:fast"
       - "Qwen3.6-27B:low"
       - "Qwen3.6-27B:high"
     ttl: 0
 ##
-  Qwen3.6-36B-A3B-MTB:
+#  Qwen3.6-36B-A3B-MTB:
+#    cmd: >
+#      /usr/local/bin/llama-server
+#      --log-colors auto
+#      --model /mnt/data/models/llm/Qwen3.6/35B-A3B-MTB/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf
+#      --mmproj /mnt/data/models/llm/Qwen3.6/35B-A3B-MTB/mmproj-BF16.gguf
+#      --alias Qwen3.6-36B-A3B
+#      --host 0.0.0.0
+#      --port ${PORT}
+#      --temp 0.6
+#      --top-p 0.95
+#      --top-k 20
+#      --min-p 0.0
+#      --flash-attn on
+#      --parallel 1
+#      --reasoning on
+#      --chat-template-kwargs '{"enable_thinking":true}'
+#      --split-mode layer
+#      --n-gpu-layers 95
+#      --fit on
+#      --ctx-size 131072
+#    filters:
+#      setParamsByID:
+#        "${MODEL_ID}:fast":
+#          reasoning: "off"
+#          chat_template_kwargs:
+#            enable_thinking: false
+#        "${MODEL_ID}:low":
+#          thinking_budget_tokens: 1024
+#          chat_template_kwargs:
+#            enable_thinking: true
+#            preserve_thinking: false
+#        "${MODEL_ID}:high":
+#          thinking_budget_tokens: -1
+#          chat_template_kwargs:
+#            enable_thinking: true
+#            preserve_thinking: true
+#    aliases:
+#      - "Qwen3.6-36B:fast"
+#      - "Qwen3.6-36B:low"
+#      - "Qwen3.6-36B:high"
+#    ttl: 0
+#
+##
+  Gemma-4-12B-MTP:
     cmd: >
       /usr/local/bin/llama-server
-      --model /mnt/data/models/llm/Qwen3.6/35B-A3B-MTB/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf
-      --mmproj /mnt/data/models/llm/Qwen3.6/35B-A3B-MTB/mmproj-BF16.gguf
-      --alias Qwen3.6-36B-A3B
+      --log-colors auto
+      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
+      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
+      --alias Gemma-4-12B-MTP
       --host 0.0.0.0
       --port ${PORT}
-      --temp 0.6
+      --temp 1.0
       --top-p 0.95
-      --top-k 20
-      --min-p 0.0
-      --flash-attn on
-      --parallel 1
+      --top-k 64
+      --min-p 0.01
+      --n-predict 2048
       --reasoning on
-      --chat-template-kwargs '{"enable_thinking":true}'
+      --chat-template-kwargs '{"enable_thinking": true}'
       --split-mode layer
-      --n-gpu-layers 95
-      --fit on
-      --ctx-size 131072
+      --spec-type draft-mtp
+      --spec-draft-n-max 2
+      --flash-attn on
+      --parallel 2
+      --ctx-size 262144
     filters:
       setParamsByID:
         "${MODEL_ID}:fast":
+          reasoning: "off"
           chat_template_kwargs:
             enable_thinking: false
         "${MODEL_ID}:low":
+          reasoning_budget_message: "Thinking budget exceeded answer now."
+          thinking_budget_tokens: 1024
           chat_template_kwargs:
-            reasoning_effort: low
+            enable_thinking: true
+            preserve_thinking: false
         "${MODEL_ID}:high":
+          thinking_budget_tokens: -1
           chat_template_kwargs:
-            reasoning_effort: high
+            enable_thinking: true
+            preserve_thinking: true
     aliases:
-      - "Qwen3.6-36B:fast"
-      - "Qwen3.6-36B:low"
-      - "Qwen3.6-36B:high"
+      - "Gemma-4-12B-MTP:fast"
+      - "Gemma-4-12B-MTP:low"
+      - "Gemma-4-12B-MTP:high"
     ttl: 0
-#
-##
-##  Gemma-4-12B-MTP:
-##    cmd: >
-##      /usr/local/bin/llama-server
-##      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
-##      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
-##      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
-##      --alias Gemma-4-12B-MTP
-##      --host 0.0.0.0
-##      --port ${PORT}
-##      --temp 1.0
-##      --top-p 0.95
-##      --top-k 64
-##      --min-p 0.01
-##      --n-predict 2048
-##      --reasoning on
-##      --chat-template-kwargs '{"enable_thinking": true}'
-##      --split-mode layer
-##      --spec-type draft-mtp
-##      --spec-draft-n-max 2
-##      --flash-attn on
-##      --parallel 2
-##      --ctx-size 262144
-##    ttl: 0
 ##
 ##  Gemma-4-12B-v2-Agentic:
 ##    cmd: >

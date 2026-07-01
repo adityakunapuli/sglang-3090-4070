@@ -268,48 +268,68 @@ async def _stream_and_log(
     """Wrap an already-open streaming response, capturing TTFT and usage.
 
     Yields bytes as they arrive from *resp*. After the stream completes,
-    finalises and persists the telemetry entry.
+    finalises and persists the telemetry entry. Telemetry is also
+    persisted on cancellation/disconnect with whatever data was collected.
     """
     time_to_first_token: float | None = None
     usage_data: dict | None = None
+    timings_data: dict | None = None
 
-    async for chunk in resp.aiter_bytes():
-        if time_to_first_token is None:
-            time_to_first_token = time.time()
-        if b'"usage"' in chunk:
-            try:
-                decoded = chunk.decode("utf-8")
-                for line in decoded.splitlines():
-                    line = line.strip()
-                    if not line:
-                        continue
-                    if line.startswith("data: "):
-                        line = line[6:].strip()
-                    if line and line != "[DONE]":
-                        try:
-                            parsed = json.loads(line)
-                            if parsed.get("usage"):
-                                usage_data = parsed["usage"]
-                        except json.JSONDecodeError:
-                            pass
-            except UnicodeDecodeError:
-                pass
-        yield chunk
+    try:
+        async for chunk in resp.aiter_bytes():
+            if time_to_first_token is None:
+                time_to_first_token = time.time()
+            if b'"usage"' in chunk or b'"timings"' in chunk:
+                try:
+                    decoded = chunk.decode("utf-8")
+                    for line in decoded.splitlines():
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if line.startswith("data: "):
+                            line = line[6:].strip()
+                        if line and line != "[DONE]":
+                            try:
+                                parsed = json.loads(line)
+                                if parsed.get("usage"):
+                                    usage_data = parsed["usage"]
+                                if parsed.get("timings"):
+                                    timings_data = parsed["timings"]
+                            except json.JSONDecodeError:
+                                pass
+                except UnicodeDecodeError:
+                    pass
+            yield chunk
+    except GeneratorExit:
+        raise
+    except Exception as exc:
+        if entry.error is None:
+            entry.error = f"stream error: {exc}"
+        raise
+    finally:
+        elapsed = time.time() - start_time
+        pt = (usage_data or {}).get("prompt_tokens", 0)
+        ct = (usage_data or {}).get("completion_tokens", 0)
 
-    # Finalise telemetry after stream completes.
-    elapsed = time.time() - start_time
-    ttft = (time_to_first_token - start_time) if time_to_first_token else 0.0
-    pt = (usage_data or {}).get("prompt_tokens", 0)
-    ct = (usage_data or {}).get("completion_tokens", 0)
+        # Use upstream timings when available (llama-swap/llama-cpp provide accurate
+        # prompt_ms and prompt_per_second). Falls back to wall-clock ttft for generic
+        # backends that only stream usage without timings.
+        upstream_ttft = timings_data.get("prompt_ms") if timings_data else None
+        pp_speed = timings_data.get("prompt_per_second") if timings_data else None
+        if pp_speed is None:
+            ttft = (time_to_first_token - start_time) if time_to_first_token else 0.0
+            pp_speed = round(pt / ttft, 1) if pt > 0 and ttft > 0 else None
+            entry.ttft_ms = round(ttft * 1000, 1) if ttft > 0 else None
+        else:
+            entry.ttft_ms = round(upstream_ttft, 1) if upstream_ttft is not None else None
 
-    entry.latency_ms = round(elapsed * 1000, 1)
-    entry.ttft_ms = round(ttft * 1000, 1) if ttft > 0 else None
-    entry.prompt_tokens = pt
-    entry.completion_tokens = ct
-    entry.tokens_per_sec = round(ct / elapsed, 2) if elapsed > 0 else None
-    entry.pp_speed = round(pt / ttft, 1) if pt > 0 and ttft > 0 else None
+        entry.latency_ms = round(elapsed * 1000, 1)
+        entry.prompt_tokens = pt
+        entry.completion_tokens = ct
+        entry.tokens_per_sec = round(ct / elapsed, 2) if elapsed > 0 else None
+        entry.pp_speed = round(pp_speed, 1) if pp_speed is not None else None
 
-    telemetry.log(entry)
+        telemetry.log(entry)
 
 
 async def _stream_with_release(

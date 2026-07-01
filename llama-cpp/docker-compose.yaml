@@ -1,7 +1,6 @@
 services:
   llama-cpp:
-    image: llama-cpp-local:server-cuda
-#    image: ghcr.io/ggml-org/llama.cpp:server-cuda-june-08
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
     container_name: llama-cpp
     restart: unless-stopped
     ipc: host # CRITICAL: Gives NCCL access to shared memory segments for P2P/AllReduce

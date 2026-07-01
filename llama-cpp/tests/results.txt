@@ -1,0 +1,88 @@
+
+
+=== 01-tensor-q4_0-65k ===
+Flags: split-mode=tensor|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=65536|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=63230 ct=128 cached=0 total=157465ms
+  [2] pt=63229 ct=128 cached=62714 total=8318ms
+  TIMING: [47857] 2.53.993.467 I slot print_timing: id  0 | task 161 |        eval time =    6756.47 ms /   128 tokens (   52.78 ms per token,    18.94 tokens per second)
+  TIMING: [47857] 2.53.993.468 I slot print_timing: id  0 | task 161 |       total time =    8196.34 ms /   643 tokens
+  TIMING: [47857] 2.53.993.469 I slot print_timing: id  0 | task 161 |    graphs reused =        251
+  >> TTFT1=157465ms TTFT2=8318ms cache=90.0% gen=t/s
+
+=== 02-layer-q4_0-65k ===
+Flags: split-mode=layer|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=65536|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=63230 ct=128 cached=0 total=119162ms
+  [2] pt=63229 ct=128 cached=62714 total=12174ms
+  TIMING: [32997] 2.19.528.137 I slot print_timing: id  0 | task 161 |        eval time =   10299.98 ms /   128 tokens (   80.47 ms per token,    12.43 tokens per second)
+  TIMING: [32997] 2.19.528.138 I slot print_timing: id  0 | task 161 |       total time =   12083.28 ms /   643 tokens
+  TIMING: [32997] 2.19.528.139 I slot print_timing: id  0 | task 161 |    graphs reused =        251
+  >> TTFT1=119162ms TTFT2=12174ms cache=80.0% gen=t/s
+
+=== 03-tensor-f16-65k ===
+Flags: split-mode=tensor|cache-type-k=f16|cache-type-v=f16|ctx-size=65536|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=63230 ct=128 cached=0 total=142761ms
+  [2] pt=63229 ct=128 cached=62714 total=6953ms
+  TIMING: [57759] 2.37.921.824 I slot print_timing: id  0 | task 161 |        eval time =    5461.34 ms /   128 tokens (   42.67 ms per token,    23.44 tokens per second)
+  TIMING: [57759] 2.37.921.824 I slot print_timing: id  0 | task 161 |       total time =    6870.14 ms /   643 tokens
+  TIMING: [57759] 2.37.921.825 I slot print_timing: id  0 | task 161 |    graphs reused =        251
+  >> TTFT1=142761ms TTFT2=6953ms cache=90.0% gen=t/s
+
+=== 04-layer-f16-65k ===
+Flags: split-mode=layer|cache-type-k=f16|cache-type-v=f16|ctx-size=65536|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=63230 ct=128 cached=0 total=106507ms
+  [2] pt=63229 ct=128 cached=62714 total=10160ms
+  TIMING: [36915] 2.04.791.643 I slot print_timing: id  0 | task 161 |        eval time =    8344.22 ms /   128 tokens (   65.19 ms per token,    15.34 tokens per second)
+  TIMING: [36915] 2.04.791.643 I slot print_timing: id  0 | task 161 |       total time =   10072.10 ms /   643 tokens
+  TIMING: [36915] 2.04.791.644 I slot print_timing: id  0 | task 161 |    graphs reused =        251
+  >> TTFT1=106507ms TTFT2=10160ms cache=90.0% gen=t/s
+
+=== 05-tensor-q4_0-131k ===
+Flags: split-mode=tensor|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=131072|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=128476 ct=128 cached=0 total=344383ms
+  [2] pt=128475 ct=128 cached=127960 total=11239ms
+  TIMING: [53857] 6.30.567.137 I slot print_timing: id  0 | task 193 |        eval time =    9059.66 ms /   128 tokens (   70.78 ms per token,    14.13 tokens per second)
+  TIMING: [53857] 6.30.567.137 I slot print_timing: id  0 | task 193 |       total time =   11083.90 ms /   643 tokens
+  TIMING: [53857] 6.30.567.138 I slot print_timing: id  0 | task 193 |    graphs reused =        251
+  >> TTFT1=344383ms TTFT2=11239ms cache=90.0% gen=t/s
+
+=== 06-layer-q4_0-131k ===
+Flags: split-mode=layer|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=131072|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=128476 ct=128 cached=0 total=269078ms
+  [2] pt=128475 ct=128 cached=127960 total=16634ms
+  TIMING: [45949] 5.20.659.839 I slot print_timing: id  0 | task 193 |        eval time =   13894.47 ms /   128 tokens (  108.55 ms per token,     9.21 tokens per second)
+  TIMING: [45949] 5.20.659.840 I slot print_timing: id  0 | task 193 |       total time =   16476.36 ms /   643 tokens
+  TIMING: [45949] 5.20.659.843 I slot print_timing: id  0 | task 193 |    graphs reused =        251
+  >> TTFT1=269078ms TTFT2=16634ms cache=90.0% gen=t/s
+
+=== 07-tensor-q4_0-65k-bs2048 ===
+Flags: split-mode=tensor|cache-type-k=q4_0|cache-type-v=q4_0|ctx-size=65536|batch-size=2048|ubatch-size=512|tensor-split=1,1.09
+ Container llama-cpp Restarting 
+ Container llama-cpp Started 
+  ready after 1s
+  [1] pt=63230 ct=128 cached=0 total=145033ms
+  [2] pt=63229 ct=128 cached=62714 total=8286ms
+  TIMING: [46961] 2.40.810.469 I slot print_timing: id  0 | task 161 |        eval time =    6744.71 ms /   128 tokens (   52.69 ms per token,    18.98 tokens per second)
+  TIMING: [46961] 2.40.810.470 I slot print_timing: id  0 | task 161 |       total time =    8191.21 ms /   643 tokens
+  TIMING: [46961] 2.40.810.471 I slot print_timing: id  0 | task 161 |    graphs reused =        251
+  >> TTFT1=145033ms TTFT2=8286ms cache=90.0% gen=t/s
+=== Complete ===
+Results: ./results.jsonl
+Log: ./results.txt
