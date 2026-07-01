@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        
+
+  - job_name: 'nvitop-exporter'
+    static_configs:
+      - targets: ['nvitop-exporter:5050']
+        
+    metric_relabel_configs:
+      - source_labels: [uuid]
+        regex: 'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'
+        target_label: gpu_info
+        replacement: '3060 (0)'
+      - source_labels: [uuid]
+        regex: 'GPU-88a93309-9467-dab9-9491-30f298a784f1'
+        target_label: gpu_info
+        replacement: '3060 (1)'
+      - source_labels: [uuid]
+        regex: 'GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877'
+        target_label: gpu_info
+        replacement: '3050 (2)'
+
+  - job_name: 'home-assistant'
+    metrics_path: '/api/prometheus'
+    bearer_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5NGMxYTdjYTYxZTI0OTliYTg5MTlhMGJmMGQyMWNkMiIsImlhdCI6MTc3OTU5MTkxMCwiZXhwIjoyMDk0OTUxOTEwfQ.bBJHGxAj9qceM262hDxuKAQcryXw6A_r2sdVJ1XY6hE'
+    static_configs:
+      - targets: ['192.168.254.22:8123']
+        
