@@ -3340,7 +3340,7 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
+  "timezone": "America/Los_Angeles",
   "title": "System Telemetry - Enhanced (Nvitop)",
   "uid": "telemetry-enhanced",
   "version": 3,

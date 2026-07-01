@@ -2660,7 +2660,7 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
+  "timezone": "America/Los_Angeles",
   "title": "nvitop-dashboard",
   "uid": "bdl3vqwxprhtsa",
   "version": 51,
