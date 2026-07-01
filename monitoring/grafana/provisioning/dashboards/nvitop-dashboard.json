@@ -1,53 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "12.0.2"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -65,169 +16,362 @@
     ]
   },
   "description": "Grafana Dashboard built by `nvitop-exporter`.",
-  "editable": false,
+  "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 3,
   "links": [],
   "liveNow": true,
   "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 26,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_power_usage_W",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{gpu_info}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU Power Usage",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd",
+            "seriesBy": "max"
+          },
+          "custom": {
+            "axisBorderShow": true,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 76
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 27,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_temperature_C",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{gpu_info}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU Temperature",
+      "transparent": true,
+      "type": "timeseries"
+    },
     {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 14
       },
       "id": 1,
       "panels": [],
       "title": "Overview",
-      "type": "row",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "type": "row"
     },
     {
-      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic",
+            "seriesBy": "last"
           },
-          "max": 100,
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
           "min": 0,
           "thresholds": {
-            "mode": "percentage",
+            "mode": "absolute",
             "steps": [
               {
                 "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
+                "value": 0
               },
               {
                 "color": "red",
-                "value": 90
+                "value": 80
               }
             ]
           },
           "unit": "percent"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 4,
+        "h": 14,
+        "w": 12,
         "x": 0,
-        "y": 1
+        "y": 15
       },
-      "id": 2,
+      "id": 20,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
+        "legend": {
           "calcs": [
-            "last"
+            "lastNotNull",
+            "mean",
+            "max"
           ],
-          "fields": "",
-          "values": false
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "exemplar": false,
-          "expr": "max(host_cpu_percent_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "gpu_utilization_Percentage",
           "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "Host CPU",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "CPU Utilization",
-      "type": "gauge",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "percentage",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 18,
-        "w": 10,
-        "x": 4,
-        "y": 1
-      },
-      "id": 3,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (gpu_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
+          "hide": false,
           "includeNullMetadata": true,
           "instant": false,
           "legendFormat": "{{gpu_info}}",
@@ -237,27 +381,28 @@
         }
       ],
       "title": "GPU Utilization",
-      "type": "gauge",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "timeseries"
     },
     {
-      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "max": 100,
+          "mappings": [],
+          "max": 12288,
           "min": 0,
           "thresholds": {
             "mode": "percentage",
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -269,133 +414,308 @@
               }
             ]
           },
-          "unit": "percent"
-        }
+          "unit": "mbytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "3050 (2)"
+            },
+            "properties": [
+              {
+                "id": "max",
+                "value": 6144
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 18,
-        "w": 10,
-        "x": 14,
-        "y": 1
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 15
       },
-      "id": 4,
+      "id": 21,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
-            "last"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (gpu_memory_percent_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "gpu_memory_used_MiB",
           "fullMetaSearch": false,
+          "hide": false,
           "includeNullMetadata": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "{{gpu_info}}",
-          "range": true,
+          "range": false,
           "refId": "A",
           "useBackend": false
         }
       ],
       "title": "GPU Memory",
-      "type": "gauge",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "bargauge"
     },
     {
-      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "continuous-GrYlRd",
+            "seriesBy": "last"
           },
-          "max": 100,
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 13,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
           "min": 0,
           "thresholds": {
-            "mode": "percentage",
+            "mode": "absolute",
             "steps": [
               {
                 "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
+                "value": 0
               },
               {
                 "color": "red",
-                "value": 90
+                "value": 80
               }
             ]
           },
-          "unit": "bytes"
-        }
+          "unit": "MiBs"
+        },
+        "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 4,
+        "h": 14,
+        "w": 12,
         "x": 0,
-        "y": 10
+        "y": 29
       },
-      "id": 5,
+      "id": 22,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
+        "legend": {
           "calcs": [
-            "last"
+            "lastNotNull",
+            "mean",
+            "max"
           ],
-          "fields": "",
-          "values": false
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "exemplar": false,
-          "expr": "max(host_virtual_memory_used_MiB{job=\"nvitop-exporter\"})",
+          "expr": "gpu_pcie_rx_throughput_MiBps",
           "fullMetaSearch": false,
+          "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "RAM Used",
+          "legendFormat": "{{devicename}} ({{index}})",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Host RAM Usage",
-      "type": "gauge",
+      "title": "GPU PCIe RX Throughput",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
       "datasource": {
         "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 2001,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 13,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "MiBs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_pcie_tx_throughput_MiBps",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{devicename}} ({{index}})",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU PCIe TX Throughput",
+      "transparent": true,
+      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -403,18 +723,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 43
       },
       "id": 6,
       "panels": [],
       "title": "Process",
-      "type": "row",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -422,6 +742,7 @@
           },
           "decimals": 0,
           "displayName": "occupied",
+          "mappings": [],
           "min": 0,
           "noValue": "0",
           "thresholds": {
@@ -429,7 +750,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -477,7 +798,7 @@
         "h": 4,
         "w": 5,
         "x": 0,
-        "y": 20
+        "y": 44
       },
       "id": 7,
       "options": {
@@ -497,16 +818,17 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"}(group by(uuid) (process_gpu_memory_MiB))",
+          "expr": "count(group by(uuid) (process_gpu_memory_MiB))",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -520,12 +842,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"}(gpu_memory_total_MiB)",
+          "expr": "count(gpu_memory_total_MiB)",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -538,13 +860,14 @@
         }
       ],
       "title": "Number of GPUs",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -552,6 +875,7 @@
           },
           "decimals": 0,
           "fieldMinMax": false,
+          "mappings": [],
           "min": 0,
           "noValue": "No Running Processes",
           "thresholds": {
@@ -559,7 +883,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -576,13 +900,14 @@
             ]
           },
           "unit": "none"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 19,
         "x": 5,
-        "y": 20
+        "y": 44
       },
       "id": 8,
       "options": {
@@ -602,39 +927,42 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"} by(hostname, index) (process_gpu_memory_MiB)",
+          "expr": "count by(hostname, index) (process_gpu_memory_MiB)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} ({{index}})",
           "range": false,
           "refId": "number of gpu processes",
           "useBackend": false
         }
       ],
       "title": "Number of Running GPU Processes",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "decimals": 0,
+          "mappings": [],
           "min": 0,
           "noValue": "No Running Processes",
           "thresholds": {
@@ -642,7 +970,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -659,13 +987,14 @@
             ]
           },
           "unit": "none"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
+        "w": 23,
         "x": 0,
-        "y": 24
+        "y": 52
       },
       "id": 9,
       "options": {
@@ -685,16 +1014,17 @@
         "textMode": "value_and_name",
         "wideLayout": true
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "count{job=\\\"nvitop-exporter\\\"} by(hostname) (count by(hostname, pid) (process_info_info))",
+          "expr": "count by(hostname) (count by(hostname, pid) (process_info_info))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -706,26 +1036,31 @@
         }
       ],
       "title": "Number of Running GPU Processes",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "custom": {
             "align": "right",
             "cellOptions": {
-              "type": "auto",
-              "wrapText": false
+              "type": "auto"
             },
             "filterable": true,
+            "footer": {
+              "reducers": []
+            },
             "inspect": false,
-            "minWidth": 50
+            "minWidth": 50,
+            "wrapText": false
           },
           "fieldMinMax": true,
+          "mappings": [],
           "min": 0,
           "noValue": "No Running Processes",
           "thresholds": {
@@ -733,7 +1068,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "yellow",
@@ -842,6 +1177,20 @@
                 "value": "left"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #gpu memory (lastNotNull)"
+            },
+            "properties": [
+              {
+                "id": "custom.footer.reducers",
+                "value": [
+                  "sum"
+                ]
+              }
+            ]
           }
         ]
       },
@@ -849,22 +1198,12 @@
         "h": 13,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 56
       },
       "id": 10,
       "options": {
         "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "enablePagination": false,
-          "fields": [
-            "Value #gpu memory (lastNotNull)"
-          ],
-          "reducer": [
-            "sum"
-          ],
-          "show": true
-        },
+        "enablePagination": false,
         "frameIndex": 0,
         "showHeader": true,
         "sortBy": [
@@ -874,16 +1213,17 @@
           }
         ]
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "process_cpu_percent_Percentage{job=\\\"nvitop-exporter\\\"}",
+          "expr": "process_cpu_percent_Percentage",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -898,12 +1238,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "process_rss_memory_MiB{job=\\\"nvitop-exporter\\\"}",
+          "expr": "process_rss_memory_MiB",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -917,12 +1257,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_memory_MiB{job=\\\"nvitop-exporter\\\"})",
+          "expr": "process_gpu_memory_MiB",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -936,12 +1276,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_sm_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "process_gpu_sm_utilization_Percentage",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -955,12 +1295,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_memory_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "process_gpu_memory_utilization_Percentage",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -974,12 +1314,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_encoder_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "process_gpu_encoder_utilization_Percentage",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -993,12 +1333,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (process_gpu_decoder_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "process_gpu_decoder_utilization_Percentage",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1012,12 +1352,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "process_running_time_Second{job=\\\"nvitop-exporter\\\"}",
+          "expr": "process_running_time_Second",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1032,12 +1372,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "process_info_info{job=\\\"nvitop-exporter\\\"}",
+          "expr": "process_info_info",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1051,12 +1391,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max(host_virtual_memory_total_MiB{job=\\\"nvitop-exporter\\\"})",
+          "expr": "host_virtual_memory_total_MiB",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1070,12 +1410,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "max by (index, devicename, gpu_info) (gpu_memory_total_MiB{job=\\\"nvitop-exporter\\\"})",
+          "expr": "gpu_memory_total_MiB",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -1190,7 +1530,11 @@
                 ],
                 "operation": "aggregate"
               },
-              "gpu_info": {
+              "hostname": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "index": {
                 "aggregations": [],
                 "operation": "groupby"
               },
@@ -1203,6 +1547,14 @@
                   "lastNotNull"
                 ],
                 "operation": "aggregate"
+              },
+              "username": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "uuid": {
+                "aggregations": [],
+                "operation": "groupby"
               }
             }
           }
@@ -1211,9 +1563,6 @@
           "id": "organize",
           "options": {
             "excludeByName": {
-              "hostname": true,
-              "index": true,
-              "username": true,
               "uuid": true
             },
             "includeByName": {},
@@ -1227,9 +1576,12 @@
               "Value #rss memory (lastNotNull)": 7,
               "Value #running time (lastNotNull)": 13,
               "command (lastNotNull)": 14,
-              "gpu_info": 0,
+              "hostname": 0,
+              "index": 3,
               "pid": 1,
-              "status (lastNotNull)": 5
+              "status (lastNotNull)": 5,
+              "username": 2,
+              "uuid": 4
             },
             "renameByName": {
               "Value #cpu percent (lastNotNull)": "%CPU",
@@ -1241,18 +1593,17 @@
               "Value #rss memory (lastNotNull)": "RSS MEMORY",
               "Value #running time (lastNotNull)": "TIME",
               "command (lastNotNull)": "COMMAND",
-              "gpu_info": "GPU",
+              "hostname": "HOSTNAME",
+              "index": "DEVICE",
               "pid": "PID",
-              "status (lastNotNull)": "STATUS"
+              "status (lastNotNull)": "STATUS",
+              "username": "USERNAME"
             }
           }
         }
       ],
-      "type": "table",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "table"
     },
     {
       "collapsed": false,
@@ -1260,18 +1611,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 69
       },
       "id": 11,
       "panels": [],
       "title": "System",
-      "type": "row",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1302,6 +1653,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1311,15 +1663,30 @@
               "mode": "off"
             }
           },
+          "mappings": [],
           "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
           "unit": "percent"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 14,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 70
       },
       "id": 12,
       "options": {
@@ -1336,37 +1703,40 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_cpu_percent_Percentage{job=\\\"nvitop-exporter\\\"})",
+          "expr": "host_cpu_percent_Percentage",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "Host CPU",
+          "legendFormat": "{{hostname}}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
       "title": "CPU Utilization",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1397,6 +1767,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1406,14 +1777,29 @@
               "mode": "off"
             }
           },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
           "unit": "percent"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 14,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 70
       },
       "id": 13,
       "options": {
@@ -1428,24 +1814,26 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_load_average_1m_Percentage{job=\\\"nvitop-exporter\\\"}",
+          "expr": "host_load_average_1m_Percentage",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " (1m)",
+          "legendFormat": "{{hostname}} (1m)",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -1453,16 +1841,16 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_load_average_5m_Percentage{job=\\\"nvitop-exporter\\\"}",
+          "expr": "host_load_average_5m_Percentage",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " (5m)",
+          "legendFormat": "{{hostname}} (5m)",
           "range": true,
           "refId": "B",
           "useBackend": false
@@ -1470,29 +1858,30 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_load_average_15m_Percentage{job=\\\"nvitop-exporter\\\"}",
+          "expr": "host_load_average_15m_Percentage",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " (15m)",
+          "legendFormat": "{{hostname}} (15m)",
           "range": true,
           "refId": "C",
           "useBackend": false
         }
       ],
       "title": "CPU Load Average",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1523,6 +1912,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1532,14 +1922,29 @@
               "mode": "off"
             }
           },
-          "unit": "bytes"
-        }
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "mbytes"
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 14,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 84
       },
       "id": 14,
       "options": {
@@ -1556,37 +1961,40 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max(host_virtual_memory_used_MiB{job=\\\"nvitop-exporter\\\"})",
+          "expr": "host_virtual_memory_used_MiB",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "",
+          "legendFormat": "{{hostname}}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Host RAM Usage",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "title": "Host Virtual Memory",
+      "transparent": true,
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1617,6 +2025,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1626,15 +2035,30 @@
               "mode": "off"
             }
           },
+          "mappings": [],
           "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
           "unit": "mbytes"
-        }
+        },
+        "overrides": []
       },
       "gridPos": {
         "h": 14,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 84
       },
       "id": 15,
       "options": {
@@ -1651,35 +2075,34 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "host_swap_memory_used_MiB{job=\\\"nvitop-exporter\\\"}",
+          "expr": "host_swap_memory_used_MiB",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "",
+          "legendFormat": "{{hostname}}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
       "title": "Host Swap Memory",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -1687,18 +2110,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 98
       },
       "id": 16,
       "panels": [],
       "title": "System I/O",
-      "type": "row",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1730,6 +2153,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1738,6 +2162,20 @@
             "thresholdsStyle": {
               "mode": "off"
             }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
           },
           "unit": "MiBs"
         },
@@ -1760,7 +2198,7 @@
         "h": 14,
         "w": 12,
         "x": 0,
-        "y": 71
+        "y": 99
       },
       "id": 17,
       "options": {
@@ -1777,25 +2215,27 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_net_io_rx_data_MiB[$__rate_interval]))",
+          "expr": "sum by(hostname) (rate(host_net_io_rx_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " RX",
+          "legendFormat": "{{hostname}} RX",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -1803,29 +2243,30 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_net_io_tx_data_MiB[$__rate_interval]))",
+          "expr": "sum by(hostname) (rate(host_net_io_tx_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " TX",
+          "legendFormat": "{{hostname}} TX",
           "range": true,
           "refId": "B",
           "useBackend": false
         }
       ],
       "title": "Host Network I/O",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1857,6 +2298,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1865,6 +2307,20 @@
             "thresholdsStyle": {
               "mode": "off"
             }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
           },
           "unit": "MiBs"
         },
@@ -1887,7 +2343,7 @@
         "h": 14,
         "w": 12,
         "x": 12,
-        "y": 71
+        "y": 99
       },
       "id": 18,
       "options": {
@@ -1904,25 +2360,27 @@
           "sortDesc": false
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_disk_io_read_data_MiB[$__rate_interval]))",
+          "expr": "sum by(hostname) (rate(host_disk_io_read_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " Read",
+          "legendFormat": "{{hostname}} Read",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -1930,27 +2388,24 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum{job=\\\"nvitop-exporter\\\"} by(hostname) (rate(host_disk_io_write_data_MiB[$__rate_interval]))",
+          "expr": "sum by(hostname) (rate(host_disk_io_write_data_MiB[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " Write",
+          "legendFormat": "{{hostname}} Write",
           "range": true,
           "refId": "B",
           "useBackend": false
         }
       ],
       "title": "Host Disk I/O",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "transparent": true,
+      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -1958,25 +2413,25 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 113
       },
       "id": 19,
       "panels": [],
       "title": "Device",
-      "type": "row",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
-            "axisBorderShow": false,
+            "axisBorderShow": true,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -1985,20 +2440,24 @@
             "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 1,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -2008,734 +2467,154 @@
               "mode": "off"
             }
           },
-          "max": 100,
-          "min": 0,
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 0,
-        "y": 86
-      },
-      "id": 20,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
+          "fieldMinMax": true,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
         },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_utilization_Percentage{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU Utilization",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1024,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*gpu_temperature_C.*/"
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "displayName",
+                "value": "Temperature"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "min"
+              },
+              {
+                "id": "max"
+              }
+            ]
           },
-          "min": 0,
-          "unit": "mbytes"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 86
-      },
-      "id": 21,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_memory_used_MiB{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU Memory",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*gpu_utilization_Percentage.*/"
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "displayName",
+                "value": "Utilization"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
           },
-          "min": 0,
-          "unit": "MiBs"
-        }
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*gpu_memory_percent_Percentage.*/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "displayName",
+                "value": "Memory (VRAM)"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 0,
-        "y": 100
-      },
-      "id": 22,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_pcie_rx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU PCIe RX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 100
-      },
-      "id": 23,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_pcie_tx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU PCIe TX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
+        "h": 10,
+        "w": 24,
         "x": 0,
         "y": 114
       },
-      "id": 24,
+      "id": 28,
       "options": {
+        "layoutMode": "grid",
         "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
+          "calcs": [],
+          "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
+          "showLegend": true
         },
         "tooltip": {
-          "maxHeight": 600,
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.3.0",
+      "repeat": "gpu",
+      "repeatDirection": "v",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "nvitop-prometheus"
+            "uid": "bfmz2d8egix34a",
+            "variable": true
           },
-          "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_nvlink_total_rx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
+          "expr": "{__name__=~\"gpu_utilization_Percentage|gpu_memory_percent_Percentage|gpu_temperature_C\", gpu_info=\"${gpu:raw}\"}",
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{__name__}} - {{gpu_info}}",
           "range": true,
-          "refId": "A",
-          "useBackend": false
+          "refId": "A"
         }
       ],
-      "title": "GPU NVLink RX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "axisSoftMax": 1,
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "min": 0,
-          "unit": "MiBs"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 114
-      },
-      "id": 25,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_nvlink_total_tx_throughput_MiBps{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU NVLink TX Throughput",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "unit": "watt"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 0,
-        "y": 128
-      },
-      "id": 26,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_power_usage_W{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU Power Usage",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "unit": "celsius"
-        }
-      },
-      "gridPos": {
-        "h": 14,
-        "w": 12,
-        "x": 12,
-        "y": 128
-      },
-      "id": 27,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "mean",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
-          "sortBy": "Name",
-          "sortDesc": false
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "nvitop-prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "max by (index, devicename, gpu_info) (gpu_temperature_C{job=\\\"nvitop-exporter\\\"})",
-          "fullMetaSearch": false,
-          "hide": false,
-          "includeNullMetadata": true,
-          "instant": false,
-          "legendFormat": "{{gpu_info}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "GPU Temperature",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "nvitop-prometheus"
-      }
+      "title": "NVIDIA RTX $gpu",
+      "transparent": true,
+      "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "5s",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [
     "nvitop",
     "nvitop-exporter",
@@ -2746,16 +2625,44 @@
     "gpu monitoring"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": [
+            "3050 (2)",
+            "3060 (0)",
+            "3060 (1)"
+          ],
+          "value": [
+            "3050 (2)",
+            "3060 (0)",
+            "3060 (1)"
+          ]
+        },
+        "definition": "label_values(gpu_utilization_Percentage, gpu_info)",
+        "includeAll": true,
+        "multi": true,
+        "name": "gpu",
+        "options": [],
+        "query": {
+          "qryType": 4,
+          "query": "label_values(gpu_utilization_Percentage, gpu_info)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "nvitop-dashboard",
   "uid": "bdl3vqwxprhtsa",
-  "version": 1,
+  "version": 51,
   "weekStart": ""
 }

@@ -15,16 +15,20 @@
       }
     ]
   },
-  "description": "HAOS System Telemetry (InfluxDB/Flux)",
+  "description": "Grafana Dashboard built by `nvitop-exporter`.",
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 4,
   "links": [],
   "liveNow": true,
   "panels": [
     {
       "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -34,13 +38,13 @@
       "id": 1,
       "panels": [],
       "title": "Overview",
-      "type": "row",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -53,8 +57,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -67,7 +70,36 @@
             ]
           },
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 9,
@@ -94,30 +126,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "host_cpu_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "CPU",
+          "legendFormat": "{{hostname}} CPU",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_user\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "CPU Utilization",
-      "type": "gauge",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "gauge"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -130,8 +162,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -144,7 +175,36 @@
             ]
           },
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 18,
@@ -171,30 +231,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "gpu_utilization_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"utilization_gpu\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Utilization",
-      "type": "gauge",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "gauge"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -207,8 +267,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -221,7 +280,36 @@
             ]
           },
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 18,
@@ -248,30 +336,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "gpu_memory_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"utilization_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Memory",
-      "type": "gauge",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "gauge"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -284,8 +372,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -298,7 +385,36 @@
             ]
           },
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 9,
@@ -325,31 +441,31 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "host_virtual_memory_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "MEM",
+          "legendFormat": "{{hostname}} MEM",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"used_percent\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "Host Virtual Memory",
-      "type": "gauge",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "gauge"
     },
     {
       "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -359,13 +475,13 @@
       "id": 6,
       "panels": [],
       "title": "Process",
-      "type": "row",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -379,8 +495,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -421,6 +536,33 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -451,12 +593,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "count(group by(uuid) (process_gpu_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"}))",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -465,17 +608,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "number of occupied gpus",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "count(gpu_memory_total_MiB{hostname=~\"$hostname\"})",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -484,18 +627,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "number of gpus",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"memory_total\") |> group(columns: [\"uuid\"]) |> last() |> group() |> count()"
+          "useBackend": false
         }
       ],
       "title": "Number of GPUs",
-      "type": "stat",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -509,8 +651,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -527,7 +668,36 @@
             ]
           },
           "unit": "none"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -556,30 +726,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "count by(hostname, index) (process_gpu_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"})",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": false,
           "refId": "number of gpu processes",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "Number of Running GPU Processes",
-      "type": "stat",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -592,8 +762,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -610,7 +779,36 @@
             ]
           },
           "unit": "none"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 4,
@@ -639,12 +837,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "count by(hostname) (count by(hostname, pid) (process_info_info{hostname=~\"$hostname\", username=~\"$username\"}))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -652,18 +851,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "number of gpu processes",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "Number of Running GPU Processes",
-      "type": "stat",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -683,8 +881,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -793,6 +990,33 @@
                 "value": "left"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -828,12 +1052,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "process_cpu_percent_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -843,17 +1068,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "cpu percent",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "process_rss_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -862,17 +1087,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "rss memory",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "process_gpu_memory_MiB{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -881,17 +1106,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "gpu memory",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "process_gpu_sm_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -900,17 +1125,94 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "gpu sm utilization",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "process_gpu_memory_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
+          "format": "table",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "gpu memory bandwidth utilization",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "process_gpu_encoder_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
+          "format": "table",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "gpu encoder utilization",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "process_gpu_decoder_utilization_Percentage{hostname=~\"$hostname\", username=~\"$username\"}",
+          "format": "table",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "gpu decoder utilization",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "process_running_time_Second{hostname=~\"$hostname\", username=~\"$username\"}",
+          "format": "table",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "interval": "",
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "running time",
+          "useBackend": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "process_info_info{hostname=~\"$hostname\", username=~\"$username\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -919,17 +1221,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "command",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi_process\") |> filter(fn: (r) => r[\"_field\"] == \"used_memory\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "host_virtual_memory_total_MiB{hostname=~\"$hostname\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -938,17 +1240,17 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "host memory total",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"total\") |> map(fn: (r) => ({r with _value: r._value / 1024 / 1024})) |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
+          "expr": "gpu_memory_total_MiB{hostname!~\"$hostname\"}",
           "format": "table",
           "fullMetaSearch": false,
           "hide": false,
@@ -957,8 +1259,7 @@
           "legendFormat": "__auto",
           "range": false,
           "refId": "gpu memory total",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"memory_total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Processes",
@@ -1064,7 +1365,11 @@
                 ],
                 "operation": "aggregate"
               },
-              "gpu_info": {
+              "hostname": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "index": {
                 "aggregations": [],
                 "operation": "groupby"
               },
@@ -1077,6 +1382,14 @@
                   "lastNotNull"
                 ],
                 "operation": "aggregate"
+              },
+              "username": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "uuid": {
+                "aggregations": [],
+                "operation": "groupby"
               }
             }
           }
@@ -1085,9 +1398,6 @@
           "id": "organize",
           "options": {
             "excludeByName": {
-              "hostname": true,
-              "index": true,
-              "username": true,
               "uuid": true
             },
             "includeByName": {},
@@ -1101,9 +1411,12 @@
               "Value #rss memory (lastNotNull)": 7,
               "Value #running time (lastNotNull)": 13,
               "command (lastNotNull)": 14,
-              "gpu_info": 0,
+              "hostname": 0,
+              "index": 3,
               "pid": 1,
-              "status (lastNotNull)": 5
+              "status (lastNotNull)": 5,
+              "username": 2,
+              "uuid": 4
             },
             "renameByName": {
               "Value #cpu percent (lastNotNull)": "%CPU",
@@ -1115,21 +1428,23 @@
               "Value #rss memory (lastNotNull)": "RSS MEMORY",
               "Value #running time (lastNotNull)": "TIME",
               "command (lastNotNull)": "COMMAND",
-              "gpu_info": "GPU",
+              "hostname": "HOSTNAME",
+              "index": "DEVICE",
               "pid": "PID",
-              "status (lastNotNull)": "STATUS"
+              "status (lastNotNull)": "STATUS",
+              "username": "USERNAME"
             }
           }
         }
       ],
-      "type": "table",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "table"
     },
     {
       "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1139,13 +1454,13 @@
       "id": 11,
       "panels": [],
       "title": "System",
-      "type": "row",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1187,7 +1502,36 @@
           },
           "min": 0,
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -1218,29 +1562,29 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "host_cpu_percent_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "",
+          "legendFormat": "{{hostname}}",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_user\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "CPU Utilization",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1281,7 +1625,36 @@
             }
           },
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -1310,63 +1683,63 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "host_load_average_1m_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " (1m)",
+          "legendFormat": "{{hostname}} (1m)",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_system\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "host_load_average_5m_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " (5m)",
+          "legendFormat": "{{hostname}} (5m)",
           "range": true,
           "refId": "B",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_system\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "host_load_average_15m_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " (15m)",
+          "legendFormat": "{{hostname}} (15m)",
           "range": true,
           "refId": "C",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"cpu\") |> filter(fn: (r) => r[\"_field\"] == \"usage_system\") |> filter(fn: (r) => r[\"cpu\"] == \"cpu-total\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "CPU Load Average",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1407,7 +1780,36 @@
             }
           },
           "unit": "mbytes"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -1438,29 +1840,29 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "host_virtual_memory_used_MiB{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "",
+          "legendFormat": "{{hostname}}",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"used\") |> map(fn: (r) => ({r with _value: r._value / 1024 / 1024})) |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "Host Virtual Memory",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1502,7 +1904,36 @@
           },
           "min": 0,
           "unit": "mbytes"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -1533,30 +1964,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "host_swap_memory_used_MiB{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "",
+          "legendFormat": "{{hostname}}",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"mem\") |> filter(fn: (r) => r[\"_field\"] == \"swap_total\" or r[\"_field\"] == \"swap_free\") |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\") |> map(fn: (r) => ({r with _value: (r.swap_total - r.swap_free) / 1024 / 1024})) |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "Host Swap Memory",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
       "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1566,13 +1997,13 @@
       "id": 16,
       "panels": [],
       "title": "System I/O",
-      "type": "row",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1627,6 +2058,33 @@
                 "value": "negative-Y"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1659,47 +2117,47 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "sum by(hostname) (rate(host_net_io_rx_data_MiB{hostname=~\"$hostname\"}[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " RX",
+          "legendFormat": "{{hostname}} RX",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"net\") |> filter(fn: (r) => r[\"_field\"] == \"bytes_recv\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "sum by(hostname) (rate(host_net_io_tx_data_MiB{hostname=~\"$hostname\"}[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " TX",
+          "legendFormat": "{{hostname}} TX",
           "range": true,
           "refId": "B",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"net\") |> filter(fn: (r) => r[\"_field\"] == \"bytes_sent\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
+          "useBackend": false
         }
       ],
       "title": "Host Network I/O",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1754,6 +2212,33 @@
                 "value": "negative-Y"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1786,48 +2271,48 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "sum by(hostname) (rate(host_disk_io_read_data_MiB{hostname=~\"$hostname\"}[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " Read",
+          "legendFormat": "{{hostname}} Read",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"diskio\") |> filter(fn: (r) => r[\"_field\"] == \"read_bytes\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
+          "useBackend": false
         },
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "sum by(hostname) (rate(host_disk_io_write_data_MiB{hostname=~\"$hostname\"}[$__rate_interval]))",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": " Write",
+          "legendFormat": "{{hostname}} Write",
           "range": true,
           "refId": "B",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"diskio\") |> filter(fn: (r) => r[\"_field\"] == \"write_bytes\") |> derivative(unit: 1s, nonNegative: true) |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> yield(name: \"mean\")"
+          "useBackend": false
         }
       ],
       "title": "Host Disk I/O",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
       "collapsed": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1837,13 +2322,13 @@
       "id": 19,
       "panels": [],
       "title": "Device",
-      "type": "row",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "row"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1885,7 +2370,36 @@
           "max": 100,
           "min": 0,
           "unit": "percent"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -1916,30 +2430,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "gpu_utilization_Percentage{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"utilization_gpu\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Utilization",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1981,7 +2495,36 @@
           },
           "min": 0,
           "unit": "mbytes"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -2012,30 +2555,530 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "gpu_memory_used_MiB{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"memory_used\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Memory",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "unit": "MiBs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 100
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_pcie_rx_throughput_MiBps{hostname=~\"$hostname\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU PCIe RX Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "unit": "MiBs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 100
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_pcie_tx_throughput_MiBps{hostname=~\"$hostname\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU PCIe TX Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "unit": "MiBs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 114
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_nvlink_total_rx_throughput_MiBps{hostname=~\"$hostname\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU NVLink RX Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "unit": "MiBs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 114
+      },
+      "id": 25,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Name",
+          "sortDesc": false
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "gpu_nvlink_total_tx_throughput_MiBps{hostname=~\"$hostname\"}",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "GPU NVLink TX Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2075,7 +3118,36 @@
             }
           },
           "unit": "watt"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -2083,7 +3155,7 @@
         "x": 0,
         "y": 128
       },
-      "id": 22,
+      "id": 26,
       "options": {
         "legend": {
           "calcs": [
@@ -2106,30 +3178,30 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "gpu_power_usage_W{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"power_draw\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Power Usage",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "bfmz2d8egix34a"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2169,7 +3241,36 @@
             }
           },
           "unit": "celsius"
-        }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "Gigabyte RTX 3060 (Slot 0)"
+                      },
+                      "1": {
+                        "text": "EVGA RTX 3060 (Slot 1)"
+                      },
+                      "2": {
+                        "text": "ASUS RTX 3050"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 14,
@@ -2177,7 +3278,7 @@
         "x": 12,
         "y": 128
       },
-      "id": 23,
+      "id": 27,
       "options": {
         "legend": {
           "calcs": [
@@ -2200,32 +3301,28 @@
       "targets": [
         {
           "datasource": {
-            "type": "influxdb",
-            "uid": "InfluxDB"
+            "type": "prometheus",
+            "uid": "bfmz2d8egix34a"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
+          "expr": "gpu_temperature_C{hostname=~\"$hostname\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{gpu_info}}",
+          "legendFormat": "{{devicename}} [Slot {{index}}]",
           "range": true,
           "refId": "A",
-          "useBackend": false,
-          "query": "from(bucket: \"telemetry\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r[\"_measurement\"] == \"nvidia_smi\") |> filter(fn: (r) => r[\"_field\"] == \"temperature_gpu\") |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false) |> yield(name: \"last\")"
+          "useBackend": false
         }
       ],
       "title": "GPU Temperature",
-      "type": "timeseries",
-      "datasource": {
-        "type": "influxdb",
-        "uid": "InfluxDB"
-      }
+      "type": "timeseries"
     }
   ],
   "refresh": "5s",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "tags": [
     "nvitop",
     "nvitop-exporter",
@@ -2244,8 +3341,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "System Telemetry (InfluxDB)",
-  "uid": "telemetry-system-dashboard",
-  "version": 1,
+  "title": "System Telemetry - Enhanced (Nvitop)",
+  "uid": "telemetry-enhanced",
+  "version": 3,
   "weekStart": ""
 }
