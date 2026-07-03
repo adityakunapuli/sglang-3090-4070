@@ -1,7 +1,7 @@
 services:
   immich-server:
     container_name: immich_server
-    image: ghcr.io/immich-app/immich-server:release
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     volumes:
       # THE DESTINATION: Immich will manage this folder.
       # It will create "library", "thumbs", "encoded-video", etc. here.
@@ -15,7 +15,7 @@ services:
       - DB_DATABASE_NAME=immich
       # Redis Connection
       - REDIS_HOSTNAME=immich_redis
-      - NVIDIA_VISIBLE_DEVICES=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+      - NVIDIA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
       - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
     ports:
       - "2283:2283"
@@ -28,13 +28,12 @@ services:
       - "homepage.name=Immich"
       - "homepage.icon=immich.png"
       - "homepage.href=http://192.168.254.111:2283"
-      - "homepage.description=AI Photo Management"
-      - "homepage.widget.type=immich"
-      - "homepage.widget.url=http://192.168.254.111:2283"
       - "homepage.target=_self"
-      - "homepage.widget.key={{HOMEPAGE_VAR_IMMICH_API_KEY}}"
-      - "homepage.widget.version=2"
-      - "homepage.widget.showStats=true"
+    #      - "homepage.widget.type=immich"
+    #      - "homepage.widget.url=http://192.168.254.111:2283"
+    #      - "homepage.widget.key={{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+    #      - "homepage.widget.version=2"
+    #      - "homepage.widget.showStats=true"
     depends_on:
       - immich_redis
       - immich_postgres
@@ -47,15 +46,16 @@ services:
           devices:
             - driver: nvidia
               device_ids:
-                - GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+                - ${GPU_3050:?GPU_3050_UUID_NOT_SET}
               capabilities:
                 - gpu
                 - video
                 - utility
+
   immich-machine-learning:
     container_name: immich_machine_learning
     # CUDA tag for your Quadro P620
-    image: ghcr.io/immich-app/immich-machine-learning:release-cuda
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
     labels:
       - "wud.watch.digest=true"
     environment:
@@ -64,14 +64,14 @@ services:
       # To see GPU UUID, use `nvidia-smi -L`
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-#      - MACHINE_LEARNING_MODEL_TTL=0
-#      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-B-16-SigLIP2__webli
-#      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-B-16-SigLIP2__webli
-#      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-L-16-SigLIP2-256__webli
-#      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-L-16-SigLIP2-256__webli
+      #      - MACHINE_LEARNING_MODEL_TTL=0
+      #      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-B-16-SigLIP2__webli
+      #      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-B-16-SigLIP2__webli
+      #      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-L-16-SigLIP2-256__webli
+      #      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-L-16-SigLIP2-256__webli
       # the following doesn't play with frigate
-#      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-SO400M-16-SigLIP2-384__webli
-#      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-SO400M-16-SigLIP2-384__webli
+    #      - MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL=ViT-SO400M-16-SigLIP2-384__webli
+    #      - MACHINE_LEARNING_PRELOAD__CLIP__VISUAL=ViT-SO400M-16-SigLIP2-384__webli
     volumes:
       - model-cache:/cache
     restart: always
@@ -84,7 +84,7 @@ services:
           devices:
             - driver: nvidia
               device_ids:
-                - GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+                - ${GPU_3050:?GPU_3050_UUID_NOT_SET}
               capabilities:
                 - all
 
@@ -103,7 +103,9 @@ services:
       start_period: 5s
   immich_postgres:
     container_name: immich_postgres
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+#    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    #    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
@@ -113,20 +115,20 @@ services:
       # Stores DB data in a local folder './postgres' relative to this compose file
       - ./postgres:/var/lib/postgresql/data
     restart: always
-    command:
-      - postgres
-      - -c
-      - shared_preload_libraries=vectors.so
-      - -c
-      - search_path="$$user", public, vectors
-      - -c
-      - logging_collector=on
-      - -c
-      - max_wal_size=2GB
-      - -c
-      - shared_buffers=512MB
-      - -c
-      - wal_compression=on
+#    command:
+#      - postgres
+#      - -c
+#      - shared_preload_libraries=vectors.so
+#      - -c
+#      - search_path="$$user", public, vectors
+#      - -c
+#      - logging_collector=on
+#      - -c
+#      - max_wal_size=2GB
+#      - -c
+#      - shared_buffers=512MB
+#      - -c
+#      - wal_compression=on
 volumes:
   model-cache: null
 networks:

@@ -1,0 +1,5 @@
+httpx
+PyMuPDF
+apscheduler
+fastapi
+uvicorn

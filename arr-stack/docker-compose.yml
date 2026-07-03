@@ -46,10 +46,11 @@ services:
             - "homepage.name=Deluge"
             - "homepage.icon=deluge.png"
             - "homepage.href=http://192.168.254.111:8112"
-            - "homepage.description=Downloads (VPN)"
+#            - "homepage.description=Downloads (VPN)"
             - "homepage.widget.type=deluge"
             - "homepage.widget.url=http://delugevpn:8112"
             - "homepage.widget.password=deluge"
+            - "homepage.target=_self"
 
     # --- 2. ARRRRRRRR ---
     radarr:
@@ -76,11 +77,12 @@ services:
             - "homepage.name=Radarr"
             - "homepage.icon=radarr.png"
             - "homepage.href=http://192.168.254.111:7878"
-            - "homepage.description=Movies"
+#            - "homepage.description=Movies"
             - "homepage.widget.type=radarr"
             - "homepage.widget.url=http://radarr:7878"
             - "homepage.widget.key={{HOMEPAGE_VAR_RADARR_API_KEY}}"
             - "homepage.widget.showStats=true"
+            - "homepage.target=_self"
 
     sonarr:
         image: linuxserver/sonarr:latest
@@ -106,11 +108,12 @@ services:
             - "homepage.name=Sonarr"
             - "homepage.icon=sonarr.png"
             - "homepage.href=http://192.168.254.111:8989"
-            - "homepage.description=TV Shows"
+#            - "homepage.description=TV Shows"
             - "homepage.widget.type=sonarr"
             - "homepage.widget.url=http://sonarr:8989"
             - "homepage.widget.key={{HOMEPAGE_VAR_SONARR_API_KEY}}"
             - "homepage.widget.showStats=true"
+            - "homepage.target=_self"
 
     prowlarr:
         image: ghcr.io/linuxserver/prowlarr:latest
@@ -135,7 +138,7 @@ services:
             - "homepage.name=Prowlarr"
             - "homepage.icon=prowlarr.png"
             - "homepage.href=http://192.168.254.111:9696"
-            - "homepage.description=Indexer Manager"
+#            - "homepage.description=Indexer Manager"
             - "homepage.widget.type=prowlarr"
             - "homepage.widget.url=http://192.168.254.111:9696"
             - "homepage.target=_self"

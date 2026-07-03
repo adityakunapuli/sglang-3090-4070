@@ -24,7 +24,7 @@ services:
         - "homepage.name=Gateway"
         - "homepage.icon=mdi-web"
         - "homepage.href=http://192.168.254.111:4001"
-        - "homepage.description=LLM Request Gateway & Telemetry"
+#        - "homepage.description=LLM Request Gateway & Telemetry"
         - "homepage.target=_self"
 
 networks:

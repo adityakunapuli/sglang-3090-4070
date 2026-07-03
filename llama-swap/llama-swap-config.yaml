@@ -6,6 +6,7 @@ models:
     cmd: >
       /usr/local/bin/llama-server
       --log-colors auto
+      --no-mmap
       --model /mnt/data/models/llm/Qwen3.6/27B-MTB/Qwen3.6-27B-Q4_K_S.gguf
       --mmproj /mnt/data/models/llm/Qwen3.6/27B-MTB/mmproj-BF16.gguf
       --alias Qwen3.6-27B
@@ -108,6 +109,7 @@ models:
     cmd: >
       /usr/local/bin/llama-server
       --log-colors auto
+      --no-mmap
       --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
       --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
       --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf

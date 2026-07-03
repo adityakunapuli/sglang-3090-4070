@@ -49,10 +49,11 @@ services:
       - "homepage.name=Frigate"
       - "homepage.icon=frigate.png"
       - "homepage.href=http://192.168.254.111:5000"
-      - "homepage.description=NVR & Object Detection"
-      - "homepage.widget.type=frigate"
-      - "homepage.widget.url=http://frigate:5000"
-      - 'homepage.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
+      - "homepage.target=_self"
+#      - "homepage.description=NVR & Object Detection"
+#      - "homepage.widget.type=frigate"
+#      - "homepage.widget.url=http://frigate:5000"
+#      - 'homepage.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
 
 
 networks:

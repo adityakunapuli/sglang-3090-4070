@@ -149,6 +149,21 @@ class UpstreamClient:
             f"after 5 attempts."
         )
 
+    async def get_all_models_full(self) -> list[dict[str, Any]]:
+        """Fetch full model objects from the upstream backend /v1/models.
+
+        Returns the raw response data including ``max_model_len``,
+        ``context_length``, and other fields the backend provides.
+        Falls back to an empty list if the upstream is unreachable.
+        """
+        try:
+            resp = await self._client.get(f"{self._backend_root}/v1/models")
+            if resp.status_code == 200:
+                return resp.json().get("data", [])
+        except httpx.HTTPError:
+            pass
+        return []
+
     async def get_active_model(self) -> str | None:
         """Query upstream for the currently active (ready) model.
 

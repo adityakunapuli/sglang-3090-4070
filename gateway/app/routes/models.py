@@ -20,8 +20,8 @@ async def list_models(request: Request):
 
     Gateway-configured aliases include their ``max_model_len`` /
     ``context_length`` (capped to the active upstream model's context
-    window). Additional upstream model IDs that aren't aliased in the
-    gateway config are appended as passthrough entries with no overrides.
+    window). Upstream models not aliased in the gateway config are
+    forwarded verbatim — the backend already knows its own context sizes.
     """
     config = request.app.state.config
     upstream = request.app.state.upstream
@@ -48,22 +48,18 @@ async def list_models(request: Request):
             "context_length": ctx,
         })
 
-    # 2. Upstream passthrough models (not already aliased in gateway config)
-    try:
-        upstream_ids = await upstream.get_all_models()
-        configured_ids = set(models.keys())
-        for model_id in upstream_ids:
-            if model_id not in configured_ids:
-                ctx = upstream_ctx or 8192
-                data.append({
-                    "id": model_id,
-                    "object": "model",
-                    "created": 1686935002,
-                    "owned_by": "upstream",
-                    "max_model_len": ctx,
-                    "context_length": ctx,
-                })
-    except Exception:
-        pass  # Upstream unreachable — still return gateway-only list
+    # 2. Upstream passthrough models — forward as-is from the backend,
+    #    enriched with the upstream context length (llama-swap doesn't
+    #    include max_model_len/context_length in /v1/models, so we inject
+    #    the value resolved from /running or /props).
+    configured_ids = set(models.keys())
+    upstream_models = await upstream.get_all_models_full()
+    for model in upstream_models:
+        model_id = model.get("id")
+        if model_id and model_id not in configured_ids:
+            if upstream_ctx is not None:
+                model["max_model_len"] = upstream_ctx
+                model["context_length"] = upstream_ctx
+            data.append(model)
 
     return {"object": "list", "data": data}

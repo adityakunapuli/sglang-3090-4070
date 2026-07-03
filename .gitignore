@@ -8,7 +8,9 @@ blocky/
 hermes/
 traefik/
 homepage/public/
-
+docker/audiobookshelf/libation_config/
+audiobookshelf/libation_config/AccountsSettings.json
+audiobookshelf/libation_config/Settings.json
 
 # Global generic ignores (Data, Logs, Caches, Backups, Sensitive)
 **/.lib/

@@ -7,7 +7,7 @@ services:
       - "3030:8080"
     environment:
       - OPENAI_API_BASE_URL=${GATEWAY_URL}
-      - OPENAI_API_KEY=sk-password
+      - OPENAI_API_KEY=openwebui
       - WEBUI_AUTH=False
       - ENABLE_PERSISTENT_CONFIG=False
       - RESET_CONFIG_ON_START=True
@@ -20,8 +20,9 @@ services:
         - "homepage.group=AI"
         - "homepage.name=Open WebUI"
         - "homepage.icon=/icons/openwebui.png"
-        - "homepage.description=LLM Web Interface"
+#        - "homepage.description=LLM Web Interface"
         - "homepage.href=http://192.168.254.111:3030"
+        - "homepage.target=_self"
 
 networks:
   proxy:

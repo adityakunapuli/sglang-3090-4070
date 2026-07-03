@@ -34,8 +34,8 @@ class ModelOverride:
     frequency_penalty: float | None = None
     presence_penalty: float | None = None
     max_tokens: int | None = None
-    max_model_len: int = 8192
-    context_length: int = 8192
+    max_model_len: int = 0
+    context_length: int = 0
     extra_body: dict[str, Any] = field(default_factory=dict)
 
 
@@ -116,8 +116,8 @@ def _parse_models(raw: dict[str, Any] | None) -> dict[str, ModelOverride]:
             frequency_penalty=cfg.get("frequency_penalty"),
             presence_penalty=cfg.get("presence_penalty"),
             max_tokens=cfg.get("max_tokens"),
-            max_model_len=int(cfg.get("max_model_len", 8192)),
-            context_length=int(cfg.get("context_length", 8192)),
+            max_model_len=int(cfg.get("max_model_len", 0)),
+            context_length=int(cfg.get("context_length", 0)),
             extra_body=cfg.get("extra_body", {}),
         )
     return models

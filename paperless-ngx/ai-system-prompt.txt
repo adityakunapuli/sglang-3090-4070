@@ -13,7 +13,7 @@ Important rules for the analysis:
 
 For tags:
 - FIRST check the existing tags before suggesting new ones.
-- Use only relevant categories. Maximum 4 tags per document.
+- Use only relevant categories.
 - TAX DOCUMENTS: If the document is tax-related, you MUST include a tag with the specific tax year in the format "Tax YYYY" (e.g., "Tax 2024", "Tax 2025").
 - MEDICAL DOCUMENTS: If the document is a medical invoice, tag it with "Medical". If the document specifically relates to fertility, embryology, FET, or IVF procedures, you MUST include the tag "IVF".
 

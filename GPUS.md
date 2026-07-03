@@ -97,8 +97,7 @@ theoretical maximum PCIe slot capabilities, and its peak historical bandwidth us
 
 ### Motherboard PCIe Slot Configuration & Maximum Capabilities
 
-* **Slot 1 (PCIE2)**: PCIe 5.0 x16 (physical). Runs at **PCIe 4.0 x16** speeds when populated with an RTX 3060.
-    * *Theoretical Bandwidth Limit:* **~31.50 GB/s** (29.3 GiB/s)
+* **Slot 1 (PCIE2)**: PCIe 5.0 x16 (physical capability of **~63.0 GB/s**). Runs at **PCIe 4.0 x16** speeds (**~31.50 GB/s**) when populated with an RTX 3000-series card.
 * **Slot 3 (PCIE3)**: PCIe 4.0 x16 (physical). Runs at **PCIe 4.0 x4** speeds.
     * *Theoretical Bandwidth Limit:* **~7.87 GB/s** (7.3 GiB/s)
 * **Slot 5 (PCIE5)**: PCIe 3.0 x16 (physical). Runs at **PCIe 3.0 x4** speeds.
@@ -106,8 +105,32 @@ theoretical maximum PCIe slot capabilities, and its peak historical bandwidth us
 
 ### GPU Bandwidth Usage (Last 30 Days Peak)
 
-| GPU                           | Physical Location  | PCIe Link Speed | Slot Max Limit | Historical Peak RX            | Historical Peak TX            |
-|:------------------------------|:-------------------|:----------------|:---------------|:------------------------------|:------------------------------|
-| **RTX 3060 (0)**<br>*(Long)*  | **Slot 1** (PCIE2) | PCIe 4.0 x16    | 31.50 GB/s     | **9.20 GB/s** *(8,778 MiB/s)* | **5.69 GB/s** *(5,423 MiB/s)* |
-| **RTX 3060 (1)**<br>*(Short)* | **Slot 3** (PCIE3) | PCIe 4.0 x4     | 7.87 GB/s      | **6.77 GB/s** *(6,455 MiB/s)* | **5.04 GB/s** *(4,805 MiB/s)* |
-| **RTX 3050 (2)**              | **Slot 5** (PCIE5) | PCIe 3.0 x4     | 3.94 GB/s      | **2.76 GB/s** *(2,630 MiB/s)* | **1.56 GB/s** *(1,485 MiB/s)* |
+| GPU                           | Physical Location  | PCIe Link Speed | Slot Max Limit | Historical Peak RX            | Historical Peak TX            | Historical Peak Total          |
+|:------------------------------|:-------------------|:----------------|:---------------|:------------------------------|:------------------------------|:-------------------------------|
+| **RTX 3060 (0)**<br>*(Long)*  | **Slot 1** (PCIE2) | PCIe 5.0 x16 (runs at 4.0 x16) | 31.50 GB/s (Slot max is ~63.0 GB/s) | **9.20 GB/s** *(8,778 MiB/s)* | **5.69 GB/s** *(5,423 MiB/s)* | **14.89 GB/s** *(14,201 MiB/s)* |
+| **RTX 3060 (1)**<br>*(Short)* | **Slot 3** (PCIE3) | PCIe 4.0 x4     | 7.87 GB/s      | **6.77 GB/s** *(6,455 MiB/s)* | **5.04 GB/s** *(4,805 MiB/s)* | **11.81 GB/s** *(11,260 MiB/s)* |
+| **RTX 3050 (2)**              | **Slot 5** (PCIE5) | PCIe 3.0 x4     | 3.94 GB/s      | **2.76 GB/s** *(2,630 MiB/s)* | **1.56 GB/s** *(1,485 MiB/s)* | **4.32 GB/s** *(4,115 MiB/s)*   |
+
+## Active References in Configuration Files
+
+Below is a list of active files and line numbers referencing these environment variables, making it easy to rename or migrate them to more generic names (e.g., `GPU_SLOT_1`, `GPU_SLOT_2`, `GPU_SLOT_3`):
+
+### 1. User Shell Profile
+* **[~/.bashrc](file:///home/maradmin/.bashrc#L10-L12)**:
+  * `GPU_3060_LONG` (maps currently to the Gigabyte card in Slot 1)
+  * `GPU_3060_SHORT` (maps currently to the EVGA card in Slot 3)
+  * `GPU_3050` (maps to the ASUS card in Slot 5)
+
+### 2. Stack Configurations
+* **[llama-cpp/docker-compose.yaml](llama-cpp/docker-compose.yaml#L36-L37)**:
+  * Uses `${GPU_3060_LONG:?GPU_3060_LONG_NOT_SET}` (Line 36)
+  * Uses `${GPU_3060_SHORT:?GPU_3060_SHORT_NOT_SET}` (Line 37)
+* **[llama-swap/docker-compose.yaml](llama-swap/docker-compose.yaml#L28-L29)**:
+  * Uses `${GPU_3060_LONG:?GPU_3060_LONG_NOT_SET}` (Line 28)
+  * Uses `${GPU_3060_SHORT:?GPU_3060_SHORT_NOT_SET}` (Line 29)
+* **[immich/docker-compose.yaml](immich/docker-compose.yaml#L18)**:
+  * Uses `${GPU_3050:?GPU_3050_UUID_NOT_SET}` (Lines 18, 49, 87)
+* **[jellyfin/docker-compose.yml](jellyfin/docker-compose.yml#L10)**:
+  * Uses `${GPU_3050:?GPU_3050_UUID_NOT_SET}` (Lines 10, 34)
+* **[frigate/docker-compose.yml](frigate/docker-compose.yml#L13)**:
+  * Uses `${GPU_3050:?GPU_3050_UUID_NOT_SET}` (Lines 13, 15, and commented out Line 41)

@@ -30,7 +30,7 @@ services:
       - "homepage.name=Scrutiny"
       - "homepage.icon=scrutiny.png"
       - "homepage.href=http://192.168.254.111:8080"
-      - "homepage.description=Drive Health Monitoring"
+#      - "homepage.description=Drive Health Monitoring"
       - "homepage.widget.type=scrutiny"
       - "homepage.widget.url=http://192.168.254.111:8080"
       - "homepage.target=_self"

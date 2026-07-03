@@ -13,7 +13,7 @@ services:
         - "homepage.name=Plex"
         - "homepage.icon=plex.png"
         - "homepage.href=http://192.168.254.111:32400/web"
-        - "homepage.description=Media Server"
+#        - "homepage.description=Media Server"
         - "homepage.widget.type=plex"
         - "homepage.widget.url=http://192.168.254.111:32400"
         - "homepage.target=_self"

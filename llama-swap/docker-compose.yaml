@@ -25,8 +25,8 @@ services:
             - driver: nvidia
               device_ids: [
 #                '0','1','2'
-                'GPU-88a93309-9467-dab9-9491-30f298a784f1', # RTX 3060 12GB
-                'GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59'  # RTX 3060 12GB
+                '${GPU_3060_LONG:?GPU_3060_LONG_NOT_SET}',
+                '${GPU_3060_SHORT:?GPU_3060_SHORT_NOT_SET}'
               ]
               capabilities: [ gpu ]
     networks:
@@ -37,7 +37,8 @@ services:
         - "homepage.name=Llama Swap"
         - "homepage.icon=/icons/llama.png"
         - "homepage.href=http://192.168.254.111:8082"
-        - "homepage.description=LLM Hot-Swapper & UI"
+        - "homepage.target=_self"
+#        - "homepage.description=LLM Hot-Swapper & UI"
 
 volumes:
   litellm_db_data:

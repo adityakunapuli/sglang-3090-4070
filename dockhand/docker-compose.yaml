@@ -9,6 +9,16 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./dockhand_data:/app/data
       - /mnt/data/docker:/mnt/data/docker
+      - /home/maradmin/.ssh:/.ssh:ro
+
+    labels:
+      - "wud.watch.digest=true"
+      - "homepage.group=System"
+      - "homepage.name=Dockhand"
+      - "homepage.icon=dockhand.png"
+      - "homepage.href=http://192.168.254.111:3999"
+      - "homepage.target=_self"
+
 
 volumes:
   dockhand_data:
