@@ -69,9 +69,8 @@ To ensure a service **always** gets the correct physical hardware, we use a dual
 Instead of hardcoding these long UUIDs in every `docker-compose.yml`, export them in your `~/.bashrc`:
 
 ```bash
-export GPU_SLOT_1=GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59
+export GPU_SLOT_1=GPU-49b45ca5-302d-9e6a-0bd6-54548fb53674
 export GPU_SLOT_3=GPU-88a93309-9467-dab9-9491-30f298a784f1
-export GPU_SLOT_5=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
 ```
 
 Then, use them in your Compose files like this:
@@ -80,13 +79,13 @@ Then, use them in your Compose files like this:
 services:
   frigate:
     environment:
-      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_5}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_3}
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [ '${GPU_SLOT_5}' ]
+              device_ids: [ '${GPU_SLOT_3}' ]
               capabilities: [ gpu, compute, video, utility ]
 ```              
 
@@ -97,40 +96,36 @@ theoretical maximum PCIe slot capabilities, and its peak historical bandwidth us
 
 ### Motherboard PCIe Slot Configuration & Maximum Capabilities
 
-* **Slot 1 (PCIE2)**: PCIe 5.0 x16 (physical capability of **~63.0 GB/s**). Runs at **PCIe 4.0 x16** speeds (**~31.50 GB/s**) when populated with an RTX 3000-series card.
+* **Slot 1 (PCIE2)**: PCIe 5.0 x16 (physical capability of **~63.0 GB/s**). Runs at **PCIe 4.0 x16** speeds (**~31.50 GB/s**) when populated with a PCIe 4.0 card like the RTX 3090 Ti.
 * **Slot 3 (PCIE3)**: PCIe 4.0 x16 (physical). Runs at **PCIe 4.0 x4** speeds.
     * *Theoretical Bandwidth Limit:* **~7.87 GB/s** (7.3 GiB/s)
-* **Slot 5 (PCIE5)**: PCIe 3.0 x16 (physical). Runs at **PCIe 3.0 x4** speeds.
-    * *Theoretical Bandwidth Limit:* **~3.94 GB/s** (3.67 GiB/s)
+* **Slot 5 (PCIE5)**: PCIe 3.0 x16 (physical). Unpopulated (previously ran at PCIe 3.0 x4 speeds with RTX 3050).
 
 ### GPU Bandwidth Usage (Last 30 Days Peak)
 
 | GPU                           | Physical Location  | PCIe Link Speed | Slot Max Limit | Historical Peak RX            | Historical Peak TX            | Historical Peak Total          |
 |:------------------------------|:-------------------|:----------------|:---------------|:------------------------------|:------------------------------|:-------------------------------|
-| **RTX 3060 (0)**<br>*(Long)*  | **Slot 1** (PCIE2) | PCIe 5.0 x16 (runs at 4.0 x16) | 31.50 GB/s (Slot max is ~63.0 GB/s) | **9.20 GB/s** *(8,778 MiB/s)* | **5.69 GB/s** *(5,423 MiB/s)* | **14.89 GB/s** *(14,201 MiB/s)* |
-| **RTX 3060 (1)**<br>*(Short)* | **Slot 3** (PCIE3) | PCIe 4.0 x4     | 7.87 GB/s      | **6.77 GB/s** *(6,455 MiB/s)* | **5.04 GB/s** *(4,805 MiB/s)* | **11.81 GB/s** *(11,260 MiB/s)* |
-| **RTX 3050 (2)**              | **Slot 5** (PCIE5) | PCIe 3.0 x4     | 3.94 GB/s      | **2.76 GB/s** *(2,630 MiB/s)* | **1.56 GB/s** *(1,485 MiB/s)* | **4.32 GB/s** *(4,115 MiB/s)*   |
+| **RTX 3090 Ti (0)**           | **Slot 1** (PCIE2) | PCIe 5.0 x16 (runs at 4.0 x16) | 31.50 GB/s (Slot max is ~63.0 GB/s) | --                            | --                            | --                             |
+| **RTX 3060 (1)**              | **Slot 3** (PCIE3) | PCIe 4.0 x4     | 7.87 GB/s      | **6.77 GB/s** *(6,455 MiB/s)* | **5.04 GB/s** *(4,805 MiB/s)* | **11.81 GB/s** *(11,260 MiB/s)* |
+| **None**                      | **Slot 5** (PCIE5) | --              | --             | --                            | --                            | --                             |
 
 ## Active References in Configuration Files
 
-Below is a list of active files and line numbers referencing these environment variables, making it easy to rename or migrate them to more generic names (e.g., `GPU_SLOT_1`, `GPU_SLOT_3`, `GPU_SLOT_5`):
+Below is a list of active files and line numbers referencing these environment variables, making it easy to rename or migrate them to more generic names (e.g., `GPU_SLOT_1`, `GPU_SLOT_3`):
 
 ### 1. User Shell Profile
 * **[~/.bashrc](file:///home/maradmin/.bashrc#L10-L12)**:
-  * `GPU_SLOT_1` (maps currently to the Gigabyte card in Slot 1)
-  * `GPU_SLOT_3` (maps currently to the EVGA card in Slot 3)
-  * `GPU_SLOT_5` (maps to the ASUS card in Slot 5)
+  * `GPU_SLOT_1` (maps to the RTX 3090 Ti in Slot 1)
+  * `GPU_SLOT_3` (maps to the EVGA RTX 3060 in Slot 3)
 
 ### 2. Stack Configurations
-* **[llama-cpp/docker-compose.yaml](llama-cpp/docker-compose.yaml#L36-L37)**:
+* **[llama-cpp/docker-compose.yaml](llama-cpp/docker-compose.yaml#L36)**:
   * Uses `${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}` (Line 36)
-  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Line 37)
-* **[llama-swap/docker-compose.yaml](llama-swap/docker-compose.yaml#L28-L29)**:
+* **[llama-swap/docker-compose.yaml](llama-swap/docker-compose.yaml#L28)**:
   * Uses `${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}` (Line 28)
-  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Line 29)
 * **[immich/docker-compose.yaml](immich/docker-compose.yaml#L18)**:
-  * Uses `${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}` (Lines 18, 49, 87)
+  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Lines 18, 49, 87)
 * **[jellyfin/docker-compose.yml](jellyfin/docker-compose.yml#L10)**:
-  * Uses `${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}` (Lines 10, 34)
+  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Lines 10, 34)
 * **[frigate/docker-compose.yml](frigate/docker-compose.yml#L13)**:
-  * Uses `${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}` (Lines 13, 15, and commented out Line 41)
+  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Lines 13, 15, and commented out Line 41)

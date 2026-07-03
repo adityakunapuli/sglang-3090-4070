@@ -33,8 +33,7 @@ services:
           devices:
             - driver: nvidia
               device_ids: [
-                '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}',
-                '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'
+                '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}'
               ]
               capabilities: [ gpu ]
     networks:

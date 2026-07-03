@@ -10,9 +10,9 @@ services:
       - .env
       - ../genai.env
     environment:
-      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - CUDA_VISIBLE_DEVICES=${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}
+      - CUDA_VISIBLE_DEVICES=${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
       - FFMPEG_DISABLE_GAMMA_EQUALIZER=true
       - LIBVA_DRIVER_NAME=nvidia
       - OPENAI_BASE_URL=http://gateway:4000/v1
@@ -38,7 +38,7 @@ services:
             - driver: nvidia
               device_ids: ["all"]  # MUST expose all device ids in order for hwaccel to work
 #              device_ids: ['GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877']
-#              device_ids: ["${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}"]
+#              device_ids: ["${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}"]
               capabilities: [all]
     networks:
       - default

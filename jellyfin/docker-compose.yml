@@ -7,7 +7,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=America/Los_Angeles
-      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - /mnt/data/media_cache/jellyfin:/config
@@ -31,7 +31,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}']
+              device_ids: ['${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}']
               capabilities: [gpu, compute, video, utility]
     restart: unless-stopped
 
