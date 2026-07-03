@@ -2065,10 +2065,10 @@
               "transformations": []
             }
           },
-          "description": "Slot 0: PCIe Gen5 x16 — Max ~64 GB/s per direction (~128 GB/s bidirectional)",
+          "description": "Slot 1: PCIe Gen4 x16 (running speed) — Max ~31.5 GB/s per direction (Slot is Gen5 x16 capable)",
           "id": 22,
           "links": [],
-          "title": "GPU 0 PCIe Bandwidth — Gen5 x16",
+          "title": "GPU 0 PCIe Bandwidth — Slot 1 (PCIe 4.0 x16)",
           "transparent": true,
           "vizConfig": {
             "group": "timeseries",
@@ -2085,7 +2085,7 @@
                     "axisColorMode": "text",
                     "axisLabel": "",
                     "axisPlacement": "auto",
-                    "axisSoftMax": 64000,
+                    "axisSoftMax": 32000,
                     "barAlignment": 0,
                     "barWidthFactor": 0.6,
                     "drawStyle": "line",
@@ -2268,10 +2268,10 @@
               "transformations": []
             }
           },
-          "description": "Slot 1: PCIe Gen4 x4 — Max ~8 GB/s per direction (~16 GB/s bidirectional)",
+          "description": "Slot 3: PCIe Gen4 x4 — Max ~8 GB/s per direction (~16 GB/s bidirectional)",
           "id": 23,
           "links": [],
-          "title": "GPU 1 PCIe Bandwidth — Gen4 x4",
+          "title": "GPU 1 PCIe Bandwidth — Slot 3 (PCIe 4.0 x4)",
           "transparent": true,
           "vizConfig": {
             "group": "timeseries",
@@ -2471,10 +2471,10 @@
               "transformations": []
             }
           },
-          "description": "Slot 2: PCIe Gen3 x4 — Max ~4 GB/s per direction (~8 GB/s bidirectional)",
+          "description": "Slot 5: PCIe Gen3 x4 (Unpopulated) — Max ~4 GB/s per direction (~8 GB/s bidirectional)",
           "id": 24,
           "links": [],
-          "title": "GPU 2 PCIe Bandwidth — Gen3 x4",
+          "title": "GPU 2 PCIe Bandwidth — Slot 5 (PCIe 3.0 x4 - Empty)",
           "transparent": true,
           "vizConfig": {
             "group": "timeseries",
