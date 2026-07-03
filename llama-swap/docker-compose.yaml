@@ -25,8 +25,8 @@ services:
             - driver: nvidia
               device_ids: [
 #                '0','1','2'
-                '${GPU_3060_LONG:?GPU_3060_LONG_NOT_SET}',
-                '${GPU_3060_SHORT:?GPU_3060_SHORT_NOT_SET}'
+                '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}',
+                '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'
               ]
               capabilities: [ gpu ]
     networks:

@@ -69,9 +69,9 @@ To ensure a service **always** gets the correct physical hardware, we use a dual
 Instead of hardcoding these long UUIDs in every `docker-compose.yml`, export them in your `~/.bashrc`:
 
 ```bash
-export GPU_3060_LONG=GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59
-export GPU_3060_SHORT=GPU-88a93309-9467-dab9-9491-30f298a784f1
-export GPU_3050=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
+export GPU_SLOT_1=GPU-5a6bd876-90f0-e6cf-a89e-ed47392ceb59
+export GPU_SLOT_3=GPU-88a93309-9467-dab9-9491-30f298a784f1
+export GPU_SLOT_5=GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877
 ```
 
 Then, use them in your Compose files like this:
@@ -80,13 +80,13 @@ Then, use them in your Compose files like this:
 services:
   frigate:
     environment:
-      - NVIDIA_VISIBLE_DEVICES=${GPU_3050}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_5}
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [ '${GPU_3050}' ]
+              device_ids: [ '${GPU_SLOT_5}' ]
               capabilities: [ gpu, compute, video, utility ]
 ```              
 
@@ -113,24 +113,24 @@ theoretical maximum PCIe slot capabilities, and its peak historical bandwidth us
 
 ## Active References in Configuration Files
 
-Below is a list of active files and line numbers referencing these environment variables, making it easy to rename or migrate them to more generic names (e.g., `GPU_SLOT_1`, `GPU_SLOT_2`, `GPU_SLOT_3`):
+Below is a list of active files and line numbers referencing these environment variables, making it easy to rename or migrate them to more generic names (e.g., `GPU_SLOT_1`, `GPU_SLOT_3`, `GPU_SLOT_5`):
 
 ### 1. User Shell Profile
 * **[~/.bashrc](file:///home/maradmin/.bashrc#L10-L12)**:
-  * `GPU_3060_LONG` (maps currently to the Gigabyte card in Slot 1)
-  * `GPU_3060_SHORT` (maps currently to the EVGA card in Slot 3)
-  * `GPU_3050` (maps to the ASUS card in Slot 5)
+  * `GPU_SLOT_1` (maps currently to the Gigabyte card in Slot 1)
+  * `GPU_SLOT_3` (maps currently to the EVGA card in Slot 3)
+  * `GPU_SLOT_5` (maps to the ASUS card in Slot 5)
 
 ### 2. Stack Configurations
 * **[llama-cpp/docker-compose.yaml](llama-cpp/docker-compose.yaml#L36-L37)**:
-  * Uses `${GPU_3060_LONG:?GPU_3060_LONG_NOT_SET}` (Line 36)
-  * Uses `${GPU_3060_SHORT:?GPU_3060_SHORT_NOT_SET}` (Line 37)
+  * Uses `${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}` (Line 36)
+  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Line 37)
 * **[llama-swap/docker-compose.yaml](llama-swap/docker-compose.yaml#L28-L29)**:
-  * Uses `${GPU_3060_LONG:?GPU_3060_LONG_NOT_SET}` (Line 28)
-  * Uses `${GPU_3060_SHORT:?GPU_3060_SHORT_NOT_SET}` (Line 29)
+  * Uses `${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}` (Line 28)
+  * Uses `${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}` (Line 29)
 * **[immich/docker-compose.yaml](immich/docker-compose.yaml#L18)**:
-  * Uses `${GPU_3050:?GPU_3050_UUID_NOT_SET}` (Lines 18, 49, 87)
+  * Uses `${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}` (Lines 18, 49, 87)
 * **[jellyfin/docker-compose.yml](jellyfin/docker-compose.yml#L10)**:
-  * Uses `${GPU_3050:?GPU_3050_UUID_NOT_SET}` (Lines 10, 34)
+  * Uses `${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}` (Lines 10, 34)
 * **[frigate/docker-compose.yml](frigate/docker-compose.yml#L13)**:
-  * Uses `${GPU_3050:?GPU_3050_UUID_NOT_SET}` (Lines 13, 15, and commented out Line 41)
+  * Uses `${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}` (Lines 13, 15, and commented out Line 41)

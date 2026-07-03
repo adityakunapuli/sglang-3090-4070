@@ -15,7 +15,7 @@ services:
       - DB_DATABASE_NAME=immich
       # Redis Connection
       - REDIS_HOSTNAME=immich_redis
-      - NVIDIA_VISIBLE_DEVICES=${GPU_3050:?GPU_3050_UUID_NOT_SET}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}
       - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
     ports:
       - "2283:2283"
@@ -46,7 +46,7 @@ services:
           devices:
             - driver: nvidia
               device_ids:
-                - ${GPU_3050:?GPU_3050_UUID_NOT_SET}
+                - ${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}
               capabilities:
                 - gpu
                 - video
@@ -84,7 +84,7 @@ services:
           devices:
             - driver: nvidia
               device_ids:
-                - ${GPU_3050:?GPU_3050_UUID_NOT_SET}
+                - ${GPU_SLOT_5:?GPU_SLOT_5_NOT_SET}
               capabilities:
                 - all
 
