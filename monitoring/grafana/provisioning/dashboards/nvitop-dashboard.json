@@ -1961,12 +1961,12 @@
                   {
                     "matcher": {
                       "id": "byName",
-                      "options": "3050 (2)"
+                      "options": "3090 Ti (0)"
                     },
                     "properties": [
                       {
                         "id": "max",
-                        "value": 6144
+                        "value": 24576
                       }
                     ]
                   }
@@ -3445,13 +3445,11 @@
           "allowCustomValue": true,
           "current": {
             "text": [
-              "3050 (2)",
-              "3060 (0)",
+              "3090 Ti (0)",
               "3060 (1)"
             ],
             "value": [
-              "3050 (2)",
-              "3060 (0)",
+              "3090 Ti (0)",
               "3060 (1)"
             ]
           },

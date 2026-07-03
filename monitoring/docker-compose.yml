@@ -13,6 +13,7 @@ services:
       - /etc:/host/etc:ro
     env_file:
       - ../.env
+      - .env
     environment:
       - HOST_PROC=/host/proc
       - HOST_SYS=/host/sys
@@ -105,6 +106,7 @@ services:
       - influxdb_data:/var/lib/influxdb2
     env_file:
       - ../.env
+      - .env
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USER:-admin}
