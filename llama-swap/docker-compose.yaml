@@ -33,6 +33,7 @@ services:
       - proxy
     labels:
         - "homepage.group=AI"
+        - "homepage.id=llama-swap-card"
         - "homepage.name=Llama Swap"
         - "homepage.icon=/icons/llama.png"
         - "homepage.href=http://192.168.254.111:8082"

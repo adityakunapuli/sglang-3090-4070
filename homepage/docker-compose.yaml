@@ -53,6 +53,7 @@ services:
       - proxy
     labels:
       - "homepage.group=System"
+      - "homepage.id=glances-card"
       - "homepage.name=Glances"
       - "homepage.icon=glances.png"
       - "homepage.href=http://192.168.254.111:61208"

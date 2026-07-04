@@ -18,6 +18,7 @@ services:
       - proxy
     labels:
         - "homepage.group=AI"
+        - "homepage.id=openwebui-card"
         - "homepage.name=Open WebUI"
         - "homepage.icon=/icons/openwebui.png"
 #        - "homepage.description=LLM Web Interface"

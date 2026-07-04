@@ -17,6 +17,7 @@ services:
     labels:
       - "wud.watch.digest=true"
       - "homepage.group=Media Automation"
+      - "homepage.id=audiobookshelf-card"
       - "homepage.name=Audiobookshelf"
       - "homepage.icon=audiobookshelf.png"
       - "homepage.target=_self"

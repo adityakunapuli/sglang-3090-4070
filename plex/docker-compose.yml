@@ -10,6 +10,7 @@ services:
       - proxy
     labels:
         - "homepage.group=Media Automation"
+        - "homepage.id=plex-card"
         - "homepage.name=Plex"
         - "homepage.icon=plex.png"
         - "homepage.href=http://192.168.254.111:32400/web"

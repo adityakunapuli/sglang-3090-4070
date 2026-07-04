@@ -25,6 +25,7 @@ services:
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
     labels:
         - "homepage.group=System"
+        - "homepage.id=coolercontrol-card"
         - "homepage.name=CoolerControl"
         - "homepage.icon=/icons/coolercontrol.svg"
         - "homepage.href=http://192.168.254.111:11987"

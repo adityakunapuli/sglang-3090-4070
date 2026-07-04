@@ -49,14 +49,11 @@ services:
     labels:
       - "wud.watch.digest=true"
       - "homepage.group=Paperless Stack"
+      - "homepage.id=paperless-card"
       - "homepage.name=Paperless"
       - "homepage.icon=paperless.png"
       - "homepage.href=http://192.168.254.111:8010"
-      - "homepage.widget.type=paperlessngx"
-      - "homepage.widget.url=http://192.168.254.111:8010"
       - "homepage.target=_self"
-      - "homepage.widget.key={{HOMEPAGE_VAR_PAPERLESS_TOKEN}}"
-      - "homepage.widget.showStats=true"
 
   gotenberg:
     image: docker.io/gotenberg/gotenberg:7.10
@@ -109,6 +106,7 @@ services:
     labels:
       - "wud.watch.digest=true"
       - "homepage.group=Paperless Stack"
+      - "homepage.id=ocr-sidecar-card"
       - "homepage.name=OCR Sidecar"
       - "homepage.icon=mdi-text-recognition"
       - "homepage.href=http://192.168.254.111:8002"

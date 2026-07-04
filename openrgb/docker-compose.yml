@@ -22,6 +22,7 @@ services:
     labels:
       - "wud.watch=false"
       - "homepage.group=System"
+      - "homepage.id=openrgb-card"
       - "homepage.name=OpenRGB"
       - "homepage.icon=/icons/openrgb.png"
       - "homepage.href=http://192.168.254.111:15800"

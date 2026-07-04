@@ -14,6 +14,7 @@ services:
     labels:
       - "wud.watch.digest=true"
       - "homepage.group=System"
+      - "homepage.id=dockhand-card"
       - "homepage.name=Dockhand"
       - "homepage.icon=dockhand.png"
       - "homepage.href=http://192.168.254.111:3999"

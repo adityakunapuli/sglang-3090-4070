@@ -27,6 +27,7 @@ services:
     labels:
       - "wud.watch.digest=true"
       - "homepage.group=Home Ops"
+      - "homepage.id=scrutiny-card"
       - "homepage.name=Scrutiny"
       - "homepage.icon=scrutiny.png"
       - "homepage.href=http://192.168.254.111:8080"

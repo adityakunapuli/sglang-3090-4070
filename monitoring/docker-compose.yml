@@ -33,6 +33,7 @@ services:
     restart: unless-stopped
     labels:
       - "homepage.group=System"
+      - "homepage.id=prometheus-card"
       - "homepage.name=Prometheus"
       - "homepage.icon=prometheus.png"
       - "homepage.href=http://192.168.254.111:9090"
@@ -96,6 +97,7 @@ services:
     restart: unless-stopped
     labels:
       - "homepage.group=System"
+      - "homepage.id=influxdb-card"
       - "homepage.name=InfluxDB"
       - "homepage.icon=influxdb.png"
       - "homepage.href=http://192.168.254.111:8087"
@@ -124,6 +126,7 @@ services:
     restart: unless-stopped
     labels:
       - "homepage.group=System"
+      - "homepage.id=grafana-card"
       - "homepage.name=Grafana"
       - "homepage.icon=grafana.png"
       - "homepage.href=http://192.168.254.111:3333"

@@ -1,6 +1,7 @@
 # Services
 
 **/*.env
+monitoring/vram_temps/.git/
 
 .archive/
 bifrost/
