@@ -20,14 +20,14 @@ models:
       --jinja
       --reasoning on
       --chat-template-kwargs '{"preserve_thinking":true}'
-      --split-mode tensor
-      --fit off
       --n-gpu-layers 99
-      --ctx-size 65536
-      --cache-type-k  q8_0
-      --cache-type-v q8_0
-      --batch-size 2048
-      --ubatch-size 1024
+      --fit off
+      --ctx-size 131072
+      --cache-type-k  q4_0
+      --cache-type-v q4_0
+#      --batch-size 2048
+#      --split-mode tensor
+#      --ubatch-size 1024
 #      --parallel 2
 #      --threads 4
 #      --threads-batch 4

@@ -126,7 +126,7 @@ services:
       - "homepage.group=System"
       - "homepage.name=Grafana"
       - "homepage.icon=grafana.png"
-      - "homepage.href=http://192.168.254.111:3002"
+      - "homepage.href=http://192.168.254.111:3333"
       - "homepage.target=_self"
     ports:
       - "${GRAFANA_PORT:-3002}:3000"
