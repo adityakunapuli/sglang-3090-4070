@@ -1,0 +1,37 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/settings/
+
+headerStyle: boxed
+favicon: /icons/favicon.png
+background:
+  image: /images/black.png
+#  blur: sm # sm, "", md, xl... see https://tailwindcss.com/docs/backdrop-blur
+#  saturate: 50 # 0, 50, 100... see https://tailwindcss.com/docs/backdrop-saturate
+#  brightness: 50 # 0, 50, 75... see https://tailwindcss.com/docs/backdrop-brightness
+#  opacity: 50 # 0-100
+
+
+showStats: false
+
+
+layout:
+  AI:
+    style: column
+    iconsOnly: true
+  Paperless Stack:
+    style: columns
+    iconsOnly: true
+  Home Ops:
+    style: column
+    iconsOnly: true
+  Infrastructure:
+    style: column
+    iconsOnly: true
+  System:
+    style: column
+    iconsOnly: true
+  Media Automation:
+    style: row
+    columns: 4
+    iconsOnly: true

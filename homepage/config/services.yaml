@@ -1,0 +1,197 @@
+---
+# All services are migrated from Docker labels to services.yaml.
+#
+- AI:
+    - Gateway:
+        icon: mdi-web
+        href: http://192.168.254.111:4001
+        id: gateway
+        description: LLM Request Gateway & Telemetry
+    - Llama Swap:
+        icon: /icons/llama.png
+        href: http://192.168.254.111:8082
+        id: llama-swap
+        description: LLM Hot-Swapper & UI
+    - Open WebUI:
+        icon: /icons/openwebui.png
+        href: http://192.168.254.111:3030
+        id: openwebui
+        description: LLM Web Interface
+    - OpenCode:
+        icon: /icons/opencode.png
+        href: http://192.168.254.111:4096
+        id: opencode
+        description: Coding Agent Web Interface
+
+- Paperless Stack:
+    - OpenArchive:
+        icon: openarchive.png
+        href: http://192.168.254.111:8080
+        id: openarchive
+    - Paperless:
+        icon: paperless.png
+        href: http://192.168.254.111:8000
+        id: paperless
+
+- Home Ops:
+    - Home Assistant:
+        icon: home-assistant.png
+        href: http://192.168.254.22:8123
+        id: home-assistant
+        description: Home Automation Platform
+        widget:
+          type: homeassistant
+          url: http://192.168.254.22:8123
+          key: {{HOMEPAGE_VAR_HA_TOKEN}}
+    - Frigate:
+        icon: frigate.png
+        href: http://192.168.254.111:5000
+        id: frigate
+        description: NVR & Object Detection
+        widget:
+          type: frigate
+          url: http://frigate:5000
+          mappings:
+            - field: detectors.nvidia.inference_speed
+              label: Inf. Speed
+              suffix: ms
+            - field: gpu_usages["NVIDIA GeForce RTX 3050"].mem
+              label: GPU Mem
+    - Scrutiny:
+        icon: scrutiny.png
+        href: http://192.168.254.111:8080
+        id: scrutiny
+        description: Drive Health Monitoring
+        widget:
+          type: scrutiny
+          url: http://192.168.254.111:8080
+          showStats: true
+    - Immich:
+        icon: immich.png
+        href: http://192.168.254.111:2283
+        id: immich
+        description: Photo & Video Management
+        widget:
+          type: immich
+          url: http://192.168.254.111:2283
+          key: {{HOMEPAGE_VAR_IMMICH_API_KEY}}
+          version: 2
+          showStats: true
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: http://192.168.254.111:3001
+        id: adguard
+    - Journiv:
+        icon: mdi-notebook-outline
+        href: http://192.168.254.111:8000
+        id: journiv
+        description: Self-hosted journal and milestone tracker
+
+- Media Automation:
+    - Deluge:
+        icon: deluge.png
+        href: http://192.168.254.111:8112
+        id: deluge
+        description: Downloads (VPN)
+        widget:
+          type: deluge
+          url: http://delugevpn:8112
+          password: deluge
+    - Radarr:
+        icon: radarr.png
+        href: http://192.168.254.111:7878
+        id: radarr
+        description: Movies
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: {{HOMEPAGE_VAR_RADARR_API_KEY}}
+          showStats: true
+    - Sonarr:
+        icon: sonarr.png
+        href: http://192.168.254.111:8989
+        id: sonarr
+        description: TV Shows
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: {{HOMEPAGE_VAR_SONARR_API_KEY}}
+          showStats: true
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://192.168.254.111:9696
+        id: prowlarr
+        description: Indexer Manager
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: {{HOMEPAGE_VAR_PROWLARR_API_KEY}}
+          showStats: true
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: http://192.168.254.111:13378
+        id: audiobookshelf
+        description: Audiobooks & Podcasts
+        widget:
+          type: audiobookshelf
+          url: http://audiobookshelf:13378
+          key: {{HOMEPAGE_VAR_AUDIOBOOKSHELF_API_KEY}}
+          showStats: true
+    - Plex:
+        icon: plex.png
+        href: http://192.168.254.111:32400/web
+        id: plex
+        widget:
+          type: plex
+          url: http://192.168.254.111:32400
+          key: {{HOMEPAGE_VAR_PLEX_KEY}}
+          fields: ["streams", "movies", "tv"]
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://192.168.254.111:8096
+        id: jellyfin
+        widget:
+          type: jellyfin
+          url: http://jellyfin:8096
+          key: {{HOMEPAGE_VAR_JELLYFIN_API_KEY}}
+
+- Infrastructure:
+    - Portainer:
+        icon: portainer.png
+        href: https://192.168.254.111:9443
+        id: portainer
+        description: Container UI
+        widget:
+          type: portainer
+          url: https://192.168.254.111:9443
+          key: {{HOMEPAGE_VAR_PORTAINER_API_KEY}}
+          env: 3
+          showStats: true
+
+- System:
+    - CoolerControl:
+        icon: coolercontrol.svg
+        href: http://192.168.254.111:11987
+        id: coolercontrol
+        description: RGB Lighting Control
+    - Dockhand:
+        icon: dockhand.png
+        href: http://192.168.254.111:3999
+        id: dockhand
+    - Grafana:
+        icon: grafana.png
+        href: http://192.168.254.111:3333
+        id: grafana
+    - InfluxDB:
+        icon: influxdb.png
+        href: http://192.168.254.111:8087
+        id: influxdb
+    - OpenRGB:
+        icon: /icons/openrgb.png
+        href: http://192.168.254.111:15800
+        id: openrgb
+        description: RGB Lighting Control
+    - Prometheus:
+        icon: prometheus.png
+        href: http://192.168.254.111:9090
+        id: prometheus

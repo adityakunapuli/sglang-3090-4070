@@ -1,0 +1,110 @@
+/* --- GLOBAL SCROLLBAR HIDING --- */
+::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* --- MASTER ROUNDED CORNERS --- */
+.service-card,
+.bookmark-card,
+.group-header,
+div[id$="-card"],
+div[id$="-card"] > div,
+div[class*="rounded-lg"] {
+    border-radius: 25px !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+}
+
+.service-card:has(.docker-status[title="Exited"]) {
+    display: none;
+}
+
+html {
+    background-color: #000000 !important;
+}
+
+/* --- HIDE STATUS/PING OVERLAY --- */
+span[class*="status-"],
+div[class*="status-"],
+.docker-status,
+.service-status,
+.service-ping,
+.service-tags,
+[class*="docker-status"],
+[class*="service-status"] {
+    display: none !important;
+}
+
+/* ============================================================================
+   CARD TINTING
+   ============================================================================ */
+
+/* AI — Deep Purple */
+#gateway-card > .service-card,
+#llama-swap-card > .service-card,
+#openwebui-card > .service-card,
+#opencode-card > .service-card {
+    background-color: rgba(91, 33, 182, 0.28) !important;
+}
+
+/* Home Ops — Cyan/Teal */
+#adguard-card > .service-card,
+#frigate-card > .service-card,
+#home-assistant-card > .service-card,
+#immich-card > .service-card,
+#journiv-card > .service-card,
+#scrutiny-card > .service-card {
+    background-color: rgba(14, 116, 144, 0.28) !important;
+}
+
+/* Infrastructure — Slate/Blue */
+#portainer-card > .service-card {
+    background-color: rgba(71, 85, 105, 0.28) !important;
+}
+
+/* System — Indigo */
+#coolercontrol-card > .service-card,
+#prometheus-card > .service-card,
+#influxdb-card > .service-card,
+#grafana-card > .service-card,
+#glances-card > .service-card,
+#dockhand-card > .service-card,
+#openrgb-card > .service-card {
+    background-color: rgba(67, 56, 202, 0.28) !important;
+}
+
+/* Media Automation — Deep Green */
+#deluge-card > .service-card,
+#radarr-card > .service-card,
+#sonarr-card > .service-card,
+#prowlarr-card > .service-card,
+#jellyfin-card > .service-card,
+#plex-card > .service-card,
+#audiobookshelf-card > .service-card {
+    background-color: rgba(6, 95, 70, 0.28) !important;
+}
+
+/* Paperless Stack — Burnt Orange */
+#paperless-card > .service-card,
+#openarchive-card > .service-card {
+    background-color: rgba(154, 52, 18, 0.28) !important;
+}
+
+/* ============================================================================
+   GENERAL TYPOGRAPHY
+   ============================================================================ */
+.service-group-name,
+.bookmark-group-name {
+    color: #555555 !important;
+    font-weight: 700 !important;
+}
+
+.service-name,
+.service-description {
+    color: #f5f5f583 !important;
+}

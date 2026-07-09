@@ -35,16 +35,24 @@ async def process_document(
     ai: AiAnalyzer | None,
     db: Database,
     config: Config,
+    processed_tag_id: int | None = None,
 ) -> str:
     doc_id = doc["id"]
     title = doc.get("title", f"doc_{doc_id}")
-    logger.info("Processing document %d: %s", doc_id, title)
+    mime_type = doc.get("mime_type", "")
+
+    logger.info("Processing document %d: %s (mime_type=%s)", doc_id, title, mime_type)
 
     ocr_text: str | None = None
     status = "done"
 
     # ── Step 1: OCR ──────────────────────────────────────────────────────
     if ocr:
+        if not mime_type.startswith("application/pdf"):
+            logger.info("Skipping non-PDF document %d (mime_type=%s)", doc_id, mime_type)
+            await db.log_event("INFO", "skipped_non_pdf", doc_id, f"Skipped: mime_type={mime_type}")
+            return "skipped"
+
         pdf_bytes = await paperless.download_document(doc_id)
         logger.info("Downloaded PDF for doc %d (%d bytes)", doc_id, len(pdf_bytes))
 
@@ -77,6 +85,13 @@ async def process_document(
         status=status,
         ocr_text=ocr_text,
     )
+
+    if processed_tag_id is not None and status == "done":
+        try:
+            await paperless.add_tag(doc_id, processed_tag_id)
+        except Exception as e:
+            logger.warning("Failed to add processed tag to doc %d: %s", doc_id, e)
+
     await db.log_event("INFO", "done", doc_id, f"Completed with status={status}")
     logger.info("Finished document %d: %s (status=%s)", doc_id, title, status)
     return status
@@ -194,8 +209,11 @@ async def scan(config: Config, db: Database | None = None) -> None:
 
             try:
                 skip_tag_id = None
+                processed_tag_id = None
                 if config.skip_tag:
                     skip_tag_id = await paperless.get_tag_id(config.skip_tag)
+                if config.processed_tag:
+                    processed_tag_id = await paperless.ensure_tag(config.processed_tag)
 
                 docs = await paperless.get_all_documents(skip_tag_id)
                 if config.only_doc_ids:
@@ -205,7 +223,7 @@ async def scan(config: Config, db: Database | None = None) -> None:
                 for i, doc in enumerate(docs):
                     logger.info("[%d/%d] Processing document %d", i + 1, len(docs), doc["id"])
                     try:
-                        status = await process_document(doc, paperless, ocr, ai, db, config)
+                        status = await process_document(doc, paperless, ocr, ai, db, config, processed_tag_id)
                     except Exception as e:
                         logger.error(
                             "Failed to process document %d: %s", doc["id"], e, exc_info=True
@@ -413,7 +431,8 @@ async def _run_single(doc_id: int, doc: dict):
     ocr = OcrProcessor(config)
     ai = AiAnalyzer(config) if config.ai_analysis_enabled else None
     try:
-        status = await process_document(doc, paperless, ocr, ai, _db, config)
+        processed_tag_id = await paperless.ensure_tag(config.processed_tag) if config.processed_tag else None
+        status = await process_document(doc, paperless, ocr, ai, _db, config, processed_tag_id)
     except Exception as e:
         logger.error("Reprocess failed for doc %d: %s", doc_id, e)
         await _db.upsert_document(paperless_id=doc_id, status="failed", error=str(e)[:500])

@@ -1,0 +1,12 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/info-widgets/
+
+- resources:
+    provider: glances
+    url: http://192.168.254.111:61208
+    cpu: true
+    memory: true
+    gpu: true
+    uptime: true
+    version: 4

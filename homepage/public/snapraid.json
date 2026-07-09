@@ -1,0 +1,11 @@
+{
+  "status": "Healthy",
+  "last_scrub": "15 days ago",
+  "sync_state": "Synced",
+  "total_gb": 17703,
+  "used_gb": 11283,
+  "free_gb": 6420,
+  "fragmented_files": 320,
+  "errors": 0,
+  "updated_at": "2026-02-11 03:01:15"
+}
