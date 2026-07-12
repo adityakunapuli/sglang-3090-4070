@@ -102,8 +102,11 @@ class Database:
                        title=excluded.title, pages=excluded.pages,
                        status=excluded.status, ocr_text=excluded.ocr_text,
                        ocr_chars=excluded.ocr_chars,
-                       metadata_json=excluded.metadata_json,
-                       error=excluded.error, page_count=excluded.page_count,
+                       metadata_json=CASE WHEN excluded.metadata_json IS NOT NULL
+                          THEN excluded.metadata_json ELSE documents.metadata_json END,
+                       error=CASE WHEN excluded.error IS NOT NULL
+                          THEN excluded.error ELSE documents.error END,
+                       page_count=excluded.page_count,
                        updated_at=CURRENT_TIMESTAMP""",
                     (
                         paperless_id,
@@ -154,7 +157,10 @@ class Database:
                 "SELECT COUNT(*) FROM documents WHERE status = 'pending'"
             ).fetchone()[0]
             failed = self._conn.execute(
-                "SELECT COUNT(*) FROM documents WHERE status = 'failed'"
+                "SELECT COUNT(*) FROM documents WHERE status IN ('failed','ocr_failed')"
+            ).fetchone()[0]
+            ocr_failed = self._conn.execute(
+                "SELECT COUNT(*) FROM documents WHERE status = 'ocr_failed'"
             ).fetchone()[0]
             ocr_done = self._conn.execute(
                 "SELECT COUNT(*) FROM documents WHERE status IN ('ocr_done','ai_done','done')"
@@ -162,13 +168,18 @@ class Database:
             ai_done = self._conn.execute(
                 "SELECT COUNT(*) FROM documents WHERE status IN ('ai_done','done')"
             ).fetchone()[0]
+            ai_missing = self._conn.execute(
+                "SELECT COUNT(*) FROM documents WHERE status = 'ocr_done'"
+            ).fetchone()[0]
             return {
                 "total": total,
                 "processed": processed,
                 "pending": pending,
                 "failed": failed,
+                "ocr_failed": ocr_failed,
                 "ocr_done": ocr_done,
                 "ai_done": ai_done,
+                "ai_missing": ai_missing,
             }
 
         return await asyncio.get_event_loop().run_in_executor(None, _stats)
@@ -199,3 +210,28 @@ class Database:
             return row[0] or 0
 
         return await asyncio.get_event_loop().run_in_executor(None, _last)
+
+    async def get_documents_needing_ocr(self) -> list[dict[str, Any]]:
+        """Get docs with OCR failure that need re-OCR."""
+        def _query() -> list[dict]:
+            rows = self._conn.execute(
+                "SELECT * FROM documents WHERE status = 'ocr_failed' ORDER BY paperless_id"
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+        return await asyncio.get_event_loop().run_in_executor(None, _query)
+
+    async def get_documents_needing_ai(self) -> list[dict[str, Any]]:
+        """Get docs with valid OCR but missing AI metadata."""
+        def _query() -> list[dict]:
+            rows = self._conn.execute(
+                """SELECT * FROM documents
+                   WHERE status IN ('ocr_done', 'done')
+                     AND (metadata_json IS NULL
+                          OR metadata_json = '{}'
+                          OR metadata_json = '')
+                   ORDER BY paperless_id"""
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+        return await asyncio.get_event_loop().run_in_executor(None, _query)

@@ -1,4 +1,6 @@
-You are a document metadata extractor. Analyze the document text below and return a JSON object with exactly these fields:
+You are a document metadata extractor. Analyze the document text below. The OCR preserves layout as markdown (tables, sections, headers) — use these structural cues to understand the document.
+
+Return a JSON object with exactly these fields:
 
 {
   "title": "Concise, meaningful document title (max 10 words, no addresses)",

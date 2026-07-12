@@ -26,6 +26,8 @@ logger = logging.getLogger("ocr.main")
 # ── Global scan lock (no overlapping scans) ──────────────────────────────
 _scan_lock = asyncio.Lock()
 _scan_in_progress = False
+_reprocess_semaphore = asyncio.Semaphore(5)
+_reprocessing_tasks = []
 
 
 async def process_document(
@@ -44,7 +46,8 @@ async def process_document(
     logger.info("Processing document %d: %s (mime_type=%s)", doc_id, title, mime_type)
 
     ocr_text: str | None = None
-    status = "done"
+    status = "pending"
+    ai_success = False
 
     # ── Step 1: OCR ──────────────────────────────────────────────────────
     if ocr:
@@ -60,30 +63,52 @@ async def process_document(
         if not ocr_text:
             logger.warning("OCR returned no text for doc %d", doc_id)
             await db.log_event("WARN", "ocr_empty", doc_id, "OCR returned no text")
-            return "failed"
-
-        existing = await paperless.get_existing_content(doc_id)
-        if existing.strip() == ocr_text.strip():
-            logger.info("OCR text unchanged for doc %d, skipping writeback", doc_id)
-        else:
-            await paperless.update_content(doc_id, ocr_text)
-            logger.info(
-                "Content updated for doc %d (was %d chars, now %d chars)",
-                doc_id, len(existing), len(ocr_text),
+            status = "failed"
+        elif "[OCR failed for page" in ocr_text:
+            failed_pages = ocr_text.count("[OCR failed for page")
+            total_pages = failed_pages + ocr_text.count("--- Page Break ---") + 1
+            logger.error(
+                "OCR failed on %d/%d pages for doc %d",
+                failed_pages, total_pages, doc_id,
             )
+            await db.log_event(
+                "ERROR", "ocr_pages_failed", doc_id,
+                f"Failed {failed_pages}/{total_pages} pages"
+            )
+            status = "ocr_failed"
 
-        await db.upsert_document(
-            paperless_id=doc_id,
-            title=title,
-            status="ocr_done",
-            ocr_text=ocr_text,
-        )
+        if status not in ("failed", "ocr_failed"):
+            existing = await paperless.get_existing_content(doc_id)
+            if existing.strip() == ocr_text.strip():
+                logger.info("OCR text unchanged for doc %d, skipping writeback", doc_id)
+            else:
+                await paperless.update_content(doc_id, ocr_text)
+                logger.info(
+                    "Content updated for doc %d (was %d chars, now %d chars)",
+                    doc_id, len(existing), len(ocr_text),
+                )
+
+            status = "ocr_done"
+
+            # ── Step 2: AI Metadata Extraction ────────────────────────────
+            if ai and ocr_text:
+                try:
+                    analysis = await ai.analyze(ocr_text)
+                    if analysis:
+                        await _apply_ai_metadata(doc_id, analysis, paperless, db)
+                        status = "done"
+                        ai_success = True
+                    else:
+                        logger.warning("AI analysis returned no metadata for doc %d", doc_id)
+                except Exception as e:
+                    logger.error("AI analysis failed for doc %d: %s", doc_id, e, exc_info=True)
+                    await db.log_event("ERROR", "ai_failed", doc_id, str(e)[:200])
 
     await db.upsert_document(
         paperless_id=doc_id,
         title=title,
         status=status,
-        ocr_text=ocr_text,
+        ocr_text=ocr_text if status not in ("failed", "ocr_failed") else None,
     )
 
     if processed_tag_id is not None and status == "done":
@@ -444,6 +469,44 @@ async def _run_single(doc_id: int, doc: dict):
             await ai.close()
 
 
+async def _run_ai_only(doc_id: int, doc: dict, ocr_text: str):
+    """Run only AI analysis on a document (skips OCR)."""
+    global _db, config
+    paperless = PaperlessClient(config)
+    ai = AiAnalyzer(config)
+    try:
+        processed_tag_id = await paperless.ensure_tag(config.processed_tag) if config.processed_tag else None
+        analysis = await ai.analyze(ocr_text)
+        if analysis:
+            await _apply_ai_metadata(doc_id, analysis, paperless, _db)
+            await _db.upsert_document(
+                paperless_id=doc_id,
+                title=doc.get("title", ""),
+                status="done",
+                metadata_json=json.dumps(analysis, default=str),
+            )
+            logger.info("AI-only reprocess succeeded for doc %d", doc_id)
+        else:
+            logger.warning("AI analysis returned no metadata for doc %d", doc_id)
+    except Exception as e:
+        logger.error("AI-only reprocess failed for doc %d: %s", doc_id, e)
+        await _db.upsert_document(paperless_id=doc_id, status="ai_failed", error=str(e)[:500])
+        await _db.log_event("ERROR", "ai_reprocess_failed", doc_id, str(e)[:200])
+    finally:
+        await paperless.close()
+        await ai.close()
+
+
+async def _run_single_sema(doc_id: int, doc: dict):
+    async with _reprocess_semaphore:
+        await _run_single(doc_id, doc)
+
+
+async def _run_ai_only_sema(doc_id: int, doc: dict, ocr_text: str):
+    async with _reprocess_semaphore:
+        await _run_ai_only(doc_id, doc, ocr_text)
+
+
 @app.post("/api/documents/reprocess-batch")
 async def reprocess_batch(body: dict):
     doc_ids = body.get("doc_ids", [])
@@ -463,7 +526,7 @@ async def reprocess_batch(body: dict):
                     status="pending",
                 )
                 await _db.log_event("INFO", "reprocess_queued", did, "Queued for reprocess")
-                asyncio.create_task(_run_single(did, doc))
+                _reprocessing_tasks.append(asyncio.create_task(_run_single_sema(did, doc)))
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 404:
                     logger.warning("Doc %d not found, skipping", did)
@@ -473,6 +536,88 @@ async def reprocess_batch(body: dict):
         await paperless.close()
 
     return {"status": "queued", "doc_ids": doc_ids, "count": len(doc_ids)}
+
+
+@app.post("/api/reprocess-ocr-failed")
+async def reprocess_ocr_failed():
+    """Re-OCR documents that failed OCR (status = 'ocr_failed')."""
+    global _db, config
+    if not _db:
+        raise HTTPException(503, "Database not ready")
+
+    failed_docs = await _db.get_documents_needing_ocr()
+    if not failed_docs:
+        return {"status": "nothing_to_do", "count": 0}
+
+    paperless = PaperlessClient(config)
+    processed = []
+    try:
+        for rec in failed_docs:
+            did = rec["paperless_id"]
+            try:
+                doc = await paperless.get_document(did)
+                await _db.upsert_document(
+                    paperless_id=did,
+                    title=doc.get("title", ""),
+                    status="pending",
+                )
+                await _db.log_event("INFO", "ocr_reprocess_queued", did, "Queued for OCR reprocess")
+                _reprocessing_tasks.append(asyncio.create_task(_run_single_sema(did, doc)))
+                processed.append(did)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    logger.warning("Doc %d not found, clearing ocr_failed status", did)
+                    await _db.upsert_document(paperless_id=did, status="done")
+                else:
+                    raise
+    finally:
+        await paperless.close()
+
+    return {"status": "queued", "doc_ids": processed, "count": len(processed)}
+
+
+@app.post("/api/reprocess-ai-missing")
+async def reprocess_ai_missing():
+    """Re-run AI analysis on documents with valid OCR but missing AI metadata."""
+    global _db, config
+    if not _db:
+        raise HTTPException(503, "Database not ready")
+    if not config.ai_analysis_enabled:
+        raise HTTPException(503, "AI analysis is disabled")
+
+    ai_docs = await _db.get_documents_needing_ai()
+    if not ai_docs:
+        return {"status": "nothing_to_do", "count": 0}
+
+    paperless = PaperlessClient(config)
+    processed = []
+    try:
+        for rec in ai_docs:
+            did = rec["paperless_id"]
+            ocr_text = rec.get("ocr_text", "")
+            if not ocr_text:
+                try:
+                    doc = await paperless.get_document(did)
+                    ocr_text = doc.get("content", "")
+                except Exception:
+                    continue
+            if not ocr_text.strip():
+                logger.warning("Skipping doc %d: no OCR text available", did)
+                continue
+
+            try:
+                doc = await paperless.get_document(did)
+                _reprocessing_tasks.append(asyncio.create_task(_run_ai_only_sema(did, doc, ocr_text)))
+                processed.append(did)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    logger.warning("Doc %d not found, skipping", did)
+                else:
+                    raise
+    finally:
+        await paperless.close()
+
+    return {"status": "queued", "doc_ids": processed, "count": len(processed)}
 
 
 @app.post("/api/reprocess-all")

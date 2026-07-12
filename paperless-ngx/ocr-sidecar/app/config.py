@@ -54,18 +54,7 @@ class Config:
     ocr_prompt: str = field(
         default_factory=lambda: os.getenv(
             "OCR_PROMPT",
-            "Transcribe all visible text from this document page. Apply these rules:\n\n"
-            "1. Collapse unusual spacing — if characters that clearly form a word, number, "
-            "or date are separated by extra spaces (e.g. \"F E B  1 3  2 0 2 6\"), write "
-            "them as the intended continuous form (\"FEB 13 2026\").\n\n"
-            "2. Handle poor scan quality — if a character is partially legible but obvious "
-            "from context, use your best judgment to reconstruct it. Do not insert "
-            "placeholder characters like @, #, or _ for unclear glyphs.\n\n"
-            "3. No hallucination — do not invent or complete text that isn't clearly "
-            "present on the page. If a section is completely illegible, mark it as [illegible].\n\n"
-            "4. Preserve line breaks and paragraph structure as they appear.\n\n"
-            "Return only the transcribed text with no commentary, explanations, or markdown "
-            "formatting around it.",
+            "Text Recognition:",
         )
     )
 
