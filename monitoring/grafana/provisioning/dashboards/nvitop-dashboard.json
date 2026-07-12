@@ -5,8 +5,8 @@
     "name": "bdl3vqwxprhtsa",
     "namespace": "default",
     "uid": "5aa85d97-689a-4ccf-af5a-46bf5621adb6",
-    "resourceVersion": "1782967859173013",
-    "generation": 11,
+    "resourceVersion": "1783200644138015",
+    "generation": 16,
     "creationTimestamp": "2026-07-01T07:05:18Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "559119440584704"
@@ -15,11 +15,11 @@
       "grafana.app/createdBy": "access-policy:service",
       "grafana.app/managedBy": "classic-file-provisioning",
       "grafana.app/managerId": "default",
-      "grafana.app/sourceChecksum": "94f5b85357ccfe535c26ef03e1f56be3",
+      "grafana.app/sourceChecksum": "dc908d45e493be146776aa011d72ef4f",
       "grafana.app/sourcePath": "/etc/grafana/provisioning/dashboards/nvitop-dashboard.json",
-      "grafana.app/sourceTimestamp": "1782967853000",
+      "grafana.app/sourceTimestamp": "1783200638000",
       "grafana.app/updatedBy": "access-policy:service",
-      "grafana.app/updatedTimestamp": "2026-07-02T04:50:59Z",
+      "grafana.app/updatedTimestamp": "2026-07-04T21:30:44Z",
       "grafana.app/folder": ""
     }
   },
@@ -1793,6 +1793,7 @@
                     "axisColorMode": "text",
                     "axisLabel": "",
                     "axisPlacement": "auto",
+                    "axisSoftMax": 100,
                     "barAlignment": 0,
                     "barWidthFactor": 0.6,
                     "drawStyle": "line",
@@ -2687,7 +2688,7 @@
                       "type": "linear"
                     },
                     "showPoints": "auto",
-                    "showValues": false,
+                    "showValues": true,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -2790,6 +2791,32 @@
                     },
                     "refId": "A"
                   }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "bfmz2d8egix34a"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "disableTextWrap": false,
+                        "editorMode": "builder",
+                        "expr": "gpu_vram_temperature_C",
+                        "fullMetaSearch": false,
+                        "includeNullMetadata": true,
+                        "instant": false,
+                        "legendFormat": "{{gpu_info}} VRAM",
+                        "range": true,
+                        "useBackend": false
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "B"
+                  }
                 }
               ],
               "queryOptions": {},
@@ -2835,7 +2862,7 @@
                       "type": "linear"
                     },
                     "showPoints": "auto",
-                    "showValues": false,
+                    "showValues": true,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -2846,7 +2873,6 @@
                     }
                   },
                   "fieldMinMax": false,
-                  "max": 80,
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
@@ -2925,7 +2951,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "builder",
-                        "expr": "{__name__=~\"gpu_utilization_Percentage|gpu_memory_percent_Percentage|gpu_temperature_C\", gpu_info=\"${gpu:raw}\"}",
+                        "expr": "{__name__=~\"gpu_utilization_Percentage|gpu_memory_percent_Percentage|gpu_temperature_C|gpu_vram_temperature_C\", gpu_info=\"${gpu:raw}\"}",
                         "instant": false,
                         "legendFormat": "{{__name__}} - {{gpu_info}}",
                         "range": true
@@ -3007,6 +3033,26 @@
                   }
                 },
                 "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": "/.*gpu_vram_temperature_C.*/"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "celsius"
+                      },
+                      {
+                        "id": "displayName",
+                        "value": "VRAM Temperature"
+                      },
+                      {
+                        "id": "custom.axisPlacement",
+                        "value": "right"
+                      }
+                    ]
+                  },
                   {
                     "matcher": {
                       "id": "byRegexp",
@@ -3446,11 +3492,11 @@
           "current": {
             "text": [
               "3090 Ti (0)",
-              "3060 (1)"
+              "4070 Ti Super"
             ],
             "value": [
               "3090 Ti (0)",
-              "3060 (1)"
+              "4070 Ti Super"
             ]
           },
           "definition": "label_values(gpu_utilization_Percentage, gpu_info)",

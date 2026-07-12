@@ -23,13 +23,26 @@ scrape_configs:
         target_label: gpu_info
         replacement: '3060 (0)'
       - source_labels: [uuid]
-        regex: 'GPU-88a93309-9467-dab9-9491-30f298a784f1'
+        regex: 'GPU-29fcc8f1-92c0-0b66-1573-9046c133efbf'
         target_label: gpu_info
         replacement: '3060 (1)'
       - source_labels: [uuid]
         regex: 'GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877'
         target_label: gpu_info
         replacement: '3050 (2)'
+      - source_labels: [uuid]
+        regex: 'GPU-49b45ca5-302d-9e6a-0bd6-54548fb53674'
+        target_label: gpu_info
+        replacement: '3090 Ti (0)'
+
+  - job_name: 'vram-exporter'
+    static_configs:
+      - targets: ['vram-exporter:5058']
+    metric_relabel_configs:
+      - source_labels: [uuid]
+        regex: 'GPU-49b45ca5-302d-9e6a-0bd6-54548fb53674'
+        target_label: gpu_info
+        replacement: '3090 Ti (0)'
 
   - job_name: 'home-assistant'
     metrics_path: '/api/prometheus'
