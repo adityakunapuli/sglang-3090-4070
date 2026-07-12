@@ -2,12 +2,29 @@
 logToStdout: "upstream"
 includeAliasesInList: true
 models:
+  GLM-OCR:
+    cmd: >
+      /usr/local/bin/llama-server
+      --log-colors auto
+      --model /mnt/data/models/llm/GLM/GLM-OCR-Q8_0.gguf
+      --mmproj /mnt/data/models/llm/GLM/mmproj-GLM-OCR-Q8_0.gguf
+      --alias GLM-OCR
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 0.0
+      --top-p 0.1
+      --ctx-size 32768
+      --flash-attn on
+      --parallel 1
+      --n-gpu-layers 99
+      --main-gpu 0
+    ttl: 60
   Qwen3.6-27B:
     cmd: >
       /usr/local/bin/llama-server
       --log-colors auto
       --no-mmap
-      --model /mnt/data/models/llm/Qwen3.6/27B-MTB/Qwen3.6-27B-Q4_K_S.gguf
+      --model /mnt/data/models/llm/Qwen3.6/27B-MTB/Qwen3.6-27B-Q6_K.gguf
       --mmproj /mnt/data/models/llm/Qwen3.6/27B-MTB/mmproj-BF16.gguf
       --alias Qwen3.6-27B
       --host 0.0.0.0
@@ -23,8 +40,10 @@ models:
       --n-gpu-layers 99
       --fit off
       --ctx-size 131072
-      --cache-type-k  q4_0
-      --cache-type-v q4_0
+      --cache-type-k  q8_0
+      --cache-type-v q8_0
+      --fit off
+      --tensor-split 1,5
 #      --batch-size 2048
 #      --split-mode tensor
 #      --ubatch-size 1024
@@ -105,52 +124,52 @@ models:
 #    ttl: 0
 #
 ##
-  Gemma-4-12B-MTP:
-    cmd: >
-      /usr/local/bin/llama-server
-      --log-colors auto
-      --no-mmap
-      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
-      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
-      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
-      --alias Gemma-4-12B-MTP
-      --host 0.0.0.0
-      --port ${PORT}
-      --temp 1.0
-      --top-p 0.95
-      --top-k 64
-      --min-p 0.01
-      --n-predict 2048
-      --reasoning on
-      --chat-template-kwargs '{"enable_thinking": true}'
-      --split-mode layer
-      --spec-type draft-mtp
-      --spec-draft-n-max 2
-      --flash-attn on
-      --parallel 2
-      --ctx-size 262144
-    filters:
-      setParamsByID:
-        "${MODEL_ID}:fast":
-          reasoning: "off"
-          chat_template_kwargs:
-            enable_thinking: false
-        "${MODEL_ID}:low":
-          reasoning_budget_message: "Thinking budget exceeded answer now."
-          thinking_budget_tokens: 1024
-          chat_template_kwargs:
-            enable_thinking: true
-            preserve_thinking: false
-        "${MODEL_ID}:high":
-          thinking_budget_tokens: -1
-          chat_template_kwargs:
-            enable_thinking: true
-            preserve_thinking: true
-    aliases:
-      - "Gemma-4-12B-MTP:fast"
-      - "Gemma-4-12B-MTP:low"
-      - "Gemma-4-12B-MTP:high"
-    ttl: 0
+#  Gemma-4-12B-MTP:
+#    cmd: >
+#      /usr/local/bin/llama-server
+#      --log-colors auto
+#      --no-mmap
+#      --model /mnt/data/models/llm/Gemma/12B/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+#      --mmproj /mnt/data/models/llm/Gemma/12B/mmproj-BF16.gguf
+#      --model-draft /mnt/data/models/llm/Gemma/12B/mtp-gemma-4-12b-it.gguf
+#      --alias Gemma-4-12B-MTP
+#      --host 0.0.0.0
+#      --port ${PORT}
+#      --temp 1.0
+#      --top-p 0.95
+#      --top-k 64
+#      --min-p 0.01
+#      --n-predict 2048
+#      --reasoning on
+#      --chat-template-kwargs '{"enable_thinking": true}'
+#      --split-mode layer
+#      --spec-type draft-mtp
+#      --spec-draft-n-max 2
+#      --flash-attn on
+#      --parallel 2
+#      --ctx-size 262144
+#    filters:
+#      setParamsByID:
+#        "${MODEL_ID}:fast":
+#          reasoning: "off"
+#          chat_template_kwargs:
+#            enable_thinking: false
+#        "${MODEL_ID}:low":
+#          reasoning_budget_message: "Thinking budget exceeded answer now."
+#          thinking_budget_tokens: 1024
+#          chat_template_kwargs:
+#            enable_thinking: true
+#            preserve_thinking: false
+#        "${MODEL_ID}:high":
+#          thinking_budget_tokens: -1
+#          chat_template_kwargs:
+#            enable_thinking: true
+#            preserve_thinking: true
+#    aliases:
+#      - "Gemma-4-12B-MTP:fast"
+#      - "Gemma-4-12B-MTP:low"
+#      - "Gemma-4-12B-MTP:high"
+#    ttl: 0
 ##
 ##  Gemma-4-12B-v2-Agentic:
 ##    cmd: >
@@ -247,13 +266,14 @@ models:
 ##    ttl: 300
 #
 ## =============================================================================
-## matrix: concurrent model combinations (Surya on CPU + Gemma 26B on GPU)
+## matrix: concurrent model combinations (GLM-OCR + Gemma-4-12B-MTP)
 ## A model not in any set can still run alone by default.
 ## =============================================================================
-#matrix:
-#  vars:
-#    g26: Gemma4-26B-A4B-QAT
-#    s: Surya-OCR-2
-#
-#  sets:
-#    ocr_combo: "g26 & s"
+matrix:
+  vars:
+    glm: GLM-OCR
+    qwen: Qwen3.6-27B
+
+  sets:
+    ocr_plus_gemma: "glm & qwen"
+

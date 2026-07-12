@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     ipc: host # CRITICAL: Gives NCCL access to shared memory segments for P2P/AllReduce
     ports:
-      - "8082:8080"
+      - "8083:8080"
     volumes:
       - /mnt/data/models/llm:/mnt/data/models/llm
       - ./models.ini:/app/models.ini:ro
@@ -33,7 +33,8 @@ services:
           devices:
             - driver: nvidia
               device_ids: [
-                '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}'
+                '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}',
+                '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'
               ]
               capabilities: [ gpu ]
     networks:

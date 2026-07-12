@@ -25,20 +25,21 @@ services:
             - driver: nvidia
               device_ids: [
 #                '0','1','2'
-                '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}'
+                  '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}',
+                  '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'
               ]
               capabilities: [ gpu ]
     networks:
       - default
       - proxy
-    labels:
-        - "homepage.group=AI"
-        - "homepage.id=llama-swap-card"
-        - "homepage.name=Llama Swap"
-        - "homepage.icon=/icons/llama.png"
-        - "homepage.href=http://192.168.254.111:8082"
-        - "homepage.target=_self"
-#        - "homepage.description=LLM Hot-Swapper & UI"
+    #    labels:
+    #        - "homepage.group=AI"
+    #        - "homepage.id=llama-swap-card"
+    #        - "homepage.name=Llama Swap"
+    #        - "homepage.icon=/icons/llama.png"
+    #        - "homepage.href=http://192.168.254.111:8082"
+    #        - "homepage.target=_self"
+    #        - "homepage.description=LLM Hot-Swapper & UI"
 
 volumes:
   litellm_db_data:
