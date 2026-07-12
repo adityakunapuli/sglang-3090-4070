@@ -21,7 +21,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./config:/config
       - /mnt/disk5/frigate_media:/media/frigate
-#      - /mnt/data/media_cache/frigate:/media/frigate
+      #      - /mnt/data/media_cache/frigate:/media/frigate
       - /mnt/data/models/frigate-detectors:/models
       - type: tmpfs
         target: /tmp/cache
@@ -37,25 +37,24 @@ services:
           devices:
             - driver: nvidia
               device_ids: ["all"]  # MUST expose all device ids in order for hwaccel to work
-#              device_ids: ['GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877']
-#              device_ids: ["${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}"]
+              #              device_ids: ['GPU-f1690852-7dc1-2557-d0f9-93cd6b19b877']
+              #              device_ids: ["${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}"]
               capabilities: [all]
     networks:
       - default
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Home Ops"
-      - "homepage.id=frigate-card"
-      - "homepage.name=Frigate"
-      - "homepage.icon=frigate.png"
-      - "homepage.href=http://192.168.254.111:5000"
-      - "homepage.target=_self"
-#      - "homepage.description=NVR & Object Detection"
-#      - "homepage.widget.type=frigate"
-#      - "homepage.widget.url=http://frigate:5000"
-#      - 'homepage.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
-
+      # - "homepage.group=Home Ops"
+      # - "homepage.id=frigate-card"
+      # - "homepage.name=Frigate"
+      # - "homepage.icon=frigate.png"
+      # - "homepage.href=http://192.168.254.111:5000"
+      # - "homepage.target=_self"
+      # - "homepage.description=NVR & Object Detection"
+      # - "homepage.widget.type=frigate"
+      # - "homepage.widget.url=http://frigate:5000"
+      # - 'homepage.widget.mappings=[{"field": "detectors.nvidia.inference_speed", "label": "Inf. Speed", "suffix": "ms"}, {"field": "gpu_usages[\"NVIDIA GeForce RTX 3050\"].mem", "label": "GPU Mem"}]'
 
 networks:
   proxy:

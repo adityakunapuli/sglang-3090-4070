@@ -6,6 +6,7 @@
 body {
     -ms-overflow-style: none;
     scrollbar-width: none;
+    background-color: #000000 !important;
 }
 
 /* --- MASTER ROUNDED CORNERS --- */

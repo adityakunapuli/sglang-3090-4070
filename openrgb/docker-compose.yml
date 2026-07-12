@@ -20,12 +20,16 @@ services:
       - ./config:/config:rw
       - /dev:/dev:rw
     labels:
-      - "wud.watch=false"
-      - "homepage.group=System"
-      - "homepage.id=openrgb-card"
-      - "homepage.name=OpenRGB"
-      - "homepage.icon=/icons/openrgb.png"
-      - "homepage.href=http://192.168.254.111:15800"
-      - "homepage.target=_self"
-#      - "homepage.description=RGB Lighting Control"
-      - "homepage.tag=RGB"
+        - "wud.watch=false"
+        # - "homepage.group=System"
+        # - "homepage.id=openrgb-card"
+        # - "homepage.name=OpenRGB"
+        # - "homepage.icon=/icons/openrgb.png"
+        # - "homepage.href=http://192.168.254.111:15800"
+        # - "homepage.target=_self"
+        # - "homepage.description=RGB Lighting Control"
+        # - "homepage.tag=RGB"
+
+networks:
+  proxy:
+    external: true

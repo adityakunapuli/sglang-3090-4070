@@ -46,14 +46,6 @@ services:
     networks:
       - default
       - proxy
-    labels:
-      - "wud.watch.digest=true"
-      - "homepage.group=Paperless Stack"
-      - "homepage.id=paperless-card"
-      - "homepage.name=Paperless"
-      - "homepage.icon=paperless.png"
-      - "homepage.href=http://192.168.254.111:8010"
-      - "homepage.target=_self"
 
   gotenberg:
     image: docker.io/gotenberg/gotenberg:7.10
@@ -66,8 +58,6 @@ services:
   tika:
     image: docker.io/apache/tika:latest
     container_name: paperless_tika
-    labels:
-      - "wud.watch.digest=true"
     restart: "no"
 
   ocr-sidecar:
@@ -90,27 +80,19 @@ services:
       PAPERLESS_URL: http://192.168.254.111:8010
       PAPERLESS_API_TOKEN: fb3e365ff53a0daca71494018d347afeb062fa6b
       OCR_API_URL: http://gateway:4000/v1/chat/completions
-      OCR_API_KEY: paperless-ai-ocr
+      OCR_API_KEY: paperless-ocr-token
       OCR_MODEL: ocr
-      SCAN_INTERVAL: "*/5 * * * *"
+      SCAN_INTERVAL: "0 * * * *"
       PROCESSED_TAG: ocr-processed
       SKIP_TAG: ocr-processed
       MAX_PAGES: "50"
       MAX_TOKENS_PER_PAGE: "8192"
       AI_ANALYSIS_ENABLED: "yes"
-      AI_MODEL: ocr
+      AI_MODEL: analysis
       AI_API_URL: http://gateway:4000/v1/chat/completions
-      AI_API_KEY: paperless-ai-ocr
+      AI_API_KEY: paperless-ocr-token
       MAX_ANALYSIS_TOKENS: "4096"
       LOG_LEVEL: info
-    labels:
-      - "wud.watch.digest=true"
-      - "homepage.group=Paperless Stack"
-      - "homepage.id=ocr-sidecar-card"
-      - "homepage.name=OCR Sidecar"
-      - "homepage.icon=mdi-text-recognition"
-      - "homepage.href=http://192.168.254.111:8002"
-      - "homepage.target=_self"
 
 networks:
   proxy:

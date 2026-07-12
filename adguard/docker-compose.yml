@@ -2,7 +2,7 @@ services:
   adguardhome:
     image: adguard/adguardhome:latest
     container_name: adguardhome
-#    restart: unless-stopped
+    restart: unless-stopped
     ports:
       # Bind to static LAN IP to prevent libvirt conflicts and survive TS tunnel resets
       - "192.168.254.111:53:53/tcp"
@@ -27,12 +27,12 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Home Ops"
-      - "homepage.id=adguard-card"
-      - "homepage.name=AdGuard Home"
-      - "homepage.icon=adguard-home.png"
-      - "homepage.href=http://192.168.254.111:3001"
-      - "homepage.target=_self"
+#      - "homepage.group=Home Ops"
+#      - "homepage.id=adguard-card"
+#      - "homepage.name=AdGuard Home"
+#      - "homepage.icon=adguard-home.png"
+#      - "homepage.href=http://192.168.254.111:3001"
+#      - "homepage.target=_self"
 
 networks:
   proxy:

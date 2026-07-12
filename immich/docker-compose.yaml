@@ -16,47 +16,39 @@ services:
       # Redis Connection
       - REDIS_HOSTNAME=immich_redis
       - NVIDIA_VISIBLE_DEVICES=${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
-      - NVIDIA_DRIVER_CAPABILITIES=video,compute,utility
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_VISIBLE_DEVICES=0
     ports:
       - "2283:2283"
     networks:
       - default
       - proxy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all # Passes both cards so NVDEC peer-checking initialization passes
+              capabilities: [ gpu, compute, video ]
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Home Ops"
-      - "homepage.id=immich-card"
-      - "homepage.name=Immich"
-      - "homepage.icon=immich.png"
-      - "homepage.href=http://192.168.254.111:2283"
-      - "homepage.target=_self"
-    #      - "homepage.widget.type=immich"
-    #      - "homepage.widget.url=http://192.168.254.111:2283"
-    #      - "homepage.widget.key={{HOMEPAGE_VAR_IMMICH_API_KEY}}"
-    #      - "homepage.widget.version=2"
-    #      - "homepage.widget.showStats=true"
+    #      - "homepage.group=Home Ops"
+    #      - "homepage.id=immich-card"
+    #      - "homepage.name=Immich"
+    #      - "homepage.icon=immich.png"
+    #      - "homepage.href=http://192.168.254.111:2283"
+    #      - "homepage.target=_self"
     depends_on:
       - immich_redis
       - immich_postgres
     restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids:
-                - ${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
-              capabilities:
-                - gpu
-                - video
-                - utility
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    # CUDA tag for your Quadro P620
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
+    # CUDA tag for the RTX 3060 (GPU_SLOT_3)
+    # NOTE: ML image doesn't get a `-cuda` variant on `main`; pin to release while
+    # server tracks main to pick up the HLS variant-config fix (PR #29613).
+    image: ghcr.io/immich-app/immich-machine-learning:main-cuda
     labels:
       - "wud.watch.digest=true"
     environment:
@@ -79,7 +71,7 @@ services:
     ports:
       - "3003:3003" # useful for debugging
 
-    deploy: # This block passes the GPU to the container
+    deploy:
       resources:
         reservations:
           devices:
@@ -105,7 +97,7 @@ services:
   immich_postgres:
     container_name: immich_postgres
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
-#    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    #    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
     #    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
     environment:
       POSTGRES_PASSWORD: postgres
@@ -116,20 +108,6 @@ services:
       # Stores DB data in a local folder './postgres' relative to this compose file
       - ./postgres:/var/lib/postgresql/data
     restart: always
-#    command:
-#      - postgres
-#      - -c
-#      - shared_preload_libraries=vectors.so
-#      - -c
-#      - search_path="$$user", public, vectors
-#      - -c
-#      - logging_collector=on
-#      - -c
-#      - max_wal_size=2GB
-#      - -c
-#      - shared_buffers=512MB
-#      - -c
-#      - wal_compression=on
 volumes:
   model-cache: null
 networks:

@@ -3,41 +3,48 @@
 #
 - AI:
     - Gateway:
-        icon: mdi-web
+        icon: /icons/gateway.svg
         href: http://192.168.254.111:4001
-        id: gateway
+        target: _self
+        id: gateway-card
         description: LLM Request Gateway & Telemetry
     - Llama Swap:
         icon: /icons/llama.png
         href: http://192.168.254.111:8082
-        id: llama-swap
+        target: _self
+        id: llama-swap-card
         description: LLM Hot-Swapper & UI
     - Open WebUI:
         icon: /icons/openwebui.png
         href: http://192.168.254.111:3030
-        id: openwebui
+        target: _self
+        id: openwebui-card
         description: LLM Web Interface
     - OpenCode:
         icon: /icons/opencode.png
         href: http://192.168.254.111:4096
-        id: opencode
+        target: _self
+        id: opencode-card
         description: Coding Agent Web Interface
 
 - Paperless Stack:
-    - OpenArchive:
-        icon: openarchive.png
-        href: http://192.168.254.111:8080
-        id: openarchive
+    - OCR-Sidecar:
+        icon: /icons/ocr.svg
+        href: http://192.168.254.111:8002
+        target: _self
+        id: openarchive-card
     - Paperless:
         icon: paperless.png
-        href: http://192.168.254.111:8000
-        id: paperless
+        href: http://192.168.254.111:8010
+        target: _self
+        id: paperless-card
 
 - Home Ops:
     - Home Assistant:
         icon: home-assistant.png
         href: http://192.168.254.22:8123
-        id: home-assistant
+        target: _self
+        id: home-assistant-card
         description: Home Automation Platform
         widget:
           type: homeassistant
@@ -46,7 +53,8 @@
     - Frigate:
         icon: frigate.png
         href: http://192.168.254.111:5000
-        id: frigate
+        target: _self
+        id: frigate-card
         description: NVR & Object Detection
         widget:
           type: frigate
@@ -58,9 +66,10 @@
             - field: gpu_usages["NVIDIA GeForce RTX 3050"].mem
               label: GPU Mem
     - Scrutiny:
-        icon: scrutiny.png
+        icon: /icons/scrutiny-white.svg
         href: http://192.168.254.111:8080
-        id: scrutiny
+        target: _self
+        id: scrutiny-card
         description: Drive Health Monitoring
         widget:
           type: scrutiny
@@ -69,7 +78,8 @@
     - Immich:
         icon: immich.png
         href: http://192.168.254.111:2283
-        id: immich
+        target: _self
+        id: immich-card
         description: Photo & Video Management
         widget:
           type: immich
@@ -80,18 +90,26 @@
     - AdGuard Home:
         icon: adguard-home.png
         href: http://192.168.254.111:3001
-        id: adguard
+        target: _self
+        id: adguard-card
+        widget:
+          type: adguard
+          url: http://192.168.254.111:3001
+          username: {{HOMEPAGE_VAR_ADGUARD_USERNAME}}
+          password: {{HOMEPAGE_VAR_ADGUARD_PASSWORD}}
     - Journiv:
         icon: mdi-notebook-outline
         href: http://192.168.254.111:8000
-        id: journiv
+        target: _self
+        id: journiv-card
         description: Self-hosted journal and milestone tracker
 
 - Media Automation:
     - Deluge:
         icon: deluge.png
         href: http://192.168.254.111:8112
-        id: deluge
+        target: _self
+        id: deluge-card
         description: Downloads (VPN)
         widget:
           type: deluge
@@ -100,7 +118,8 @@
     - Radarr:
         icon: radarr.png
         href: http://192.168.254.111:7878
-        id: radarr
+        target: _self
+        id: radarr-card
         description: Movies
         widget:
           type: radarr
@@ -110,7 +129,8 @@
     - Sonarr:
         icon: sonarr.png
         href: http://192.168.254.111:8989
-        id: sonarr
+        target: _self
+        id: sonarr-card
         description: TV Shows
         widget:
           type: sonarr
@@ -120,7 +140,8 @@
     - Prowlarr:
         icon: prowlarr.png
         href: http://192.168.254.111:9696
-        id: prowlarr
+        target: _self
+        id: prowlarr-card
         description: Indexer Manager
         widget:
           type: prowlarr
@@ -130,7 +151,8 @@
     - Audiobookshelf:
         icon: audiobookshelf.png
         href: http://192.168.254.111:13378
-        id: audiobookshelf
+        target: _self
+        id: audiobookshelf-card
         description: Audiobooks & Podcasts
         widget:
           type: audiobookshelf
@@ -140,7 +162,8 @@
     - Plex:
         icon: plex.png
         href: http://192.168.254.111:32400/web
-        id: plex
+        target: _self
+        id: plex-card
         widget:
           type: plex
           url: http://192.168.254.111:32400
@@ -149,49 +172,64 @@
     - Jellyfin:
         icon: jellyfin.png
         href: http://192.168.254.111:8096
-        id: jellyfin
+        target: _self
+        id: jellyfin-card
         widget:
           type: jellyfin
           url: http://jellyfin:8096
           key: {{HOMEPAGE_VAR_JELLYFIN_API_KEY}}
 
-- Infrastructure:
-    - Portainer:
-        icon: portainer.png
-        href: https://192.168.254.111:9443
-        id: portainer
-        description: Container UI
-        widget:
-          type: portainer
-          url: https://192.168.254.111:9443
-          key: {{HOMEPAGE_VAR_PORTAINER_API_KEY}}
-          env: 3
-          showStats: true
+#- Infrastructure:
+#    - Portainer:
+#        icon: portainer.png
+#        href: https://192.168.254.111:9443
+#        target: _self
+#        id: portainer-card
+#        description: Container UI
+#        widget:
+#          type: portainer
+#          url: https://192.168.254.111:9443
+#          key: {{HOMEPAGE_VAR_PORTAINER_API_KEY}}
+#          env: 3
+#          showStats: true
 
 - System:
     - CoolerControl:
-        icon: coolercontrol.svg
+        icon: /icons/coolercontrol.svg
         href: http://192.168.254.111:11987
-        id: coolercontrol
+        target: _self
+        id: coolercontrol-card
         description: RGB Lighting Control
     - Dockhand:
         icon: dockhand.png
         href: http://192.168.254.111:3999
-        id: dockhand
+        target: _self
+        id: dockhand-card
+        widget:
+          type: dockhand
+          url: http://192.168.254.111:3999
+#          environment: local # optional: name or id; aggregates all when omitted
+          username: {{HOMEPAGE_VAR_DOCKHAND_USERNAME}}
+          password: {{HOMEPAGE_VAR_DOCKHAND_PASSWORD}}
+
     - Grafana:
         icon: grafana.png
         href: http://192.168.254.111:3333
-        id: grafana
+        target: _self
+        id: grafana-card
     - InfluxDB:
         icon: influxdb.png
         href: http://192.168.254.111:8087
-        id: influxdb
+        target: _self
+        id: influxdb-card
     - OpenRGB:
         icon: /icons/openrgb.png
         href: http://192.168.254.111:15800
-        id: openrgb
+        target: _self
+        id: openrgb-card
         description: RGB Lighting Control
     - Prometheus:
         icon: prometheus.png
         href: http://192.168.254.111:9090
-        id: prometheus
+        target: _self
+        id: prometheus-card

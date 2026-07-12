@@ -31,13 +31,12 @@ services:
     container_name: prometheus
     image: prom/prometheus:latest
     restart: unless-stopped
-    labels:
-      - "homepage.group=System"
-      - "homepage.id=prometheus-card"
-      - "homepage.name=Prometheus"
-      - "homepage.icon=prometheus.png"
-      - "homepage.href=http://192.168.254.111:9090"
-      - "homepage.target=_self"
+    # - "homepage.group=System"
+    # - "homepage.id=prometheus-card"
+    # - "homepage.name=Prometheus"
+    # - "homepage.icon=prometheus.png"
+    # - "homepage.href=http://192.168.254.111:9090"
+    # - "homepage.target=_self"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -95,13 +94,12 @@ services:
     container_name: influxdb
     image: influxdb:2
     restart: unless-stopped
-    labels:
-      - "homepage.group=System"
-      - "homepage.id=influxdb-card"
-      - "homepage.name=InfluxDB"
-      - "homepage.icon=influxdb.png"
-      - "homepage.href=http://192.168.254.111:8087"
-      - "homepage.target=_self"
+    # - "homepage.group=System"
+    # - "homepage.id=influxdb-card"
+    # - "homepage.name=InfluxDB"
+    # - "homepage.icon=influxdb.png"
+    # - "homepage.href=http://192.168.254.111:8087"
+    # - "homepage.target=_self"
     ports:
       - "${INFLUXDB_PORT:-8087}:8086"
     volumes:
@@ -124,13 +122,12 @@ services:
     container_name: grafana
     image: grafana/grafana-oss:latest
     restart: unless-stopped
-    labels:
-      - "homepage.group=System"
-      - "homepage.id=grafana-card"
-      - "homepage.name=Grafana"
-      - "homepage.icon=grafana.png"
-      - "homepage.href=http://192.168.254.111:3333"
-      - "homepage.target=_self"
+    # - "homepage.group=System"
+    # - "homepage.id=grafana-card"
+    # - "homepage.name=Grafana"
+    # - "homepage.icon=grafana.png"
+    # - "homepage.href=http://192.168.254.111:3333"
+    # - "homepage.target=_self"
     ports:
       - "${GRAFANA_PORT:-3002}:3000"
     volumes:
@@ -148,6 +145,20 @@ services:
     depends_on:
       - influxdb
       - prometheus
+    networks:
+      - monitoring
+
+  vram-exporter:
+    container_name: vram-exporter
+    build:
+      context: ./vram_temps
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /dev:/dev:ro
+    ports:
+      - 5058:5058
     networks:
       - monitoring
 

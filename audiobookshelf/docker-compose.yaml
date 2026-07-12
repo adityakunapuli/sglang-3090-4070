@@ -16,17 +16,17 @@ services:
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Media Automation"
-      - "homepage.id=audiobookshelf-card"
-      - "homepage.name=Audiobookshelf"
-      - "homepage.icon=audiobookshelf.png"
-      - "homepage.target=_self"
-      - "homepage.href=http://192.168.254.111:13378"
-#      - "homepage.description=Audiobooks & Podcasts"
-      - "homepage.widget.type=audiobookshelf"
-      - "homepage.widget.url=http://192.168.254.111:13378"
-      - "homepage.widget.key=${HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}"
-      - "homepage.widget.showStats=true"
+      # - "homepage.group=Media Automation"
+      # - "homepage.id=audiobookshelf-card"
+      # - "homepage.name=Audiobookshelf"
+      # - "homepage.icon=audiobookshelf.png"
+      # - "homepage.target=_self"
+      # - "homepage.href=http://192.168.254.111:13378"
+      # - "homepage.description=Audiobooks & Podcasts"
+      # - "homepage.widget.type=audiobookshelf"
+      # - "homepage.widget.url=http://192.168.254.111:13378"
+      # - "homepage.widget.key=${HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}"
+      # - "homepage.widget.showStats=true"
   # abs-tract is primarily used to sync an Audible library to Audiobookshelf.
   abs-tract:
     image: arranhs/abs-tract
@@ -49,7 +49,7 @@ services:
       - TZ=America/New_York
       - SLEEP_TIME=1440m
     restart: unless-stopped
-#
+
 networks:
   proxy:
     external: true
