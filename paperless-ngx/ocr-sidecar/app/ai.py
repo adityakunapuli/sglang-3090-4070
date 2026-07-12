@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -43,7 +44,12 @@ class AiAnalyzer:
             "stream": False,
         }
 
-        for attempt in range(3):
+        max_hard_attempts = 3
+        hard_attempts = 0
+        delay = 5.0
+        unparseable_count = 0
+
+        while True:
             try:
                 start = time.time()
                 resp = await self._client.post(
@@ -62,28 +68,36 @@ class AiAnalyzer:
                 parsed = self._parse_json(content)
                 if parsed:
                     return parsed
-                logger.warning("AI returned unparseable output, retrying")
+                unparseable_count += 1
+                logger.warning("AI returned unparseable output (attempt %d)", unparseable_count)
+                if unparseable_count >= 3:
+                    return None
+                await asyncio.sleep(2.0)
             except httpx.HTTPStatusError as e:
-                logger.warning(
-                    "AI analysis attempt %d failed: HTTP %d - %s",
-                    attempt + 1, e.response.status_code, e.response.text[:200],
-                )
-                if attempt < 2:
-                    import asyncio
-                    await asyncio.sleep(2.0 ** attempt)
+                if e.response.status_code == 503:
+                    logger.info(
+                        "AI analysis QoS busy (backing off %.0fs): %s",
+                        delay, e.response.text[:200],
+                    )
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 2, 300)
                 else:
-                    raise
+                    hard_attempts += 1
+                    logger.warning(
+                        "AI analysis attempt %d failed: HTTP %d - %s",
+                        hard_attempts, e.response.status_code, e.response.text[:200],
+                    )
+                    if hard_attempts >= max_hard_attempts:
+                        raise
+                    await asyncio.sleep(2.0 ** (hard_attempts - 1))
             except httpx.RequestError as e:
+                hard_attempts += 1
                 logger.warning(
-                    "AI analysis attempt %d failed: %s", attempt + 1, e,
+                    "AI analysis attempt %d failed: %s", hard_attempts, e,
                 )
-                if attempt < 2:
-                    import asyncio
-                    await asyncio.sleep(2.0 ** attempt)
-                else:
+                if hard_attempts >= max_hard_attempts:
                     raise
-
-        return None
+                await asyncio.sleep(2.0 ** (hard_attempts - 1))
 
     @staticmethod
     def _parse_json(content: str) -> dict[str, Any] | None:

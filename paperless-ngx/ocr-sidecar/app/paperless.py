@@ -173,6 +173,29 @@ class PaperlessClient:
         logger.info("Fetched %d documents from Paperless-ngx", len(docs))
         return docs
 
+    async def get_documents_needing_ai(
+        self, has_tag_id: int, missing_tag_id: int
+    ) -> list[dict[str, Any]]:
+        """Fetch documents that have one tag but are missing another (e.g. ocr-processed but no ai-processed)."""
+        page = 1
+        docs: list[dict[str, Any]] = []
+        while True:
+            params: dict = {"page": page, "page_size": 100, "ordering": "created"}
+            resp = await self._client.get(
+                f"{self.base_url}/api/documents/", params=params
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            for doc in data.get("results", []):
+                tags = doc.get("tags", [])
+                if has_tag_id in tags and missing_tag_id not in tags:
+                    docs.append(doc)
+            if not data.get("next"):
+                break
+            page += 1
+        logger.info("Fetched %d documents needing AI reprocessing", len(docs))
+        return docs
+
     async def get_document(self, doc_id: int) -> dict[str, Any]:
         resp = await self._client.get(
             f"{self.base_url}/api/documents/{doc_id}/"

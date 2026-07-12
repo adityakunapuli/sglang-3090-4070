@@ -2,6 +2,19 @@
 logToStdout: "upstream"
 includeAliasesInList: true
 models:
+  Surya-OCR-2:
+    cmd: >
+      /usr/local/bin/llama-server
+      --log-colors auto
+      --model /mnt/data/models/llm/Surya2/surya-2.gguf
+      --mmproj /mnt/data/models/llm/Surya2/surya-2-mmproj.gguf
+      --alias Surya-OCR
+      --host 0.0.0.0
+      --port ${PORT}
+      --parallel 1
+      --n-gpu-layers 99
+      --main-gpu 0
+    ttl: 300
   GLM-OCR:
     cmd: >
       /usr/local/bin/llama-server
@@ -11,14 +24,9 @@ models:
       --alias GLM-OCR
       --host 0.0.0.0
       --port ${PORT}
-      --temp 0.0
-      --top-p 0.1
-      --ctx-size 32768
-      --flash-attn on
-      --parallel 1
       --n-gpu-layers 99
       --main-gpu 0
-    ttl: 60
+    ttl: 300
   Qwen3.6-27B:
     cmd: >
       /usr/local/bin/llama-server
@@ -38,25 +46,24 @@ models:
       --reasoning on
       --chat-template-kwargs '{"preserve_thinking":true}'
       --n-gpu-layers 99
-      --fit off
       --ctx-size 131072
       --cache-type-k  q8_0
       --cache-type-v q8_0
       --fit off
       --tensor-split 1,5
-#      --batch-size 2048
-#      --split-mode tensor
-#      --ubatch-size 1024
-#      --parallel 2
-#      --threads 4
-#      --threads-batch 4
-#      --tensor-split 1,1.09
-#      --defrag-thold 0.1
-#      --spec-default
-#      --spec-type ngram-map-k4v
-#      --spec-ngram-map-k4v-size-n 16
-#      --spec-ngram-map-k4v-size-m 24
-#      --spec-ngram-map-k4v-min-hits 1
+    #      --batch-size 2048
+    #      --split-mode tensor
+    #      --ubatch-size 1024
+    #      --parallel 2
+    #      --threads 4
+    #      --threads-batch 4
+    #      --tensor-split 1,1.09
+    #      --defrag-thold 0.1
+    #      --spec-default
+    #      --spec-type ngram-map-k4v
+    #      --spec-ngram-map-k4v-size-n 16
+    #      --spec-ngram-map-k4v-size-m 24
+    #      --spec-ngram-map-k4v-min-hits 1
     filters:
       setParamsByID:
         "${MODEL_ID}:fast":
@@ -272,8 +279,11 @@ models:
 matrix:
   vars:
     glm: GLM-OCR
+    surya: Surya-OCR-2
     qwen: Qwen3.6-27B
 
   sets:
-    ocr_plus_gemma: "glm & qwen"
+    glm_plus_qwen: "glm & qwen"
+    surya_plus_qwen: "surya & qwen"
+
 

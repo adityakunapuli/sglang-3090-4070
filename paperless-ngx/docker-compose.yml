@@ -2,14 +2,14 @@ services:
   broker:
     image: docker.io/library/redis:8
     container_name: paperless_redis
-    restart: "no"
+    restart: unless-stopped
     volumes:
       - ./redis:/data
 
   db:
     image: docker.io/library/postgres:18
     container_name: paperless_db
-    restart: "no"
+    restart: unless-stopped
     volumes:
       - ./db:/var/lib/postgresql
     env_file:
@@ -18,7 +18,7 @@ services:
   webserver:
     image: ghcr.io/paperless-ngx/paperless-ngx:latest
     container_name: paperless_web
-    restart: "no"
+    restart: unless-stopped
     depends_on:
       - db
       - broker
@@ -50,7 +50,7 @@ services:
   gotenberg:
     image: docker.io/gotenberg/gotenberg:7.10
     container_name: paperless_gotenberg
-    restart: "no"
+    restart: unless-stopped
     command:
       - "gotenberg"
       - "--chromium-disable-routes=true"
@@ -58,7 +58,7 @@ services:
   tika:
     image: docker.io/apache/tika:latest
     container_name: paperless_tika
-    restart: "no"
+    restart: unless-stopped
 
   ocr-sidecar:
     build: ./ocr-sidecar
@@ -85,6 +85,7 @@ services:
       SCAN_INTERVAL: "0 * * * *"
       PROCESSED_TAG: ocr-processed
       SKIP_TAG: ocr-processed
+      AI_PROCESSED_TAG: ai-processed
       MAX_PAGES: "50"
       MAX_TOKENS_PER_PAGE: "8192"
       AI_ANALYSIS_ENABLED: "yes"

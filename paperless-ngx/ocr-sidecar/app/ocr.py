@@ -72,7 +72,12 @@ class OcrProcessor:
             "stream": False,
         }
 
-        for attempt in range(3):
+        # Retry loop: hard errors get 3 attempts, QoS 503s get extended backoff.
+        max_hard_attempts = 3
+        hard_attempts = 0
+        delay = 5.0  # Start at 5s for QoS backoff
+
+        while True:
             try:
                 start = time.time()
                 resp = await self._client.post(
@@ -92,26 +97,34 @@ class OcrProcessor:
                 )
                 return text
             except httpx.HTTPStatusError as e:
-                logger.warning(
-                    "Page %d attempt %d failed: HTTP %d - %s",
-                    page_num, attempt + 1, e.response.status_code,
-                    e.response.text[:200],
-                )
-                if attempt < 2:
-                    await asyncio.sleep(2.0 ** attempt)
+                if e.response.status_code == 503:
+                    # QoS "model busy" — retry with exponential backoff, no attempt limit.
+                    body_text = e.response.text[:200]
+                    logger.info(
+                        "Page %d/%d QoS busy (attempt #%d, backing off %.0fs): %s",
+                        page_num, total, hard_attempts + 1, delay, body_text,
+                    )
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 2, 300)  # Cap at 5 minutes
                 else:
-                    raise
+                    hard_attempts += 1
+                    logger.warning(
+                        "Page %d attempt %d failed: HTTP %d - %s",
+                        page_num, hard_attempts, e.response.status_code,
+                        e.response.text[:200],
+                    )
+                    if hard_attempts >= max_hard_attempts:
+                        raise
+                    await asyncio.sleep(2.0 ** (hard_attempts - 1))
             except httpx.RequestError as e:
+                hard_attempts += 1
                 logger.warning(
                     "Page %d attempt %d failed: %s",
-                    page_num, attempt + 1, e,
+                    page_num, hard_attempts, e,
                 )
-                if attempt < 2:
-                    await asyncio.sleep(2.0 ** attempt)
-                else:
+                if hard_attempts >= max_hard_attempts:
                     raise
-
-        return ""
+                await asyncio.sleep(2.0 ** (hard_attempts - 1))
 
     async def ocr_document(
         self, pdf_bytes: bytes, doc_id: int
@@ -127,6 +140,7 @@ class OcrProcessor:
             return None
 
         page_texts: list[str] = []
+        failed_pages: list[int] = []
         for i, img in enumerate(page_images):
             try:
                 text = await self.ocr_page(img, i + 1, len(page_images))
@@ -136,6 +150,21 @@ class OcrProcessor:
                     "Failed to OCR page %d/%d for doc %d: %s",
                     i + 1, len(page_images), doc_id, e,
                 )
-                page_texts.append(f"\n[OCR failed for page {i+1}]\n")
+                failed_pages.append(i + 1)
+
+        if failed_pages and not page_texts:
+            # Every page failed — nothing useful to write back; let caller handle.
+            logger.error(
+                "All pages failed for doc %d (pages %s)", doc_id, failed_pages,
+            )
+            return None
+
+        if failed_pages:
+            # Partial success — insert markers but still return the good text.
+            logger.warning(
+                "Partial OCR for doc %d: %d/%d pages failed (%s)",
+                doc_id, len(failed_pages), len(page_images), failed_pages,
+            )
+            return "\n\n--- Page Break ---\n\n".join(page_texts)
 
         return "\n\n--- Page Break ---\n\n".join(page_texts)

@@ -235,15 +235,19 @@ async def scan(config: Config, db: Database | None = None) -> None:
             try:
                 skip_tag_id = None
                 processed_tag_id = None
+                ai_processed_tag_id = None
                 if config.skip_tag:
                     skip_tag_id = await paperless.get_tag_id(config.skip_tag)
                 if config.processed_tag:
                     processed_tag_id = await paperless.ensure_tag(config.processed_tag)
+                if config.ai_processed_tag:
+                    ai_processed_tag_id = await paperless.get_tag_id(config.ai_processed_tag)
 
+                # Phase 1: Full processing (OCR + AI) for docs without processed tag
                 docs = await paperless.get_all_documents(skip_tag_id)
                 if config.only_doc_ids:
                     docs = [d for d in docs if d["id"] in config.only_doc_ids]
-                logger.info("Found %d documents to process", len(docs))
+                logger.info("Found %d documents for full processing (OCR + AI)", len(docs))
 
                 for i, doc in enumerate(docs):
                     logger.info("[%d/%d] Processing document %d", i + 1, len(docs), doc["id"])
@@ -260,6 +264,37 @@ async def scan(config: Config, db: Database | None = None) -> None:
                             error=str(e)[:500],
                         )
                         await db.log_event("ERROR", "failed", doc["id"], str(e)[:200])
+
+                # Phase 2: AI-only reprocessing for docs with ocr-processed but missing ai-processed tag
+                if ai_processed_tag_id is not None and processed_tag_id is not None and ai:
+                    ai_docs = await paperless.get_documents_needing_ai(
+                        has_tag_id=processed_tag_id,
+                        missing_tag_id=ai_processed_tag_id,
+                    )
+                    if ai_docs:
+                        logger.info("Found %d documents needing AI-only reprocessing", len(ai_docs))
+                        for i, doc in enumerate(ai_docs):
+                            logger.info("[AI %d/%d] Running AI analysis for document %d", i + 1, len(ai_docs), doc["id"])
+                            try:
+                                ocr_text = doc.get("content", "")
+                                if not ocr_text.strip():
+                                    logger.warning("Skipping doc %d: no content available for AI analysis", doc["id"])
+                                    continue
+                                analysis = await ai.analyze(ocr_text)
+                                if analysis:
+                                    await _apply_ai_metadata(doc["id"], analysis, paperless, db)
+                                    await db.upsert_document(
+                                        paperless_id=doc["id"],
+                                        title=doc.get("title", ""),
+                                        status="done",
+                                    )
+                                else:
+                                    logger.warning("AI analysis returned no metadata for doc %d", doc["id"])
+                            except Exception as e:
+                                logger.error(
+                                    "AI reprocessing failed for document %d: %s", doc["id"], e, exc_info=True
+                                )
+                                await db.log_event("ERROR", "ai_reprocess_failed", doc["id"], str(e)[:200])
 
             finally:
                 await paperless.close()

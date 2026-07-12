@@ -87,10 +87,10 @@ function_uid = "02ba5ea0-89cc-4085-808f-c3b1cc97963b"
 uid = "57439cc6-dd87-460d-99f2-293307a74fce"
 name = "gpu-side-fans"
 p_type = "Graph"
-speed_profile = [[45.0, 0], [70.0, 100]]
+speed_profile = [[45.0, 0], [65.0, 100]]
 temp_source = { temp_name = "sensor1", device_uid = "19e098e312e1b1b39163a343ea22b6ea17f18ec1a803ffe0ce44f5bacd6076ee" }
 temp_min = 45.0
-temp_max = 70.0
+temp_max = 65.0
 function_uid = "63cf9c97-16ad-49a9-b0f3-3dc62e5b51ad"
 offset_profile = []
 
@@ -109,10 +109,10 @@ offset_profile = []
 uid = "d2c4a1b0-5e8f-4b2a-9c1d-3f7e9b2a1c4d"
 name = "cpu-fans"
 p_type = "Graph"
-speed_profile = [[35.0, 20], [60.0, 80], [80.0, 100]]
+speed_profile = [[35.0, 20], [70.0, 100]]
 temp_source = { temp_name = "temp7", device_uid = "18517aee779eda4778fc7b5432bc39dff7d75c1a3a418c80a52457d40a4a9b90" }
 temp_min = 35.0
-temp_max = 80.0
+temp_max = 70.0
 function_uid = "63cf9c97-16ad-49a9-b0f3-3dc62e5b51ad"
 offset_profile = []
 
@@ -153,6 +153,18 @@ response_delay = 5
 deviance = 4.0
 only_downward = true
 threshold_hopping = true
+
+[[functions]]
+uid = "092487d1-149d-4ce8-a0c2-6a7919b64d41"
+name = "cpu-fans"
+f_type = "ExponentialMovingAvg"
+duty_minimum = 2
+duty_maximum = 100
+step_size_min_decreasing = 0
+step_size_max_decreasing = 0
+sample_window = 8
+threshold_hopping = true
+bypass_min_at_extremes = false
 
 
 # Cooler Control Settings
@@ -233,11 +245,11 @@ cs_type = "Mix"
 mix_function = "Max"
 
 [[custom_sensors.sources]]
-temp_source = { temp_name = "temp1", device_uid = "3cd4e388e9f449eac198a41a6a130677078f456219fbcf026dde7197ad434afe" }
+temp_source = { temp_name = "temp1", device_uid = "787b280a5d5400e07047adf787c6a68c61a18c735e35283d70396e9f1b807d97" }
 weight = 1
 
 [[custom_sensors.sources]]
-temp_source = { temp_name = "temp1", device_uid = "8f6019b6e39cb0ec03b995afe88c54be9efde8d35d343ef042d9af7e57a9e975" }
+temp_source = { temp_name = "temp1", device_uid = "3cd4e388e9f449eac198a41a6a130677078f456219fbcf026dde7197ad434afe" }
 weight = 1
 
 [[custom_sensors.sources]]
@@ -245,15 +257,60 @@ temp_source = { temp_name = "temp1", device_uid = "b889bedcc1ae4954efd8c3733bacf
 weight = 1
 
 [[custom_sensors.sources]]
-temp_source = { temp_name = "temp1", device_uid = "1c6068de8a42ba7f130c9c455de95efe619a3bce07f48b51f1cb385657d32c73" }
-weight = 1
-
-[[custom_sensors.sources]]
-temp_source = { temp_name = "temp1", device_uid = "787b280a5d5400e07047adf787c6a68c61a18c735e35283d70396e9f1b807d97" }
-weight = 1
-
-[[custom_sensors.sources]]
 temp_source = { temp_name = "temp1", device_uid = "3310f08189aa594251addd39400809f8eceaf3484038a090781fab08dd0bd691" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp1", device_uid = "8f6019b6e39cb0ec03b995afe88c54be9efde8d35d343ef042d9af7e57a9e975" }
+weight = 1
+
+[[custom_sensors]]
+id = "sensor3"
+cs_type = "Mix"
+mix_function = "Max"
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp1", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp2", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp6", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp10", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp14", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp18", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp22", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp31", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp30", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp32", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
+weight = 1
+
+[[custom_sensors.sources]]
+temp_source = { temp_name = "temp33", device_uid = "2b97e5f4256c55b70a6a5ff700ca21a066bffe03cd237c2c802f3db93694cf03" }
 weight = 1
 
 # TLS/HTTPS Configuration:

@@ -67,6 +67,9 @@ class Config:
     skip_tag: str = field(
         default_factory=lambda: os.getenv("SKIP_TAG", "ocr-processed")
     )
+    ai_processed_tag: str = field(
+        default_factory=lambda: os.getenv("AI_PROCESSED_TAG", "ai-processed")
+    )
     max_pages: int = field(
         default_factory=lambda: int(os.getenv("MAX_PAGES", "50"))
     )
