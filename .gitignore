@@ -8,7 +8,6 @@ bifrost/
 blocky/
 hermes/
 traefik/
-homepage/public/
 docker/audiobookshelf/libation_config/
 audiobookshelf/libation_config/AccountsSettings.json
 audiobookshelf/libation_config/Settings.json
@@ -141,6 +140,20 @@ immich/.env
 !frigate/config/
 !frigate/config/config.yml
 !frigate/docs/
+!coolercontrol/config/
+!coolercontrol/config/config.toml
+!coolercontrol/config/config-ui.json
+# But still ignore sensitive/transient files within coolercontrol/config
+/coolercontrol/config/.passwd
+/coolercontrol/config/.session_key
+/coolercontrol/config/sessions/
+/coolercontrol/config/alert-logs.json
+/coolercontrol/config/alerts.json
+/coolercontrol/config/calibrations.json
+/coolercontrol/config/modes.json
+/coolercontrol/config/config.toml.bak
+/coolercontrol/config/config.toml.corrupted
+/coolercontrol/config/.session_key.*
 
 
 !llama-swap/llama-swap-config.yaml
@@ -159,3 +172,7 @@ update_final.py
 upload_dash.py
 screenshot.png
 monitoring/archive_backup/
+#!homepage/config/
+#!homepage/config/**
+#homepage/config/logs/
+homepage/public/images/**
