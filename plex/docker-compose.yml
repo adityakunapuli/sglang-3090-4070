@@ -8,18 +8,6 @@ services:
     networks:
       - default
       - proxy
-    labels:
-        - "homepage.group=Media Automation"
-        - "homepage.id=plex-card"
-        - "homepage.name=Plex"
-        - "homepage.icon=plex.png"
-        - "homepage.href=http://192.168.254.111:32400/web"
-#        - "homepage.description=Media Server"
-        - "homepage.widget.type=plex"
-        - "homepage.widget.url=http://192.168.254.111:32400"
-        - "homepage.target=_self"
-        - "homepage.widget.key=${PLEX_TOKEN}"
-        - 'homepage.widget.fields=["streams", "movies", "tv"]'
     environment:
       - PUID=1000
       - PGID=1000

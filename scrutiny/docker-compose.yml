@@ -14,28 +14,27 @@ services:
       - ./config:/opt/scrutiny/config
       - ./data:/opt/scrutiny/influxdb
     devices:
-      - "/dev/sda:/dev/sda" # 18TB WDC WUH721818AL (Ultrastar DC HC550)
-      - "/dev/sdb:/dev/sdb" # 8TB HGST HUS728T8TAL (Ultrastar DC HC320)
-      - "/dev/sdc:/dev/sdc" # 6TB WDC WD60EFRX-68M (WD Red Plus)
-      - "/dev/sdd:/dev/sdd" # 500GB Samsung SSD 840 (OS SSD)
-      - "/dev/sde:/dev/sde" # 6TB ST6000NM0115-1YZ (Seagate Enterprise Capacity)
-      - "/dev/sdf:/dev/sdf" # 8TB WDC WD80EMAZ-00M (VAG2E09L)
-      - "/dev/sdg:/dev/sdg" # 6TB WDC WD60EFRX-68M (WD Red Plus)
+      - "/dev/sda:/dev/sda" # 6TB WDC WD60EFRX-68M (WD Red Plus) - SnapRAID d2
+      - "/dev/sdb:/dev/sdb" # 8TB HGST HUS728T8TAL (Ultrastar DC HC320) - SnapRAID parity
+      - "/dev/sdc:/dev/sdc" # 18TB WDC WUH721818AL (Ultrastar DC HC550) - FatMan
+      - "/dev/sdd:/dev/sdd" # 6TB WDC WD60EFRX-68M (WD Red Plus) - SnapRAID d4
+      - "/dev/sde:/dev/sde" # 8TB WDC WD80EMAZ-00M (VAG2E09L) - SnapRAID d5
+      - "/dev/sdf:/dev/sdf" # 6TB ST6000NM0115-1YZ (Seagate Enterprise Capacity) - SnapRAID d3
     networks:
       - default
       - proxy
     labels:
       - "wud.watch.digest=true"
-      - "homepage.group=Home Ops"
-      - "homepage.id=scrutiny-card"
-      - "homepage.name=Scrutiny"
-      - "homepage.icon=scrutiny.png"
-      - "homepage.href=http://192.168.254.111:8080"
-#      - "homepage.description=Drive Health Monitoring"
-      - "homepage.widget.type=scrutiny"
-      - "homepage.widget.url=http://192.168.254.111:8080"
-      - "homepage.target=_self"
-      - "homepage.widget.showStats=true"
+      # - "homepage.group=Home Ops"
+      # - "homepage.id=scrutiny-card"
+      # - "homepage.name=Scrutiny"
+      # - "homepage.icon=scrutiny.png"
+      # - "homepage.href=http://192.168.254.111:8080"
+      # - "homepage.description=Drive Health Monitoring"
+      # - "homepage.widget.type=scrutiny"
+      # - "homepage.widget.url=http://192.168.254.111:8080"
+      # - "homepage.target=_self"
+      # - "homepage.widget.showStats=true"
 
 networks:
   proxy:
