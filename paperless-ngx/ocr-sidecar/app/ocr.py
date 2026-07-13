@@ -139,18 +139,32 @@ class OcrProcessor:
             logger.warning("No pages rendered for doc %d", doc_id)
             return None
 
-        page_texts: list[str] = []
-        failed_pages: list[int] = []
-        for i, img in enumerate(page_images):
-            try:
-                text = await self.ocr_page(img, i + 1, len(page_images))
-                page_texts.append(text)
-            except Exception as e:
-                logger.error(
-                    "Failed to OCR page %d/%d for doc %d: %s",
-                    i + 1, len(page_images), doc_id, e,
-                )
-                failed_pages.append(i + 1)
+        # Process pages concurrently with a per-document semaphore (max 4 pages at once)
+        semaphore = asyncio.Semaphore(4)
+
+        async def ocr_page_with_semaphore(img: bytes, page_num: int, total: int) -> tuple[int, str | None]:
+            async with semaphore:
+                try:
+                    text = await self.ocr_page(img, page_num, total)
+                    return page_num, text
+                except Exception as e:
+                    logger.error(
+                        "Failed to OCR page %d/%d for doc %d: %s",
+                        page_num, total, doc_id, e,
+                    )
+                    return page_num, None
+
+        # Launch all pages concurrently
+        tasks = [
+            ocr_page_with_semaphore(img, i + 1, len(page_images))
+            for i, img in enumerate(page_images)
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=False)
+
+        # Sort results by page number to preserve semantic order
+        results.sort(key=lambda x: x[0])
+        page_texts = [text for _, text in results if text is not None]
+        failed_pages = [page_num for page_num, text in results if text is None]
 
         if failed_pages and not page_texts:
             # Every page failed — nothing useful to write back; let caller handle.
@@ -167,4 +181,5 @@ class OcrProcessor:
             )
             return "\n\n--- Page Break ---\n\n".join(page_texts)
 
+        logger.info("Completed OCR for doc %d: %d pages processed", doc_id, len(page_texts))
         return "\n\n--- Page Break ---\n\n".join(page_texts)

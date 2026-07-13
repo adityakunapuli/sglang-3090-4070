@@ -267,6 +267,7 @@ async def scan(config: Config, db: Database | None = None) -> None:
 
                 # Phase 2: AI-only reprocessing for docs with ocr-processed but missing ai-processed tag
                 if ai_processed_tag_id is not None and processed_tag_id is not None and ai:
+                    logger.info(f"Phase 2: ai_processed_tag_id={ai_processed_tag_id}, processed_tag_id={processed_tag_id}")
                     ai_docs = await paperless.get_documents_needing_ai(
                         has_tag_id=processed_tag_id,
                         missing_tag_id=ai_processed_tag_id,
@@ -283,11 +284,15 @@ async def scan(config: Config, db: Database | None = None) -> None:
                                 analysis = await ai.analyze(ocr_text)
                                 if analysis:
                                     await _apply_ai_metadata(doc["id"], analysis, paperless, db)
+                                    # Add ai-processed tag to mark AI analysis complete
+                                    logger.info("Adding ai-processed tag (id=%d) to doc %d", ai_processed_tag_id, doc["id"])
+                                    await paperless.add_tag(doc["id"], ai_processed_tag_id)
                                     await db.upsert_document(
                                         paperless_id=doc["id"],
                                         title=doc.get("title", ""),
                                         status="done",
                                     )
+                                    logger.info("AI-only reprocess succeeded for doc %d", doc["id"])
                                 else:
                                     logger.warning("AI analysis returned no metadata for doc %d", doc["id"])
                             except Exception as e:
