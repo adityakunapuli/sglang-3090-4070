@@ -34,7 +34,7 @@
         description: Network Controller
     - Hermes UI:
         icon: /icons/hermesagent.png
-        href: http://192.168.254.111:9119
+        href: http://127.0.0.1:9119
         target: _self
         id: hermes-ui-card
         description: Hermes Agent Dashboard
