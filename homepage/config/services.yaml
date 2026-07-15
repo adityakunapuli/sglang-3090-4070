@@ -26,6 +26,24 @@
         target: _self
         id: opencode-card
         description: Coding Agent Web Interface
+    - UniFi:
+        icon: mdi-network
+        href: https://192.168.254.22:8443
+        target: _blank
+        id: unifi-card
+        description: Network Controller
+    - Hermes UI:
+        icon: /icons/hermesagent.png
+        href: http://192.168.254.111:9119
+        target: _self
+        id: hermes-ui-card
+        description: Hermes Agent Dashboard
+    - QwenPaw:
+        icon: /icons/qwen.png
+        href: http://192.168.254.111:8088
+        target: _self
+        id: qwenpaw-card
+        description: QwenPaw Console
 
 - Paperless Stack:
     - OCR-Sidecar:
