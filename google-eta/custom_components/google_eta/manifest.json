@@ -1,0 +1,11 @@
+{
+  "domain": "google_eta",
+  "name": "Google ETA",
+  "version": "1.0.0",
+  "documentation": "https://github.com/user/google-eta",
+  "issue_tracker": "https://github.com/user/google-eta/issues",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": [],
+  "config_flow": true
+}
