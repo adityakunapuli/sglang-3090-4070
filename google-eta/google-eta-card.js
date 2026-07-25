@@ -54,8 +54,8 @@ var GoogleEtaCard = class GoogleEtaCard extends HTMLElement {
     this._container = null;
     this._pendingMapEl = null;
     this._waitingLeaflet = false;
-    this._sensorA = 'sensor.eta_to_wife';
-    this._sensorB = 'sensor.eta_to_me';
+    this._sensorA = null;
+    this._sensorB = null;
     this._mapHeight = 400;
     this._nameA = 'Adi';
     this._nameB = 'Wife';
@@ -67,6 +67,8 @@ var GoogleEtaCard = class GoogleEtaCard extends HTMLElement {
     this._mapHeight = config.height || this._mapHeight;
     if (config.name_a) this._nameA = config.name_a.charAt(0).toUpperCase() + config.name_a.slice(1);
     if (config.name_b) this._nameB = config.name_b.charAt(0).toUpperCase() + config.name_b.slice(1);
+    if (config.sensor_a) this._sensorA = config.sensor_a;
+    if (config.sensor_b) this._sensorB = config.sensor_b;
   }
 
   getCardSize() {
@@ -147,7 +149,28 @@ var GoogleEtaCard = class GoogleEtaCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._discoverSensors();
     this._render();
+  }
+
+  _discoverSensors() {
+    if (this._sensorA && this._sensorB) return;
+    var states = this._hass.states;
+    var sensors = [];
+    Object.keys(states).forEach(function (key) {
+      var s = states[key];
+      if (s.platform === 'google_eta' && s.attributes.type === 'driving_eta') {
+        sensors.push(s.entity_id);
+      } else if (key.includes('google_eta') && key.includes('eta_to')) {
+        sensors.push(key);
+      }
+    });
+    if (sensors.length >= 1 && !this._sensorA) {
+      this._sensorA = sensors[0];
+    }
+    if (sensors.length >= 2 && !this._sensorB) {
+      this._sensorB = sensors[1];
+    }
   }
 
   _render() {
