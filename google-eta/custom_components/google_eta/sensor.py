@@ -39,7 +39,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up google_eta sensors."""
-    options = dict(entry.data)
+    options = dict(entry.options)
     config: dict = {
         CONF_API_KEY: options[CONF_API_KEY],
         CONF_PERSON_A: options[CONF_PERSON_A],
@@ -54,10 +54,15 @@ async def async_setup_entry(
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator}
 
+    def _name_for(val: str) -> str:
+        if "." in val:
+            return val.split(".", 1)[1]
+        return val
+
     state_a = hass.states.get(options[CONF_PERSON_A])
     state_b = hass.states.get(options[CONF_PERSON_B])
-    name_a = state_a.name if state_a else options[CONF_PERSON_A].split(".", 1)[1]
-    name_b = state_b.name if state_b else options[CONF_PERSON_B].split(".", 1)[1]
+    name_a = (state_a and state_a.name) or _name_for(options[CONF_PERSON_A])
+    name_b = (state_b and state_b.name) or _name_for(options[CONF_PERSON_B])
 
     sensor_a_to_b = EtaSensor(coordinator, name_a, name_b, SENSOR_A_TO_B, "from_a_to_b")
     sensor_b_to_a = EtaSensor(coordinator, name_b, name_a, SENSOR_B_TO_A, "from_b_to_a")
