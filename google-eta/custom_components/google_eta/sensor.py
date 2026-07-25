@@ -39,7 +39,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up google_eta sensors."""
-    options = dict(entry.options)
+    options = dict(entry.data)
     config: dict = {
         CONF_API_KEY: options[CONF_API_KEY],
         CONF_PERSON_A: options[CONF_PERSON_A],

@@ -16,6 +16,8 @@ from .const import (
     CONF_PERSON_B,
     CONF_COOLDOWN,
     CONF_THRESHOLD_M,
+    DEFAULT_COOLDOWN,
+    DEFAULT_THRESHOLD_M,
     DOMAIN,
     ROUTE_A_TO_B,
     ROUTE_B_TO_A,

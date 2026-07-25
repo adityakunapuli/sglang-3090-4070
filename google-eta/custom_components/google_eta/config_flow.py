@@ -38,23 +38,24 @@ class GoogleEtaConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title="Google ETA",
-                    data={},
-                    options=user_input,
+                    data=user_input,
                 )
             except Exception as err:
                 _LOGGER.error("Config flow error: %s", err)
                 errors["base"] = "unknown"
 
-        person_entities = self._get_person_entities()
+        person_map = self._get_person_entities()
+        person_names = list(person_map.keys())
 
-        if not person_entities:
+        if not person_names:
             errors["base"] = "no_persons"
-            person_entities = [("person.aditya_kunapuli", "Adi"), ("person.mrs_wife", "Wife")]
+            person_map = {"Adi": "person.aditya_kunapuli", "Babe": "person.mrs_wife"}
+            person_names = list(person_map.keys())
 
         schema = vol.Schema({
             vol.Required(CONF_API_KEY, default=""): str,
-            vol.Required(CONF_PERSON_A, default=person_entities[0][0]): vol.In(person_entities),
-            vol.Required(CONF_PERSON_B, default=person_entities[1][0] if len(person_entities) > 1 else person_entities[0][0]): vol.In(person_entities),
+            vol.Required(CONF_PERSON_A, default=person_names[0]): vol.In(person_map),
+            vol.Required(CONF_PERSON_B, default=person_names[1] if len(person_names) > 1 else person_names[0]): vol.In(person_map),
             vol.Required(CONF_COOLDOWN, default=DEFAULT_COOLDOWN): vol.All(vol.Coerce(int), vol.Range(min=60, max=86400)),
             vol.Required(CONF_THRESHOLD_M, default=DEFAULT_THRESHOLD_M): vol.All(vol.Coerce(int), vol.Range(min=100, max=100000)),
         })
@@ -65,12 +66,12 @@ class GoogleEtaConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    def _get_person_entities(self) -> list[tuple[str, str]]:
-        """Collect available person entities."""
-        entities = []
+    def _get_person_entities(self) -> dict[str, str]:
+        """Collect available person entities as {display_name: entity_id}."""
+        entities = {}
         for state in self.hass.states.async_all(PERSON_DOMAIN):
             if not state.entity_id.startswith(f"{PERSON_DOMAIN}."):
                 continue
             name = state.name or state.entity_id
-            entities.append((state.entity_id, name))
+            entities[name] = state.entity_id
         return entities
