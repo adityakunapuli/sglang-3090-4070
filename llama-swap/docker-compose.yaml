@@ -14,8 +14,10 @@ services:
     environment:
       - LLAMA_CACHE=/mnt/data/models/llm
       - HF_HOME=/mnt/data/models/llm
-      - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
+#      - CUDA_VISIBLE_DEVICES=all
+#      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=${GPU_SLOT_1:?GPU_SLOT_3_NOT_SET},${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
     command: ["--config", "/app/llama-swap-config.yaml", "--listen", "0.0.0.0:8080"]
     working_dir: /app
     deploy:
@@ -28,7 +30,7 @@ services:
                   '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}',
                   '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'
               ]
-              capabilities: [ gpu ]
+              capabilities: [ all ]
     networks:
       - default
       - proxy

@@ -55,12 +55,12 @@ models:
           chat_template_kwargs:
             reasoning_effort: "medium"
             enable_thinking: true
-            preserve_thinking: true
+            preserve_thinking: false
         "${MODEL_ID}:low":
           chat_template_kwargs:
             reasoning_effort: "low"
             enable_thinking: true
-            preserve_thinking: true
+            preserve_thinking: false
         "${MODEL_ID}:none":
           reasoning: "off"
           temperature: 0.7
@@ -70,6 +70,7 @@ models:
           presence_penalty: 1.5
           repetition_penalty: 1.0
           chat_template_kwargs:
+            reasoning_effort: "none"
             enable_thinking: false
     aliases:
       - "Qwen3.8-27B:xhigh"
@@ -244,6 +245,61 @@ models:
       - "Muse-Glimmer-30B:fast"
       - "Muse-Glimmer-30B:low"
       - "Muse-Glimmer-30B:high"
+    ttl: 0
+
+  Nemotron-3.5-Lightning-30B-A3B:
+    cmd: >
+      /usr/local/bin/llama-server
+      --log-colors auto
+      --no-mmap
+      --model /mnt/data/models/llm/Nemotron/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-IQ4_NL.gguf
+      --alias Nemotron-3.5-Lightning-30B-A3B
+      --host 0.0.0.0
+      --port ${PORT}
+      --temp 0.6
+      --top-p 0.95
+      --min-p 0.01
+      --flash-attn on
+      --jinja
+      --reasoning on
+      --chat-template-kwargs '{"enable_thinking":true,"preserve_thinking":true}'
+      --split-mode layer
+      --n-gpu-layers 99
+      --fit on
+      --ctx-size 262144
+      --cache-type-k  q8_0
+      --cache-type-v q8_0
+      --spec-type ngram-mod
+      --spec-ngram-mod-n-match 24
+      --spec-ngram-mod-n-min 48
+      --spec-ngram-mod-n-max 64
+    # NOTE: this GGUF does NOT contain MTP/DFlash/DSpark draft weights
+    # (tensor table verified: 417 tensors, arch nemotron_h_moe, zero mtp tensors).
+    # draft-mtp/draft-dspark/draft-dflash unavailable until MTP ships in the
+    # GGUF or draft GGUFs land. When they do:
+    #   --spec-type draft-mtp             (MTP baked into main gguf)
+    #   --model-draft <gguf> --spec-type draft-dspark
+    # No tensor-split: --fit on decides the split.
+    filters:
+      setParamsByID:
+        "${MODEL_ID}:fast":
+          reasoning: "off"
+          chat_template_kwargs:
+            enable_thinking: false
+        "${MODEL_ID}:low":
+          thinking_budget_tokens: 1024
+          chat_template_kwargs:
+            enable_thinking: true
+            preserve_thinking: false
+        "${MODEL_ID}:high":
+          thinking_budget_tokens: -1
+          chat_template_kwargs:
+            enable_thinking: true
+            preserve_thinking: true
+    aliases:
+      - "Nemotron-3.5-Lightning-30B-A3B:fast"
+      - "Nemotron-3.5-Lightning-30B-A3B:low"
+      - "Nemotron-3.5-Lightning-30B-A3B:high"
     ttl: 0
 
 #  Qwen3.6-36B-A3B-MTP-91split:
