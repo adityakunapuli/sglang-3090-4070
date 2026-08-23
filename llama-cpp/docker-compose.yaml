@@ -14,6 +14,7 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - LD_LIBRARY_PATH=/app:/usr/local/cuda/lib64
       - NCCL_DEBUG=WARN
+      - CUDA_VISIBLE_DEVICES=${GPU_SLOT_1:?GPU_SLOT_3_NOT_SET},${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
       # If NCCL still chokes on networking setups, uncomment the line below to force it to use local P2P:
       # - NCCL_NET_PLUGIN=none
     # Start in router mode using the models.ini preset
