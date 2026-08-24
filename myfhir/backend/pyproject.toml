@@ -1,0 +1,74 @@
+[project]
+name = "myhealth-fhir"
+version = "0.1.0"
+description = "Multi-provider FHIR API explorer: Anthem insurance + UCLA Health clinical data"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "httpx>=0.28.0",
+    "python-dotenv>=1.0.0",
+    "click>=8.1.0",
+    "rich>=13.9.0",
+    "fhirpy>=2.2.0",
+    "fhirclient>=4.4.0",
+    "sqlalchemy>=2.0.51",
+    "psycopg>=3.2.0",
+    "psycopg-binary>=3.2.0",
+    "tqdm>=4.66.0",
+    "python-docx>=1.1.0",
+    "beautifulsoup4>=4.12.0",
+    "markitdown>=0.1.0",
+]
+
+[project.scripts]
+myhealth = "myhealth_fhir.cli:main"
+anthem = "myhealth_fhir.cli:anthem_main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pdfplumber>=0.11.10",
+    "ruff>=0.11.0",
+    "pre-commit>=4.0.0",
+    "pytest>=8.0.0",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "UP",  # pyupgrade
+    "D",   # pydocstyle
+    "TID", # flake8-tidy-imports
+    "Q",   # flake8-quotes
+]
+ignore = [
+    "D417", # allow missing parameter docstrings
+]
+
+# NOTE: TC (flake8-type-checking) intentionally NOT selected — it would
+# require importing `typing.TYPE_CHECKING`, which is banned below by TID.
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+banned-module-level-imports = ["typing"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

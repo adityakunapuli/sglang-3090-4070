@@ -1,0 +1,64 @@
+# MyHealth FHIR Dashboard — scheduled data-pull backend + dashboard frontend.
+#
+# Targets the shared PostgreSQL instance (../database/docker-compose.yml, service
+# name `db` on the external `proxy` network). Backend is internal-only; only the
+# frontend port is published.
+#
+# NOTE: interpolate from THIS directory's .env (myfhir/.env), not ../.env —
+# the shared-db `myhealth` role password and all provider credentials
+# (CLIENT_ID, EPIC_CLIENT_ID, ...) live here. Run with:
+#
+#   docker compose --env-file .env up -d --build
+
+services:
+  backend:
+    build:
+      context: backend/
+    container_name: myfhir_backend
+    restart: unless-stopped
+    environment:
+      # DB credentials. All MYHEALTH_DB_* come from myfhir/.env (the shared-db
+      # role password that actually authenticates over the network).
+      MYHEALTH_DB_USER: ${MYHEALTH_DB_USER:-myhealth}
+      MYHEALTH_DB_PASS: ${MYHEALTH_DB_PASS:?MYHEALTH_DB_PASS not set in myfhir/.env}
+      MYHEALTH_DB_HOST: db
+      MYHEALTH_DB_PORT: "5432"
+      MYHEALTH_DB_NAME: ${MYHEALTH_DB_NAME:-myhealth_auth}
+
+      # Provider credentials. CLIENT_ID/CLIENT_SECRET/FHIR_PLAN and Epic
+      # (UCLA) IDs/secrets live in myfhir/.env.
+      CLIENT_ID: ${CLIENT_ID:-}
+      CLIENT_SECRET: ${CLIENT_SECRET:-}
+      FHIR_PLAN: ${FHIR_PLAN:-AnthemBlueCrossBlueShield}
+      REDIRECT_URI: ${REDIRECT_URI:-https://localhost/callback}
+      EPIC_CLIENT_ID: ${EPIC_CLIENT_ID:-}
+      EPIC_SECRET: ${EPIC_SECRET:-}
+      UCLA_SECRET: ${UCLA_SECRET_PROD:-}
+
+      # API data-pull scheduler. Token keep-alive runs independently every 5m.
+      JOB_DAEMON: "1"
+      JOB_INTERVAL_MINUTES: ${JOB_INTERVAL_MINUTES:-1380}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/status',timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - proxy
+
+  frontend:
+    build:
+      context: frontend/
+    container_name: myfhir_frontend
+    restart: unless-stopped
+    ports:
+      - "8517:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

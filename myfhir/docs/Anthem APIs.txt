@@ -1,0 +1,436 @@
+ 
+Interoperability API    
+Endpoint Support Document   
+Title:      Interoperability API Endpoints   
+Document  
+ID:     
+IO105   
+Version #:      15.0   
+Document  
+Type:     
+☐  Policy                  ☐ Procedure     
+☒ Other support documentation    Department:   Enterprise   
+Data (EDA)  
+Effective  
+Date:    
+November 18, 2025   
+Status:     Active     
+Scope:     This document provides the details needed to access and connect to the Patient Access API, Provider Directory 
+API and the Formulary API Endpoints.     
+  
+    
+POLICY   
+Per the United States Centers for Medicare & Medicaid Services (CMS) Interoperability (IO) and 
+Patient Access Final Rule, data is made available via an Application Programming Interface (API) 
+for accessing an individual’s health information.  Additional APIs include the Provider Directory 
+and Formulary APIs.   
+  
+RESPONSIBILITY   
+All associates, contractors and business partners must comply with the requirements in this 
+document and the supporting procedures.  Compliance with the CMS IO Final Rule and related 
+procedures will be maintained and overseen by the Interoperability Center of Excellence (IO 
+CoE).    
+  
+PURPOSE   
+This document outlines all the endpoints available for connections and accessing the Patient 
+Access API, Provider Directory API and the Formulary API. This document is intended to provide 
+guidance to alliance partners, application developers or others seeking access to these APIs 
+once an agreement is in place. The Provider Directory production environment, Formulary 
+production environment, Patient Access Sandbox environment and are public, however they 
+require registration.  The Patient Access API production environment requires member consent. 
+Once received, a token will be issued and valid for 90 days to access this data. Ongoing access 
+will require renewed consent.  
+    
+PATIENT ACCESS API   
+The Patient Access API contains 5 years of historical medical, dental and vision claims and 
+clinical data for an individual. The Patient Access API adheres to the following specifications: 
+  
+• US Core Implementation Guide 6.1.0 
+• CARIN Consumer Directed Payer Data Exchange (CARIN IG for Blue Button) 
+Implementation Guide STU 2.1.0 
+• HL7 FHIR Release 4.0.1 
+• SMART Application Launch Framework Implementation Guide Release 2.2.0 
+ 
+Documentation and technical information related to the patient API can be found here.   
+  
+NOTE: Prior Authorization data required by CMS-0057 final rule will be added to the Patient 
+Access API by 1/1/27.  
+ 
+Patient Access API – Sandbox Environment 
+This is a public environment for FHIR functional testing containing synthetic data.  It is available 
+for Application Developers upon registration and supports the HL7® FHIR® standard with 
+SMART® authorization.    
+  
+SMART® clients can be registered and maintained here.    
+   
+Users can self-register for sandbox accounts here.   
+ 
+Patient Access API – Production Environment 
+This is the live data environment for the Patient Access API endpoints.  Registration is 
+required to properly establish connections.  Requests can be made by completing the 
+Patient Access API Production Environment request form on the Developer Portal.  
+  
+For accessing the Formulary information of a specific member and the supported 
+searches along with the endpoints, please refer to the Formulary API section. The 
+same endpoints can also be used to fetch the formulary data for all our plans and have 
+a member choose a plan for his/her plan specific formulary.  
+ 
+FHIR Endpoints (Production Base URL) 
+ 
+Brand Brand URL Endpoint  
+Amerigroup https://totalview.healthos.elevancehealth.com/resources/registered/Amerigrou
+p/api/v1/fhir 
+Anthem Blue Cross https://totalview.healthos.elevancehealth.com/resources/registered/AnthemBlu
+eCross/api/v1/fhir 
+ Anthem Blue Cross Blue 
+Shield 
+https://totalview.healthos.elevancehealth.com/resources/registered/AnthemBlu
+eCrossBlueShield/api/v1/fhir 
+ Blue Medicare 
+Advantage 
+https://totalview.healthos.elevancehealth.com/resources/registered/BlueMedic
+areAdvantage/api/v1/fhir 
+ Clear Health Alliance https://totalview.healthos.elevancehealth.com/resources/registered/ClearHealt
+hAlliance/api/v1/fhir 
+ Dell Children Health 
+Plan 
+https://totalview.healthos.elevancehealth.com/resources/registered/DellChildr
+enHealthPlan/api/v1/fhir 
+ Healthy Blue https://totalview.healthos.elevancehealth.com/resources/registered/HealthyBlu
+e/api/v1/fhir 
+ Healthy Blue Blue 
+Choice 
+https://totalview.healthos.elevancehealth.com/resources/registered/HealthyBlu
+eBlueChoice/api/v1/fhir 
+ Healthy Blue NC https://totalview.healthos.elevancehealth.com/resources/registered/HealthyBlu
+eNC/api/v1/fhir 
+ Simply HealthCare https://totalview.healthos.elevancehealth.com/resources/registered/SimplyHea
+lthCare/api/v1/fhir 
+ Summit https://totalview.healthos.elevancehealth.com/resources/registered/Summit/ap
+i/v1/fhir 
+ Unicare https://totalview.healthos.elevancehealth.com/resources/registered/Unicare/ap
+i/v1/fhir 
+ Wellpoint https://totalview.healthos.elevancehealth.com/resources/registered/Wellpoint/
+api/v1/fhir 
+ 
+ 
+ 
+ 
+ 
+   
+PROVIDER DIRECTORY API  
+Provider Directory API enables current or prospective members to see which providers are in-
+network for a given insurance plan. This service includes multiple FHIR APIs: InsurancePlan, 
+Practitioner, PractitionerRole, Organization, Organization Affiliation and Location.  
+These APIs adhere to the following specifications: 
+• HL7 R4 FHIR 
+• DaVinci PDEX Plan Net 1.1.0 
+• HL7 FHIR US Core IG STU 3.1.1 (for the US Core resources, Plan-Net Location, Plan-Net 
+Organization, Plan-Net Practitioner) 
+To establish connections, third party application (TPA) need to complete the Registration 
+process. This involves filling out the Provider Directory API Production Environment request 
+form, available on the Developer Portal. Once the registration is successfully completed, TPA 
+will receive the client credentials and the access token URL through a secure email.  
+To access Provider Directory data using the OAuth 2.0 client credentials flow, follow these 
+enhanced steps: 
+Step 1: Generate the Access Token 
+1. Access Token URL: 
+• Use the access token endpoint URL which you received in the secure email 
+2. Client Credentials: 
+• Ensure you have your client ID and client secret, which you received during 
+registration. 
+3. Request Parameters: 
+• Set the grant type to client credentials. 
+ 
+4. Make an Access Token Request: 
+Using CURL: 
+1curl -X POST <access token endpoint URL> 
+2-H 'Content-Type: application/x-www-form-urlencoded' \ 
+3-H ' Authorization: Basic <my-base64-encoded-username-and-password> 
+4-d 'grant_type=client_credentials' \ 
+ 
+5. Receive and Store Access Token: 
+• Upon successful request, you'll receive a JSON response containing the access 
+token. Securely store this token for your API requests. 
+  
+Step 2: Query the Provider Directory Data 
+1. API Endpoint: 
+• Use the following FHIR data endpoint: 
+https://totalview.healthos.elevancehealth.com/resources/unregistered/api/v1/fhir/c
+ms_mandate/mcd/ 
+ 
+2. Make an API Request with the Access Token: 
+Using CURL: 
+1curl -X GET 
+'https://totalview.healthos.elevancehealth.com/resources/unregistered/api/v1/fhir/cms_mandate/mcd/' 
+\ 
+2-H 'Authorization: Bearer YOUR_ACCESS_TOKEN' 
+ 
+By following these steps, you will be equipped to successfully generate an access token and use 
+it to query the Provider Directory data. Ensure that your credentials are accurate and that you 
+are handling the access token securely. If you run into any issues, consider verifying the 
+endpoint URLs and your connectivity. 
+Supported Search Parameters 
+Insurance Plan Search Parameters  
+Parameter Example 
+_id  GET [base]/InsurancePlan?_id=[id] 
+_lastupdated  GET [base]/InsurancePlan?_lastUpdated=[date]  
+name  GET [base]/InsurancePlan?name=[string]  
+identifier  GET [base]/InsurancePlan?identifier=[system]|[code] 
+type  GET [base]/InsurancePlan?type=[system]|[code] 
+ 
+Location Plan Search Parameters  
+Parameter Example 
+_id  Get [base]/Location?_id=[id] 
+_lastupdated  GET [base]/Location?_lastUpdated=[date]  
+name GET [base]/Location?=[name] 
+address-city GET [base]/Location?address-city=[string] 
+address-postalcode GET [base]/Location?address-postalcode=[string] 
+address-state GET [base]/Location?address-state=[string]  
+address GET [base]/Location?address=[string] 
+ 
+ 
+ 
+Practitioner Search Parameters  
+Parameter Example 
+_id  Get [base]/Practitioner?_id=[id] 
+_lastupdated  GET [base]/Practitioner?_lastUpdated=[date]  
+name  GET [base]/Practitioner?name=[string] 
+family GET [base]/Practitioner?family=[string] 
+given GET [base]/Practitioner?given=[string] 
+ 
+Organization Search Parameters  
+Parameter Example 
+_id  Get [base]/Organization?_id=[id] 
+_lastupdated  GET [base]/Organization?_lastUpdated=[date]  
+name  GET [base]/Organization?name=[string] 
+Type GET [base]/Organization?type=[system]|[code] 
+Address GET [base]/Organization?address=[string] 
+ 
+Healthcare Services Parameters  
+Parameter Example 
+_id  Get [base]/HealthcareService?_id=[id] 
+_lastupdated GET [base]/ HealthcareService?_lastUpdated=[date]  
+name  GET [base]/HealthcareService?name=[string] 
+organization GET [base]/HealthcareService?organization=[organization] 
+location GET [base]/HealthcareService?location=[location] 
+Specialty GET [base]/HealthcareService?specialty=[system]|[code] 
+service-type GET [base]/HealthcareService?type=[system]|[code]  
+service-category GET [base]/HealthcareService?category=[system]|[code] 
+HealthcareService:loca
+tion 
+GET 
+[base]/HealthcareService?[parameter=value]&_include=Healthca
+reService:location 
+HealthcareService:org
+anization 
+GET 
+[base]/HealthcareService?[parameter=value]&_include=Healthca
+reService:organization 
+ 
+Organization Affiliation Search Parameters  
+Parameter Example 
+_id  Get [base]/OrganizationAffiliation?_id=[id] 
+_lastupdated  GET [base]/OrganizationAffiliation?_lastUpdated=[date]  
+participating-
+organization 
+GET [base]/ OrganizationAffiliation?participating-organization 
+=[string] 
+primary-organization GET [base]/OrganizationAffiliation?primary-
+organization=[primary-organization] 
+Location GET [base]/ 
+OrganizationAffiliation?location=[location/reference] 
+Service GET [base]/ OrganizationAffiliation?service=[service/reference] 
+Network GET [base]/ 
+OrganizationAffiliation?network=[network/reference] 
+Specialty GET [base]/ OrganizationAffiliation?specialty=[system]|[code] 
+Role GET [base]/ OrganizationAffiliation?role=[system]|[code] 
+OrganizationAffiliation:
+primary-organization 
+GET 
+[base]/OrganizationAffiliation?[parameter=value]&_include=Org
+anizationAffiliation:primary-organization 
+OrganizationAffiliation:
+participating-
+organization 
+GET 
+[base]/OrganizationAffiliation?[parameter=value]&_include=Org
+anizationAffiliation:participating-organization  
+OrganizationAffiliation:l
+ocation 
+GET 
+[base]/OrganizationAffiliation?[parameter=value]&_include=Org
+anizationAffiliation:location 
+OrganizationAffiliation:s
+ervice   
+GET 
+[base]/OrganizationAffiliation?[parameter=value]&_include=Org
+anizationAffiliation:service 
+OrganizationAffiliation:
+network 
+GET 
+[base]/OrganizationAffiliation?[parameter=value]&_include=Org
+anizationAffiliation:network 
+ 
+Practitioner Role Search Parameters 
+Parameter Example 
+_id  Get [base]/PractitionerRole?_id=[id] 
+_lastupdated  GET [base]/ PractitionerRole?_lastUpdated=[date]  
+Practitioner GET [base]/ PractitionerRole?practitioner=[practitioner/reference] 
+organization  GET [base]/ PractitionerRole?organization=[organization/reference] 
+location GET [base]/ PractitionerRole?location=[location/reference] 
+service GET [base]/ PractitionerRole?service=[service/reference] 
+network GET [base]/ PractitionerRole?network=[network/reference] 
+role GET [base]/ PractitionerRole?role=[system][code] 
+specialty GET [base]/ PractitionerRole?specialty=[system][code] 
+PractitionerRole:practi
+tioner   
+GET[base]/PractitionerRole?[parameter=value]&_include=Practitio
+nerRole:practitioner 
+PractitionerRole:organ
+ization   
+GET[base]/PractitionerRole?[parameter=value]&_include=Practitio
+nerRole:organization 
+PractitionerRole:locati
+on 
+GET[base]/PractitionerRole?[parameter=value]&_include=Practitio
+nerRole:location 
+PractitionerRole:servi
+ce 
+GET[base]/PractitionerRole?[parameter=value]&_include=Practitio
+nerRole:service 
+PractitionerRole:netw
+ork   
+GET[base]/PractitionerRole?[parameter=value]&_include=Practitio
+nerRole:network  
+ 
+ 
+   
+FORMULARY API  
+The Formulary API provides data on formularies associated with different insurance plans and 
+the corresponding drug lists. Data on cost sharing for the drugs under a formulary, their 
+respective tier and pharmacy type data is also available through the API. We currently have data 
+on Medicare, Medicaid, and CHIP plans.   
+The API adheres to the following specifications: 
+• HL7 R4 FHIR 
+• DaVinci Payer Data Exchange (PDEX) US Drug Formulary IG 2.0.1 STU2 US 
+ 
+To establish connections, third party applications (TPA) need to complete the registration 
+process. This involves filling out the Formulary API Production Environment request form, 
+available on the Developer Portal. Once the registration is successfully completed, TPA will 
+receive the client credentials and the access token URL through a secure email.  
+To access Formulary data using the OAuth 2.0 client credentials flow, follow these enhanced 
+steps: 
+Step 1: Generate the Access Token 
+1. Access Token URL: 
+• Use the access token endpoint URL which you received in the secure email 
+2. Client Credentials: 
+a. Ensure you have your client ID and client secret, which you received during 
+registration. 
+3. Request Parameters: 
+a. Set the grant type to client credentials. 
+4. Make an Access Token Request: 
+When using CURL: 
+1curl -X POST <access token endpoint URL> 
+2-H 'Content-Type: application/x-www-form-urlencoded' \ 
+3-H ' Authorization: Basic <my-base64-encoded-username-and-password> 
+4-d 'grant_type=client_credentials' \ 
+ 
+5. Receive and Store Access Token: 
+• Upon successful request, you'll receive a JSON response containing the access 
+token. Securely store this token for your API requests. 
+ 
+Step 2: Query Formulary Data  
+6. API Endpoint: 
+a. Use the following FHIR data endpoint: 
+https://totalview.healthos.elevancehealth.com/resources/unregistered/api/v1/fhir/c
+ms_mandate/frmlry 
+ 
+ 
+7. Make an API Request with the Access Token: 
+When using CURL: 
+1curl -X GET 
+'https://totalview.healthos.elevancehealth.com/resources/unregistered/api/v1/fhir/cms_mandate/frmlry
+/' \ 
+2-H 'Authorization: Bearer YOUR_ACCESS_TOKEN' 
+ 
+By following these steps, you will be equipped to successfully generate an access token and use 
+it to query the Formulary data. Ensure that your credentials are accurate and that you are 
+handling the access token securely. If you run into any issues, consider verifying the endpoint 
+URLs and your connectivity. 
+ 
+Covered API Searches 
+PayerInsurancePlan & Formulary (InsurancePlan)  
+ 
+Parameter  Example  
+_id  GET [base]/InsurancePlan?_id=[id]  
+_lastUpdated  GET [base]/InsurancePlan?_lastUpdated=[date]  
+identifier  GET [base]/InsurancePlan?identifier=[system]|[code]  
+status  GET [base]/InsurancePlan?status=[code]  
+period  GET [base]/InsurancePlan?period=[date]  
+type  GET [base]/InsurancePlan?type=[system]|[code]  
+name  GET [base]/InsurancePlan?name=[string]  
+coverage-type  GET [base]/InsurancePlan?coverage-type=[system]|[code]  
+formularycoverage  GET [base]/InsurancePlan?formulary-coverage=[reference]  
+coverage-area  GET [base]/InsurancePlan?coverage-area=[reference]  
+  
+ 
+ 
+FormularyItem (Basic)   
+Parameter  Sample URL  
+_id  GET [base]/Basic?_id=[id]  
+_lastUpdated  GET [base]/Basic?_lastUpdated=[date]  
+code  GET [base]/Basic?code=formulary-item  
+subject  GET [base]/Basic?subject=[reference]  
+status  GET [base]/Basic?status=[code]  
+period  GET [base]/Basic?period=[date]  
+formulary  GET [base]/Basic?formulary=[reference]  
+pharmacy-benefit-
+type  
+GET [base]/Basic?pharmacy-benefit-type=[system]|[code]  
+drug-tier  GET [base]/Basic?drug-tier=[system]|[code]  
+   
+FormularyDrug (MedicationKnowledge)  
+Parameter  Sample URL  
+_id  GET [base]/MedicationKnowledge?_id=[id]  
+_lastUpdated  GET [base]/MedicationKnowledge?_lastUpdated=[date]  
+status  GET [base]/MedicationKnowledge?status=[code]  
+code  GET [base]/MedicationKnowledge?code=[system]|[code]  
+drug-name  GET [base]/MedicationKnowledge?drug-name=[string]  
+  
+Anticipated Client Queries  
+Search  Example  
+Find All 
+PayerInsurancePlans  
+GET [base]/InsurancePlan?type=http://hl7.org/fhir/us/davinci-
+pdex-plannet/CodeSystem/InsuranceProductTypeCS|  
+Find All Insurance Plans 
+with Drug Coverage  
+GET [base]/InsurancePlan?coverage- 
+type=http://terminology.hl7.org/CodeSystem/v3-
+ActCode|DRUGPOL  
+Find All Formulary Resource  GET 
+[base]/InsurancePlan?type=http://terminology.hl7.org/CodeSyst
+em/v3ActCode|DRUGPOL   
+Find a Formulary by its 
+Identifier  
+GET 
+[base]/InsurancePlan?type=http://terminology.hl7.org/CodeSyst
+em/v3ActCode|DRUGPOL&identifier=D1002  
+Find All 
+PayerInsurancePlans by a 
+Formulary  
+GET 
+[base]/InsurancePlan?formularycoverage=InsurancePlan/Formul
+aryD1002  
+  
+PAYER TO PAYER API 
+The Payer-to-Payer API will be implemented as required in the CMS-0057 final rule by 1/1/27.  
+ 
+PRIOR AUTHORIZATION API 
+The Prior Authorization API will be implemented as required in the CMS-0057 final rule by 
+1/1/27. 
+ 
+PROVIDER ACCESS API 
+The Provider Access API will be implemented as required in the CMS-0057 final rule by 1/1/27. 
+ 
