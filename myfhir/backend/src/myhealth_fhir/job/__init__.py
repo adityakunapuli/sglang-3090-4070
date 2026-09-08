@@ -22,7 +22,7 @@ log = logging.getLogger("myhealth_fhir.job")
 
 # Table counters per provider database, used to report totals + deltas.
 _COUNTERS = {
-    "anthem": ["eob", "claim_submission", "member_claim"],
+    "anthem": ["eob", "claim_submission"],
     "ucla": [
         "encounter",
         "diagnostic_report",
@@ -37,6 +37,11 @@ _COUNTERS = {
         "care_team",
     ],
 }
+
+# Result-metric keys that represent real records fed to the run summary.
+# Everything else (saved/new/updated/db_total/sec/status/error/...) is
+# bookkeeping and excluded so the "fetched" totals aren't inflated.
+_SUMMARY_METRIC_KEYS = {"count", "panels", "results", "imaging"}
 
 
 def _count_rows(provider: str) -> dict[str, int]:
@@ -109,7 +114,11 @@ def _job_run_summary(provider: str, results: dict) -> dict:
                         n = int(sub.get("new") or 0)
                         fetched.setdefault(rt, 0)
                         fetched[rt] += n
-            elif isinstance(value, (int, float)) and key not in ("db_total",):
+            elif isinstance(value, (int, float)) and key in _SUMMARY_METRIC_KEYS:
+                # Only real record metrics feed the summary:
+                #   "count" (EOB/claims saved this run) and the lab counters
+                #   (panels/results/imaging). Derived per-patient bookkeeping
+                #   (saved/new/updated/db_total/sec/...) is not summed.
                 fetched.setdefault(key, 0)
                 fetched[key] += int(value or 0)
     return {"fetched": fetched}

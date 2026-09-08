@@ -20,6 +20,14 @@ frontend port is published.
   copy/paste; no localhost listener; `REDIRECT_URI` never needs hosting).
 - Run entirely locally. No PHI committed to the repo.
 
+## Plan Coverage (BENEFITS.md)
+- A local `BENEFITS.md` file (gitignored, present on this machine) documents the
+  user's current Anthem plan coverage: deductibles, OOP maximums, coverage
+  details.
+- If `BENEFITS.md` exists locally, read it before interpreting EOBs, claims,
+  out-of-pocket costs, or answer questions about plan coverage/deductibles —
+  it is the authority for what the plan pays, independent of the FHIR data.
+
 ## Architecture
 
 ```
@@ -61,9 +69,9 @@ Three PG databases with explicit sessions (`db/__init__.py`):
 - `myhealth_auth` — `oauth_tokens` (patient_id, provider) PK; `entity_names`;
   `patients`; `pkce_verifiers` (provider PK, verifier, state); `job_run`
   (running|success|partial|failed, totals counts JSON).
-- `myhealth_anthem` — `eob`, `eob_item`, `eob_diagnosis`, `eob_care_team`,
-  `eob_total`, `claim_submission`, `claim_item`, `claim_diagnosis`,
-  `claim_care_team`, `member_claim`, `entity_names`, `member_claim_submission`
+- `myhealth_anthem` — `eob`, `eob_item`, `eob_item_adjudication`, `eob_diagnosis`,
+  `eob_care_team`, `eob_total`, `claim_submission`, `claim_item`, `claim_diagnosis`,
+  `claim_care_team`, `entity_names`, `member_claim_submission`
   (+ `submission_origin`/`is_out_of_network` classification columns + views).
 - `myhealth_ucla` — `encounter`, `encounter_participant`, `diagnostic_report`,
   `lab_result`, `imaging_observation`, `clinical_observation`, `clinical_note`,
@@ -82,8 +90,7 @@ synthetic `fhir_id` values: `ehi_note_<NOTE_ID>`, `ehi_mar_<ORDER_MED_ID>_<LINE>
 `ehi_imm_<DOCUMENT_ID>`.
 
 Views: Anthem `eob_claims`, `eob_items`, `claim_submissions`, `claim_items`,
-`member_claims_recon`, `member_claims_summary`, `member_claims`; UCLA
-`lab_results`, `clinical_overview`.
+`member_claims`; UCLA `lab_results`, `clinical_overview`.
 
 `db.init_db()` runs `create_all` on each base — tables are idempotent. The
 `schema.md` in `docs/` is the schema authority; read it before changing ORM
@@ -156,7 +163,7 @@ uv run --project backend myhealth ucla ehi /path/to/export -p <ID> --only notes 
 
 ## Security Constraints
 - Never log tokens, secrets, or patient data to stdout beyond formatted summaries.
-- `.env`, `.archive/`, `*.db`, `node_modules/` are gitignored.
+- `.env`, `.archive/`, `*.db`, `node_modules/`, `BENEFITS.md` are gitignored.
 - Dashboard `POST /api/auth/{provider}/exchange` returns no secrets; keep the
   backend unpublished (internal network only).
 - PHI must never be committed. Keep the tests anonymized; add real patient

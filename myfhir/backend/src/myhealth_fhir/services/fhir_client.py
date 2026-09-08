@@ -519,7 +519,12 @@ class FHIRClient:
                     patient_id=pid,
                     status=status,
                     use=use,
-                    created_date_gte=pid_lastupdated or created_date_gte,
+                    # When filtering by _lastUpdated (incremental) don't ALSO
+                    # constrain service-date — that would drop recently
+                    # re-adjudicated EOBs whose original service date is older
+                    # than the checkpoint. Service-date filtering is only used
+                    # when the caller explicitly requests a created-date window.
+                    created_date_gte=None if pid_lastupdated else created_date_gte,
                     lastupdated_gte=pid_lastupdated,
                     count=100,
                     all_pages=not no_paginate,
@@ -888,6 +893,10 @@ class FHIRClient:
             EOBDiagnosis,
             EOBCareTeam,
             EOBTotal,
+            EOBIdentifier,
+            EOBAdjudication,
+            EOBSupportingInfo,
+            EOBProcedure,
         )
         from myhealth_fhir.db import get_anthem_session
 
@@ -898,6 +907,10 @@ class FHIRClient:
             load_care_team,
             load_totals,
             load_item_adjudications,
+            load_eob_identifiers,
+            load_eob_adjudications,
+            load_eob_supporting_info,
+            load_eob_procedures,
         )
 
         count = 0
@@ -933,6 +946,18 @@ class FHIRClient:
 
                 for t in load_totals(rec, eob_id):
                     session.add(EOBTotal(**t))
+
+                for ident in load_eob_identifiers(rec, eob_id):
+                    session.add(EOBIdentifier(**ident))
+
+                for adj in load_eob_adjudications(rec, eob_id):
+                    session.add(EOBAdjudication(**adj))
+
+                for si in load_eob_supporting_info(rec, eob_id):
+                    session.add(EOBSupportingInfo(**si))
+
+                for proc in load_eob_procedures(rec, eob_id):
+                    session.add(EOBProcedure(**proc))
 
                 count += 1
                 if count % 20 == 0:
@@ -1140,6 +1165,7 @@ class FHIRClient:
             ClaimItem,
             ClaimDiagnosis,
             ClaimCareTeam,
+            ClaimIdentifier,
         )
         from myhealth_fhir.db import get_anthem_session
         from myhealth_fhir.db.parser import (
@@ -1147,6 +1173,7 @@ class FHIRClient:
             load_claim_item,
             load_claim_diagnoses,
             load_claim_care_team,
+            load_claim_identifiers,
         )
 
         count = 0
@@ -1176,6 +1203,9 @@ class FHIRClient:
 
                 for ct in load_claim_care_team(rec, claim_id):
                     session.add(ClaimCareTeam(**ct))
+
+                for ident in load_claim_identifiers(rec, claim_id):
+                    session.add(ClaimIdentifier(**ident))
 
                 count += 1
                 if count % 20 == 0:
@@ -1419,7 +1449,8 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
     import json
 
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import DiagnosticReport, LabResult
+    from myhealth_fhir.db.models_ucla import DiagnosticReport, DiagnosticReportIdentifier, LabResult, LabResultComponent
+    from myhealth_fhir.db.ucla_unpack import extract_diagnostic_report, extract_lab_result
 
     new_panels = 0
     new_results = 0
@@ -1506,6 +1537,8 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
             performer_obj = report.get("performer", [{}])[0] if report.get("performer") else None
             performer_ref = _save_actor(session, performer_obj, provider, "Organization", f"report:{dr_id}:performer")
 
+            dr_fields, dr_children = extract_diagnostic_report(report)
+
             # Upsert panel
             existing = session.get(DiagnosticReport, dr_id)
             if existing:
@@ -1523,6 +1556,8 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
                 existing.encounter_id = enc_id
                 existing.specimen_ref = spec_ref
                 existing.has_images = has_images
+                for k, v in dr_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(report)
                 # Delete old results (will be re-inserted)
                 for r in existing.results:
@@ -1548,10 +1583,15 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
                     specimen_ref=spec_ref,
                     has_images=has_images,
                     raw_json=json.dumps(report),
+                    **dr_fields,
                 )
                 session.add(dr)
                 new_panels += 1
                 session.flush()
+
+            session.query(DiagnosticReportIdentifier).filter(DiagnosticReportIdentifier.report_id == dr_id).delete(synchronize_session=False)
+            for row in dr_children.get("diagnostic_report_identifier", []):
+                session.add(DiagnosticReportIdentifier(**row))
 
             # ── Fetch and save child Observations ──
             result_refs = report.get("result", [])
@@ -1632,30 +1672,8 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
                                 interp_display = cc[0].get("display")
                                 break
 
-                # Components — panel members (e.g. CBC differential, BMP sub-tests)
-                components = obs.get("component", [])
-                component_value = None
-                if components:
-                    parsed = []
-                    for comp in components:
-                        if not isinstance(comp, dict):
-                            continue
-                        c_code = comp.get("code", {})
-                        c_name = _parse_code_display(c_code) if isinstance(c_code, dict) else None
-                        c_val = _extract_observation_value(comp)
-                        c_unit = None
-                        cq = comp.get("valueQuantity")
-                        if isinstance(cq, dict):
-                            c_unit = cq.get("unit", cq.get("code"))
-                        parsed.append({
-                            "code": c_name,
-                            "value": c_val,
-                            "unit": c_unit,
-                        })
-                    if parsed:
-                        component_value = json.dumps(parsed)
-
                 obs_eff = _parse_dt(obs.get("effectiveDateTime"))
+                lr_fields, lr_children = extract_lab_result(obs)
 
                 lr = LabResult(
                     fhir_id=obs_id,
@@ -1671,10 +1689,14 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
                     interpretation_display=interp_display,
                     effective_datetime=obs_eff,
                     status=obs.get("status"),
-                    component_value=component_value,
                     raw_json=json.dumps(obs),
+                    **lr_fields,
                 )
                 session.add(lr)
+                session.flush()
+                session.query(LabResultComponent).filter(LabResultComponent.lab_id == lr.id).delete(synchronize_session=False)
+                for row in lr_children.get("lab_result_component", []):
+                    session.add(LabResultComponent(lab_id=lr.id, **row))
 
             if len(reports) > 0:
                 pass  # commit at end
@@ -1830,13 +1852,84 @@ def _coding_first_code(code_obj: dict) -> dict:
     return {}
 
 
+def _as_list(val):
+    """Normalize a FHIR field that may be a single object or an array into a list."""
+    if val is None:
+        return []
+    return val if isinstance(val, list) else [val]
+
+
+def _identifier_rows(resource: dict) -> list[dict]:
+    """Flatten FHIR identifier[] into rows for a *_identifier child table."""
+    rows = []
+    for i, ident in enumerate(_as_list(resource.get("identifier"))):
+        if not isinstance(ident, dict):
+            continue
+        rows.append({"seq": i, "system": ident.get("system"), "value": ident.get("value"), "use": ident.get("use")})
+    return rows
+
+
+def _extension_value(resource: dict, url: str):
+    """Return the value* of the first top-level extension matching url (whitespace-insensitive)."""
+    for ext in _as_list(resource.get("extension")):
+        if isinstance(ext, dict) and "".join((ext.get("url") or "").split()) == url:
+            for key in ("valueBoolean", "valueString", "valueInteger", "valueDecimal", "valueDate", "valueDateTime", "valueCode", "valueCoding"):
+                if key in ext:
+                    return ext[key]
+    return None
+
+
+def _component_rows(comp_list) -> tuple[str | None, list[dict]]:
+    """Parse Observation.component[] into (component_value JSON, child-row dicts)."""
+    import json
+
+    component_value = None
+    rows = []
+    for i, comp in enumerate(_as_list(comp_list)):
+        if not isinstance(comp, dict):
+            continue
+        c_code = comp.get("code", {})
+        c_name = _parse_code_display(c_code) if isinstance(c_code, dict) else None
+        c_val = _extract_observation_value(comp)
+        cq = comp.get("valueQuantity")
+        c_unit = cq.get("unit", cq.get("code")) if isinstance(cq, dict) else None
+        c_float = None
+        if isinstance(cq, dict) and cq.get("value") is not None:
+            try:
+                c_float = float(cq["value"])
+            except (TypeError, ValueError):
+                c_float = None
+        rows.append(
+            {
+                "seq": i,
+                "code_loinc": _parse_loinc(c_code.get("coding", []) if isinstance(c_code, dict) else []),
+                "code_display": c_name,
+                "component_value": c_val,
+                "value_float": c_float,
+                "value_unit": c_unit,
+                "reference_range": None,
+                "interpretation_code": None,
+                "interpretation_display": None,
+            }
+        )
+        for it in comp.get("interpretation", []) or []:
+            if isinstance(it, dict) and it.get("coding") and isinstance(it["coding"][0], dict):
+                rows[-1]["interpretation_code"] = it["coding"][0].get("code")
+                rows[-1]["interpretation_display"] = it["coding"][0].get("display")
+                break
+    if rows:
+        component_value = json.dumps([{"code": r["code_display"], "value": r["component_value"], "unit": r["value_unit"]} for r in rows])
+    return component_value, rows
+
+
 # ── Encounter ──────────────────────────────────────────────────────
 
 
 def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import Encounter, EncounterParticipant
+    from myhealth_fhir.db.models_ucla import Encounter, EncounterIdentifier, EncounterParticipant
+    from myhealth_fhir.db.ucla_unpack import extract_encounter, participant_new_fields
 
     count = 0
     with get_ucla_session() as session:
@@ -1866,6 +1959,7 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
             patient_ref = ref_from_fhir(subject.get("reference") if subject else None, provider, "Patient")
             if patient_ref and subject:
                 upsert_patient_name(session, provider=provider, patient_id=patient_ref.rsplit(":", 1)[-1], name=subject.get("display"))
+            enc_fields, enc_children = extract_encounter(res)
             if existing:
                 existing.patient_id = patient_id
                 existing.patient_ref = patient_ref
@@ -1875,6 +1969,8 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                 existing.period_end = _parse_dt(period.get("end"))
                 existing.reason_display = reason_display
                 existing.location = location
+                for k, v in enc_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(res)
             else:
                 enc = Encounter(
@@ -1888,10 +1984,15 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     reason_display=reason_display,
                     location=location,
                     raw_json=json.dumps(res),
+                    **enc_fields,
                 )
                 session.add(enc)
                 count += 1
             session.flush()
+
+            session.query(EncounterIdentifier).filter(EncounterIdentifier.encounter_id == eid).delete(synchronize_session=False)
+            for row in enc_children.get("encounter_identifier", []):
+                session.add(EncounterIdentifier(**row))
 
             # Participants
             for p_old in session.query(EncounterParticipant).filter(EncounterParticipant.encounter_id == eid).all():
@@ -1906,6 +2007,7 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                         individual_ref=_save_actor(session, ind, provider, "Practitioner", f"encounter:{eid}:participant"),
                         role_code=role.get("coding", [{}])[0].get("code") if role.get("coding") else None,
                         role_display=role.get("text", _coding_first_display(role)),
+                        **participant_new_fields(part),
                     ))
         session.commit()
     return count
@@ -1918,6 +2020,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import Condition
+    from myhealth_fhir.db.ucla_unpack import extract_condition
 
     count = 0
     with get_ucla_session() as session:
@@ -1938,6 +2041,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
 
             asserter_ref = _save_actor(session, r.get("asserter"), provider, "Practitioner", rid)
+            cond_fields, _ = extract_condition(r)
 
             existing = session.get(Condition, rid)
             if existing:
@@ -1945,8 +2049,10 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
                              "verification_status": r.get("verificationStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("verificationStatus"), dict) else None,
                              "code_display": code_info.get("display", _coding_first_display(code_obj)),
                               "asserter_ref": asserter_ref,
-                             "onsett_datetime": _parse_dt(r.get("onsetDateTime")),
+                             "onset_datetime": _parse_dt(r.get("onsetDateTime")),
                              "abatement_datetime": _parse_dt(r.get("abatementDateTime"))}.items():
+                    setattr(existing, k, v)
+                for k, v in cond_fields.items():
                     setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
@@ -1965,6 +2071,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     recorded_date=_parse_dt(r.get("recordedDate")),
                     asserter_ref=asserter_ref,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **cond_fields,
                 ))
                 count += 1
         session.commit()
@@ -2036,6 +2143,7 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import MedicationStatement
+    from myhealth_fhir.db.ucla_unpack import extract_medication_statement
 
     count = 0
     with get_ucla_session() as session:
@@ -2054,10 +2162,13 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
                 if isinstance(n, dict):
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
 
+            ms_fields, _ = extract_medication_statement(r)
             existing = session.get(MedicationStatement, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.medication_display = med_info.get("display", _coding_first_display(med))
+                for k, v in ms_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(MedicationStatement(
@@ -2071,6 +2182,7 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
                     reason_display=r.get("reasonCode", [{}])[0].get("coding", [{}])[0].get("display") if r.get("reasonCode") else None,
                     dosage_text=dosage_text, route_display=route.get("coding", [{}])[0].get("display") if route.get("coding") else None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **ms_fields,
                 ))
                 count += 1
         session.commit()
@@ -2083,7 +2195,8 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
 def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import MedicationRequest
+    from myhealth_fhir.db.models_ucla import MedicationRequest, MedicationRequestDosage, MedicationRequestIdentifier
+    from myhealth_fhir.db.ucla_unpack import extract_medication_request
 
     count = 0
     with get_ucla_session() as session:
@@ -2103,11 +2216,14 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
 
             requester_ref = _save_actor(session, r.get("requester"), provider, "Practitioner", rid)
+            mr_fields, mr_children = extract_medication_request(r)
             existing = session.get(MedicationRequest, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.medication_display = med_info.get("display", _coding_first_display(med))
                 existing.requester_ref = requester_ref
+                for k, v in mr_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(MedicationRequest(
@@ -2124,8 +2240,16 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
                     validity_start=_parse_dt(validity.get("start")), validity_end=_parse_dt(validity.get("end")),
                     reason_display=r.get("reasonCode", [{}])[0].get("coding", [{}])[0].get("display") if r.get("reasonCode") else None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **mr_fields,
                 ))
                 count += 1
+            session.flush()
+            session.query(MedicationRequestIdentifier).filter(MedicationRequestIdentifier.medreq_id == rid).delete(synchronize_session=False)
+            for row in mr_children.get("medication_request_identifier", []):
+                session.add(MedicationRequestIdentifier(**row))
+            session.query(MedicationRequestDosage).filter(MedicationRequestDosage.medreq_id == rid).delete(synchronize_session=False)
+            for row in mr_children.get("medication_request_dosage", []):
+                session.add(MedicationRequestDosage(**row))
         session.commit()
     return count
 
@@ -2137,6 +2261,7 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import AllergyIntolerance
+    from myhealth_fhir.db.ucla_unpack import extract_allergy
 
     count = 0
     with get_ucla_session() as session:
@@ -2162,11 +2287,14 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
 
             recorder_ref = _save_actor(session, r.get("recorder"), provider, "Practitioner", rid)
+            al_fields, _ = extract_allergy(r)
             existing = session.get(AllergyIntolerance, rid)
             if existing:
                 existing.clinical_status = r.get("clinicalStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("clinicalStatus"), dict) else None
                 existing.code_display = code_info.get("display", _coding_first_display(code_obj))
                 existing.recorder_ref = recorder_ref
+                for k, v in al_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(AllergyIntolerance(
@@ -2180,6 +2308,7 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     recorded_date=_parse_dt(r.get("recordedDate")),
                     recorder_ref=recorder_ref,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **al_fields,
                 ))
                 count += 1
         session.commit()
@@ -2192,7 +2321,8 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
 def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import Immunization
+    from myhealth_fhir.db.models_ucla import Immunization, ImmunizationIdentifier
+    from myhealth_fhir.db.ucla_unpack import extract_immunization
 
     count = 0
     with get_ucla_session() as session:
@@ -2214,11 +2344,17 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
                     performer_obj = act
 
             performer_ref = _save_actor(session, performer_obj, provider, "Practitioner", rid)
+            im_fields, im_children = extract_immunization(r)
+            enc_ref = im_fields.pop("encounter_ref", None)
+            enc_id = _existing_encounter_id(session, {"encounter": {"reference": enc_ref}}) if enc_ref else None
             existing = session.get(Immunization, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.vaccine_display = vac_info.get("display", _coding_first_display(vac))
                 existing.performer_ref = performer_ref
+                existing.encounter_id = enc_id
+                for k, v in im_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(Immunization(
@@ -2234,10 +2370,15 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
                     route_display=r.get("route", {}).get("coding", [{}])[0].get("display") if isinstance(r.get("route"), dict) else None,
                     site_display=r.get("site", {}).get("coding", [{}])[0].get("display") if isinstance(r.get("site"), dict) else None,
                     performer_ref=performer_ref,
+                    encounter_id=enc_id,
                     reason_code=r.get("reasonCode", [{}])[0].get("coding", [{}])[0].get("display") if r.get("reasonCode") else None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **im_fields,
                 ))
                 count += 1
+            session.query(ImmunizationIdentifier).filter(ImmunizationIdentifier.immunization_id == rid).delete(synchronize_session=False)
+            for row in im_children.get("immunization_identifier", []):
+                session.add(ImmunizationIdentifier(**row))
         session.commit()
     return count
 
@@ -2363,6 +2504,7 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import ServiceRequest
+    from myhealth_fhir.db.ucla_unpack import extract_service_request
 
     count = 0
     with get_ucla_session() as session:
@@ -2377,12 +2519,15 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
                 if isinstance(n, dict):
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
             requester_ref = _save_actor(session, r.get("requester"), provider, "Practitioner", rid)
+            sr_fields, _ = extract_service_request(r)
             cat = r.get("category", [{}])[0] if r.get("category") else {}
             existing = session.get(ServiceRequest, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.code_display = code_info.get("display", _coding_first_display(code_obj))
                 existing.note_text = note_text or existing.note_text
+                for k, v in sr_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(ServiceRequest(
@@ -2397,6 +2542,7 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
                     reason_display=r.get("reasonCode", [{}])[0].get("coding", [{}])[0].get("display") if r.get("reasonCode") else None,
                     order_detail=r.get("orderDetail", [{}])[0].get("text") if r.get("orderDetail") else None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **sr_fields,
                 ))
                 count += 1
         session.commit()
@@ -2410,6 +2556,7 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import Specimen
+    from myhealth_fhir.db.ucla_unpack import extract_specimen
 
     count = 0
     with get_ucla_session() as session:
@@ -2423,9 +2570,12 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
             for n in r.get("note", []):
                 if isinstance(n, dict):
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
+            sp_fields, _ = extract_specimen(r)
             existing = session.get(Specimen, rid)
             if existing:
                 existing.status = r.get("status")
+                for k, v in sp_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(Specimen(
@@ -2438,6 +2588,7 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     received_datetime=_parse_dt(r.get("receivedTime")),
                     body_site=r.get("collection", {}).get("bodySite", {}).get("text") if isinstance(r.get("collection"), dict) else None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **sp_fields,
                 ))
                 count += 1
         session.commit()
@@ -2451,6 +2602,7 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import Communication
+    from myhealth_fhir.db.ucla_unpack import extract_communication
 
     count = 0
     with get_ucla_session() as session:
@@ -2476,10 +2628,13 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
             recipient = r.get("recipient", [{}])[0] if r.get("recipient") else None
             recipient_ref = _save_actor(session, recipient, provider, "Patient", rid) if isinstance(recipient, dict) else None
             cat = r.get("category", [{}])[0] if r.get("category") else {}
+            co_fields, _ = extract_communication(r)
             existing = session.get(Communication, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.payload_text = "; ".join(p for p in payload_parts if p) or existing.payload_text
+                for k, v in co_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(Communication(
@@ -2493,6 +2648,7 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
                     medium=r.get("medium", [{}])[0].get("coding", [{}])[0].get("display") if r.get("medium") else None,
                     payload_text="; ".join(p for p in payload_parts if p) or None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **co_fields,
                 ))
                 count += 1
         session.commit()
@@ -2505,7 +2661,8 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
 def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import CareTeam
+    from myhealth_fhir.db.models_ucla import CareTeam, CareTeamParticipant
+    from myhealth_fhir.db.ucla_unpack import extract_care_team
 
     count = 0
     with get_ucla_session() as session:
@@ -2526,10 +2683,13 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
                 if isinstance(n, dict):
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
             cat = r.get("category", [{}])[0] if r.get("category") else {}
+            ct_fields, ct_children = extract_care_team(r)
             existing = session.get(CareTeam, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.participants_display = " ".join(x for x in participants if x) or existing.participants_display
+                for k, v in ct_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(CareTeam(
@@ -2542,8 +2702,12 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     period_end=_parse_dt(r.get("period", {}).get("end")),
                     participants_display=" ".join(x for x in participants if x) or None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **ct_fields,
                 ))
                 count += 1
+            session.query(CareTeamParticipant).filter(CareTeamParticipant.care_team_id == rid).delete(synchronize_session=False)
+            for row in ct_children.get("care_team_participant", []):
+                session.add(CareTeamParticipant(**row))
         session.commit()
     return count
 
@@ -2551,7 +2715,8 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
 def save_document_references_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import DocumentReference
+    from myhealth_fhir.db.models_ucla import DocumentReference, DocumentReferenceContent, DocumentReferenceIdentifier
+    from myhealth_fhir.db.ucla_unpack import extract_document_reference, upgrade_doc_displays
 
     count = 0
     with get_ucla_session() as session:
@@ -2571,11 +2736,15 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
 
             author_obj = r.get("author", [{}])[0] if r.get("author") and isinstance(r["author"][0], dict) else None
             author_ref = _save_actor(session, author_obj, provider, "Practitioner", rid)
+            dr_fields, dr_children = extract_document_reference(r)
+            upgrade_doc_displays(session, dr_fields, r, provider)
             existing = session.get(DocumentReference, rid)
             if existing:
                 existing.status = r.get("status")
                 existing.description = r.get("description")
                 existing.author_ref = author_ref
+                for k, v in dr_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(DocumentReference(
@@ -2591,8 +2760,15 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
                     content_type=attachment.get("contentType"), size_bytes=attachment.get("size"),
                     facility=ctx.get("facilityType", {}).get("coding", [{}])[0].get("display") if isinstance(ctx, dict) and isinstance(ctx.get("facilityType"), dict) else None,
                     raw_json=json.dumps(r),
+                    **dr_fields,
                 ))
                 count += 1
+            session.query(DocumentReferenceContent).filter(DocumentReferenceContent.doc_id == rid).delete(synchronize_session=False)
+            for row in dr_children.get("document_reference_content", []):
+                session.add(DocumentReferenceContent(**row))
+            session.query(DocumentReferenceIdentifier).filter(DocumentReferenceIdentifier.doc_id == rid).delete(synchronize_session=False)
+            for row in dr_children.get("document_reference_identifier", []):
+                session.add(DocumentReferenceIdentifier(**row))
         session.commit()
     return count
 
@@ -2604,6 +2780,7 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
     import json
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.db.models_ucla import FamilyMemberHistory
+    from myhealth_fhir.db.ucla_unpack import extract_family_member_history
 
     count = 0
     with get_ucla_session() as session:
@@ -2622,10 +2799,13 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
                     note_text = (note_text + "; " + n.get("text", "")) if note_text else n.get("text", "")
 
             family_member_ref = _save_actor(session, {"display": r.get("name")} if r.get("name") else None, provider, "FamilyMember", rid)
+            fm_fields, _ = extract_family_member_history(r)
             existing = session.get(FamilyMemberHistory, rid)
             if existing:
                 existing.condition_display = "; ".join(c for c in conditions if c) if conditions else None
                 existing.family_member_ref = family_member_ref
+                for k, v in fm_fields.items():
+                    setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(FamilyMemberHistory(
@@ -2636,6 +2816,7 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
                     condition_display="; ".join(c for c in conditions if c) if conditions else None,
                     condition_code=conditions[0] if conditions else None,
                     note_text=note_text, raw_json=json.dumps(r),
+                    **fm_fields,
                 ))
                 count += 1
         session.commit()
@@ -2648,7 +2829,8 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
 def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import ClinicalObservation
+    from myhealth_fhir.db.models_ucla import ClinicalObservation, ClinicalObservationComponent
+    from myhealth_fhir.db.ucla_unpack import extract_clinical_observation
 
     count = 0
     with get_ucla_session() as session:
@@ -2689,23 +2871,8 @@ def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucl
                         interp_display = cc[0].get("display")
                         break
 
-            components = r.get("component", [])
-            component_value = None
-            if components:
-                parsed = []
-                for comp in components:
-                    if not isinstance(comp, dict):
-                        continue
-                    c_code = comp.get("code", {})
-                    c_name = _parse_code_display(c_code) if isinstance(c_code, dict) else None
-                    c_val = _extract_observation_value(comp)
-                    c_unit = None
-                    cq = comp.get("valueQuantity")
-                    if isinstance(cq, dict):
-                        c_unit = cq.get("unit", cq.get("code"))
-                    parsed.append({"code": c_name, "value": c_val, "unit": c_unit})
-                if parsed:
-                    component_value = json.dumps(parsed)
+            co_fields, co_children = extract_clinical_observation(r)
+            component_value = co_fields.get("component_value")
 
             cat_list = r.get("category", [])
             cat_str = None
@@ -2715,7 +2882,11 @@ def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucl
             existing = session.get(ClinicalObservation, rid)
             if existing:
                 existing.value_text = str(value_float) + " " + value_unit if value_float is not None else value_text
-                existing.component_value = component_value or existing.component_value
+                for k, v in co_fields.items():
+                    if k == "component_value":
+                        existing.component_value = component_value or existing.component_value
+                    else:
+                        setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(ClinicalObservation(
@@ -2732,9 +2903,15 @@ def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucl
                     interpretation_code=interp_code, interpretation_display=interp_display,
                     effective_datetime=_parse_dt(r.get("effectiveDateTime")),
                     status=r.get("status"), raw_json=json.dumps(r),
-                    component_value=component_value, source="fhir",
+                    source="fhir",
+                    **co_fields,
                 ))
                 count += 1
+            session.flush()
+            obs = session.get(ClinicalObservation, rid)
+            session.query(ClinicalObservationComponent).filter(ClinicalObservationComponent.observation_id == obs.id).delete(synchronize_session=False)
+            for row in co_children.get("clinical_observation_component", []):
+                session.add(ClinicalObservationComponent(observation_id=obs.id, **row))
         session.commit()
     return count
 
@@ -2764,7 +2941,8 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
     import httpx
 
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.db.models_ucla import ClinicalNote, Encounter
+    from myhealth_fhir.db.models_ucla import ClinicalNote, ClinicalNoteIdentifier, Encounter
+    from myhealth_fhir.db.ucla_unpack import extract_clinical_note, upgrade_doc_displays
 
     def _is_clinical_note(doc: dict) -> bool:
         for c in doc.get("category", []):
@@ -2889,6 +3067,8 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
             author_obj = doc.get("author", [{}])[0] if doc.get("author") and isinstance(doc["author"][0], dict) else None
             author_ref = _save_actor(session, author_obj, provider, "Practitioner", rid)
             authored_dt = _parse_dt(doc.get("date"))
+            cn_fields, cn_children = extract_clinical_note(doc)
+            upgrade_doc_displays(session, cn_fields, doc, provider)
 
             existing = session.query(ClinicalNote).filter(ClinicalNote.fhir_id == rid).first()
             if existing:
@@ -2902,6 +3082,8 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
                 existing.source = "fhir"
                 existing.source_id = rid
                 existing.raw_json = json.dumps(doc) if existing.raw_json is None else existing.raw_json
+                for k, v in cn_fields.items():
+                    setattr(existing, k, v)
             else:
                 encounter_refs = doc.get("context", {}).get("encounter", [{}]) if isinstance(doc.get("context"), dict) else []
                 encounter_id = None
@@ -2922,8 +3104,12 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
                     source="fhir",
                     source_id=rid,
                     raw_json=json.dumps(doc),
+                    **cn_fields,
                 ))
                 count += 1
+            session.query(ClinicalNoteIdentifier).filter(ClinicalNoteIdentifier.note_id == rid).delete(synchronize_session=False)
+            for row in cn_children.get("clinical_note_identifier", []):
+                session.add(ClinicalNoteIdentifier(**row))
         session.commit()
     return count
 

@@ -64,6 +64,25 @@ def ucla(ctx, provider):
     ctx.obj["provider"] = provider
 
 
+@main.group(short_help="Database maintenance commands")
+def db():
+    """Database maintenance commands (backfills, migrations)."""
+
+
+@db.command(name="backfill-raw-json")
+@click.option("--only", type=click.Choice(["anthem", "ucla"]), default="anthem", show_default=True)
+@click.option("--dry-run", is_flag=True, help="Parse and count without writing")
+def db_backfill_raw_json(only, dry_run):
+    """Re-parse stored raw_json and populate unpacked columns/child tables."""
+    from myhealth_fhir.db.rawjson_backfill import backfill_anthem, backfill_ucla
+
+    if only == "anthem":
+        stats = backfill_anthem(dry_run=dry_run)
+    else:
+        stats = backfill_ucla(dry_run=dry_run)
+    click.echo(f"{only}: {json.dumps(stats)}")
+
+
 # ── Authentication Commands (shared by provider groups) ────────
 
 
@@ -622,41 +641,30 @@ def update(ctx, patient_id, force, fetch_all):
         click.echo(click.style("No patients found. Run 'auth login' first.", fg="red"))
         return
 
-    # Determine date limits for EOBs and Claims
-    # Force mode: YTD by default. --all goes back to the beginning.
+    # Fetch-mode selection:
+    #   default  → per-patient auto-incremental: each patient is anchored to its
+    #              OWN last-successful-fetch checkpoint; brand-new patients get a
+    #              one-time full pull without forcing re-pulls for existing ones.
+    #   --force  → reset: re-fetch every patient from YTD this year.
+    #   --all    → full history for every patient (ignores checkpoints).
     if fetch_all:
         eob_lu = None
         claim_lu = None
+        auto_incremental = False
+        click.echo(click.style("  Full-history fetch (checkpoints ignored)", fg="yellow"))
     elif force:
-        eob_lu = f"{datetime.now().year}-01-01"
-        claim_lu = f"{datetime.now().year}-01-01"
+        ytd = f"{datetime.now().year}-01-01"
+        eob_lu = ytd
+        claim_lu = ytd
+        auto_incremental = False
+        click.echo(click.style(f"  Force-reset: re-fetching from YTD ({ytd}) for all patients", fg="yellow"))
     else:
         eob_lu = None
         claim_lu = None
+        auto_incremental = True
+        click.echo(click.style("  Incremental per-patient fetch (uses each patient's checkpoint)", fg="cyan"))
 
-    # Resolve incremental dates
-    if eob_lu is None:
-        fetched = {pid: auth_mgr.token_store.get_last_eob_fetch(pid) for pid in pid_list}
-        if all(v is not None for v in fetched.values()):
-            earliest = min(v for v in fetched.values() if v is not None)
-            eob_lu = earliest.strftime("%Y-%m-%d")
-            click.echo(click.style(f"  Incremental EOB fetch (lastupdated >= {eob_lu})", fg="cyan"))
-        else:
-            click.echo(click.style("  First-time EOB fetch (no date limit)", fg="cyan"))
-
-    if claim_lu is None:
-        fetched = {pid: auth_mgr.token_store.get_last_claim_fetch(pid) for pid in pid_list}
-        if all(v is not None for v in fetched.values()):
-            earliest = min(v for v in fetched.values() if v is not None)
-            claim_lu = earliest.strftime("%Y-%m-%d")
-            click.echo(click.style(f"  Incremental claim fetch (lastupdated >= {claim_lu})", fg="cyan"))
-        else:
-            click.echo(click.style("  First-time claim fetch (no date limit)", fg="cyan"))
-
-    if force and not fetch_all:
-        click.echo(click.style("  (Reseting checkpoints — pulling from YTD)", fg="yellow"))
-
-    pbar = tqdm(total=4, desc="Fetching", unit="resource")
+    pbar = tqdm(total=2 + 2 * len(pid_list), desc="Fetching", unit="step")
 
     # ── 1. EOBs ──────────────────────────────────────────────────
     pbar.set_description("EOBs")
@@ -664,6 +672,7 @@ def update(ctx, patient_id, force, fetch_all):
         eob_results = client.fetch_and_store_eobs_all_patients(
             patient_ids=pid_list,
             lastupdated_gte=eob_lu,
+            auto_incremental=auto_incremental,
             on_auth_failure=lambda pid: do_login(provider, reason=f"re-auth patient {pid}"),
         )
     except Exception as e:
@@ -678,6 +687,7 @@ def update(ctx, patient_id, force, fetch_all):
         claim_results = client.fetch_and_store_claims_all_patients(
             patient_ids=pid_list,
             lastupdated_gte=claim_lu,
+            auto_incremental=auto_incremental,
             on_auth_failure=lambda pid: do_login(provider, reason=f"re-auth patient {pid}"),
         )
     except Exception as e:
@@ -686,28 +696,28 @@ def update(ctx, patient_id, force, fetch_all):
 
     pbar.update(1)
 
-    # ── 3. Patients (always fresh) ──────────────────────────────
-    pbar.set_description("Patients")
-    try:
-        patient_data = client.list_patients(count=100)
+    # ── 3+4. Patients & Coverage (always fresh, per patient) ────
+    patient_entries: list[dict] = []
+    coverage_entries: list[dict] = []
+    for pid in pid_list:
+        pbar.set_description("Coverage")
+        try:
+            cov = client.list_coverage(patient_id=pid, count=100)
+            coverage_entries.extend(cov.get("entry", []))
+        except Exception as e:
+            click.echo(click.style(f"  Coverage fetch failed for {pid}: {e}", fg="red"))
         pbar.update(1)
-        click.echo(click.style("  Patients fetched", fg="green"))
-    except Exception as e:
-        click.echo(click.style(f"  Patient fetch failed: {e}", fg="red"))
-        pbar.update(1)
-        patient_data = {}
 
-    # ── 4. Coverage (always fresh) ──────────────────────────────
-    pbar.set_description("Coverage")
-    try:
-        coverage_data = client.list_coverage(count=100)
+        pbar.set_description("Patients")
+        try:
+            pat = client.list_patients(patient_id=pid, count=100)
+            patient_entries.extend(pat.get("entry", []))
+        except Exception as e:
+            click.echo(click.style(f"  Patient fetch failed for {pid}: {e}", fg="red"))
         pbar.update(1)
-        click.echo(click.style("  Coverage fetched", fg="green"))
-    except Exception as e:
-        click.echo(click.style(f"  Coverage fetch failed: {e}", fg="red"))
-        pbar.update(1)
-        coverage_data = {}
 
+    patient_data = {"total": len(patient_entries), "entry": patient_entries}
+    coverage_data = {"total": len(coverage_entries), "entry": coverage_entries}
     pbar.close()
 
     # ── Summary ──────────────────────────────────────────────────
@@ -743,7 +753,11 @@ def update(ctx, patient_id, force, fetch_all):
         for pid, info in eob_ok.items():
             name = pid_name(pid)
             label = name or pid
-            msg = f"EOBs:   {label}: {info['count']} new ({info.get('db_total', '?')} total)"
+            saved = info.get("saved", info.get("count", 0))
+            new = info.get("new", 0)
+            updated = info.get("updated", 0)
+            db_total = info.get("db_total", "?")
+            msg = f"EOBs:   {label}: {saved} processed ({new} new, {updated} updated) — {db_total} total in DB"
             click.echo(click.style(msg, fg="green"))
     if eob_fail:
         for pid, info in eob_fail.items():
@@ -758,7 +772,12 @@ def update(ctx, patient_id, force, fetch_all):
         for pid, info in claim_ok.items():
             name = pid_name(pid)
             label = name or pid
-            click.echo(click.style(f"Claims: {label}: {info['count']} stored", fg="green"))
+            saved = info.get("saved", info.get("count", 0))
+            new = info.get("new", 0)
+            updated = info.get("updated", 0)
+            db_total = info.get("db_total", "?")
+            msg = f"Claims: {label}: {saved} processed ({new} new, {updated} updated) — {db_total} total in DB"
+            click.echo(click.style(msg, fg="green"))
     if claim_fail:
         for pid, info in claim_fail.items():
             name = pid_name(pid)
@@ -797,21 +816,9 @@ def update(ctx, patient_id, force, fetch_all):
             parts.append(f"to {end}")
         click.echo("  - " + " ".join(parts))
 
-    # Checkpoint timestamps
-    now = datetime.now()
-    for pid in pid_list:
-        no_eob_fail = pid not in eob_fail
-        no_claim_fail = pid not in claim_fail
-        if no_eob_fail:
-            if pid in eob_ok:
-                auth_mgr.token_store.set_last_eob_fetch(pid, now)
-        if no_claim_fail:
-            if pid in claim_ok:
-                auth_mgr.token_store.set_last_claim_fetch(pid, now)
-        if no_eob_fail or no_claim_fail:
-            name = pid_name(pid)
-            label = name or pid
-            click.echo(click.style(f"  Checkpoint updated for: {label}", fg="green"))
+    # Per-patient checkpoints are updated by fetch_and_store_* on success
+    # (EOB/claim separately, so a failed claims fetch never rolls back the EOB
+    # checkpoint and vice versa). Nothing extra to persist here.
 
     if eob_ok or claim_ok:
         click.echo(click.style("\nUpdate complete. Run again to fetch only changes since this run.", fg="cyan"))
@@ -1730,14 +1737,14 @@ def server(port: int):
 @click.option("--provider", help="Filter by care team provider (substring match)")
 @click.option("--date-from", help="Earliest date (YYYY-MM-DD)")
 @click.option("--date-to", help="Latest date (YYYY-MM-DD)")
-@click.option("--items", is_flag=True, help="Search at item level (claim_items) instead of claim-level")
+@click.option("--items", is_flag=True, help="Item-level output (default output is claim-grain, deduped)")
 @click.option("--limit", "-l", default=50, type=int, help="Max results")
 @click.option("--raw", is_flag=True, help="Tab-separated output for CSV export")
 def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, items, limit, raw):
-    """Search stored claim submissions (claim_submissions or claim_items view)."""
+    """Search stored claim submissions (vw_claims view, line-item grain)."""
     from myhealth_fhir.db import get_anthem_session
 
-    view = "claim_items" if items else "claim_submissions"
+    view = "vw_claims"
     conditions = []
     params: dict = {}
 
@@ -1754,7 +1761,7 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
         conditions.append("hcpcs_code LIKE :code")
         params["code"] = f"%{code}%"
     if code and not items:
-        conditions.append("claim_id IN (SELECT DISTINCT claim_id FROM claim_items WHERE hcpcs_code LIKE :code)")
+        conditions.append("claim_number IN (SELECT DISTINCT claim_number FROM vw_claims WHERE hcpcs_code LIKE :code)")
         params["code"] = f"%{code}%"
     if provider:
         conditions.append("care_team_providers LIKE :prov")
@@ -1786,7 +1793,8 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
         elif items:
             for r in rows:
                 pname = f" ({r.patient_name})" if r.patient_name else ""
-                click.echo(click.style(f"\n── Claim {r.claim_id} item #{r.item_seq} ──", bold=True))
+                claim_label = r.claim_number or r.claim_adjustment_key or "?"
+                click.echo(click.style(f"\n── Claim {claim_label} item #{r.item_seq} ──", bold=True))
                 click.echo(f"  Patient: {r.patient_id}{pname}")
                 if r.hcpcs_code:
                     click.echo(f"  HCPCS: {r.hcpcs_code} — {r.hcpcs_display or ''}")
@@ -1795,9 +1803,14 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
                     f"Qty: {r.quantity} | Amt: {r.net_amount or r.unit_price}"
                 )
         else:
+            seen = set()
             for r in rows:
+                if r.claim_number in seen:
+                    continue
+                seen.add(r.claim_number)
                 pname = f" ({r.patient_name})" if r.patient_name else ""
-                click.echo(click.style(f"\n── Claim {r.claim_id} ──", bold=True))
+                claim_label = r.claim_number or r.claim_adjustment_key or "?"
+                click.echo(click.style(f"\n── Claim {claim_label} ──", bold=True))
                 click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status} | Type: {r.claim_type}")
                 if r.provider_name and r.provider_name != r.patient_id:
                     click.echo(f"  Provider: {r.provider_name}")
@@ -1809,6 +1822,9 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
                     click.echo(f"  Care Team: {r.care_team_providers}")
                 if r.total_amount:
                     click.echo(f"  Total: {r.total_amount} {r.total_currency or 'USD'}")
+                if r.eob_status:
+                    paid = f" | Paid: {r.eob_payment_amount}" if r.eob_payment_amount else ""
+                    click.echo(f"  Linked EOB: {r.eob_status} ({r.eob_disposition or '-'}){paid}")
         if not rows:
             click.echo("No results.")
 
@@ -1824,16 +1840,16 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
 @click.option("--amt-min", type=float, help="Minimum net/submitted amount")
 @click.option("--amt-max", type=float, help="Maximum net/submitted amount")
 @click.option("--status", help="EOB status (active, historical, etc.)")
-@click.option("--claims", is_flag=True, help="Search at claim level (eob_claims) instead of items")
+@click.option("--claims", is_flag=True, help="Claim-grain output (deduped) instead of one row per line item")
 @click.option("--limit", "-l", default=50, type=int, help="Max results")
 @click.option("--raw", is_flag=True, help="Tab-separated output for CSV export")
 def search_eob(
     patient, hcpcs, icd, diagnosis, provider, date_from, date_to, amt_min, amt_max, status, claims, limit, raw
 ):
-    """Search denormalized EOB data — items (default) or claims (--claims)."""
+    """Search denormalized EOB data (vw_eob view, line-item grain)."""
     from myhealth_fhir.db import get_anthem_session
 
-    view = "eob_claims" if claims else "eob_items"
+    view = "vw_eob"
     conditions = []
     params: dict = {}
 
@@ -1841,13 +1857,13 @@ def search_eob(
         conditions.append("patient_id LIKE :patient")
         params["patient"] = f"%{patient}%"
     if icd and not claims:
-        conditions.append("eob_id IN (SELECT DISTINCT eob_id FROM eob_claims WHERE icd_codes LIKE :icd)")
+        conditions.append("claim_number IN (SELECT DISTINCT claim_number FROM vw_eob WHERE icd_codes LIKE :icd)")
         params["icd"] = f"%{icd}%"
     if icd and claims:
         conditions.append("icd_codes LIKE :icd")
         params["icd"] = f"%{icd}%"
     if diagnosis and not claims:
-        conditions.append("eob_id IN (SELECT DISTINCT eob_id FROM eob_claims WHERE icd_displays LIKE :diagnosis)")
+        conditions.append("claim_number IN (SELECT DISTINCT claim_number FROM vw_eob WHERE icd_displays LIKE :diagnosis)")
         params["diagnosis"] = f"%{diagnosis}%"
     if diagnosis and claims:
         conditions.append("icd_displays LIKE :diagnosis")
@@ -1856,8 +1872,8 @@ def search_eob(
         conditions.append("hcpcs_code LIKE :hcpcs")
         params["hcpcs"] = f"%{hcpcs}%"
     if hcpcs and claims:
-        click.echo("--hcpcs only applies to item-level search (omit --claims)")
-        return
+        conditions.append("claim_number IN (SELECT DISTINCT claim_number FROM vw_eob WHERE hcpcs_code LIKE :hcpcs)")
+        params["hcpcs"] = f"%{hcpcs}%"
     if provider:
         conditions.append("care_team_providers LIKE :prov")
         params["prov"] = f"%{provider}%"
@@ -1897,10 +1913,13 @@ def search_eob(
                 for r in rows:
                     click.echo("\t".join(str(getattr(r, c) or "") for c in cols))
         elif claims:
+            seen = set()
             for r in rows:
+                if r.claim_number in seen:
+                    continue
+                seen.add(r.claim_number)
                 pname = f" ({r.patient_name})" if r.patient_name else ""
-                cn = f" #{r.claim_number}" if r.claim_number else ""
-                click.echo(click.style(f"\n── EOB {r.eob_id}{cn} ──", bold=True))
+                click.echo(click.style(f"\n── EOB {r.claim_number or '?'} ──", bold=True))
                 click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status} | Type: {r.claim_type}")
                 if r.provider_name and r.provider_name != r.patient_id:
                     click.echo(f"  Provider: {r.provider_name}")
@@ -1918,10 +1937,12 @@ def search_eob(
                         f"  Submitted: {r.total_submitted} | Benefit: {r.total_benefit} | "
                         f"Deductible: {r.total_deductible}"
                     )
+                if r.claim_status:
+                    click.echo(f"  Linked Claim: {r.claim_status} | Submitted: {r.claim_total_amount}")
         else:
             for r in rows:
                 pname = f" ({r.patient_name})" if r.patient_name else ""
-                click.echo(click.style(f"\n── EOB {r.eob_id} item #{r.item_seq} ──", bold=True))
+                click.echo(click.style(f"\n── EOB {r.claim_number or '?'} item #{r.item_seq} ──", bold=True))
                 click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status}")
                 if r.hcpcs_code:
                     click.echo(f"  HCPCS: {r.hcpcs_code} — {r.hcpcs_display or ''}")

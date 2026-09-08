@@ -9,6 +9,8 @@
 reports/
 *.docx
 *.pdf
+# Contains sensitive data — never commit (runtime-generated report source)
+backend/src/myhealth_fhir/services/report_generator.py
 
 # ── Python ──────────────────────────────────────────────────────
 __pycache__/
@@ -35,3 +37,10 @@ postgres_data/
 .idea/
 .vscode/
 .DS_Store
+BENEFITS.md
+
+# ── Re-include ORM source package ───────────────────────────────
+# Root repo .gitignore has broad data-dir patterns (**/db/, **/data/)
+# meant for container stacks; without this negation the entire
+# backend/src/myhealth_fhir/db/ source package is silently untracked.
+!backend/src/myhealth_fhir/db/

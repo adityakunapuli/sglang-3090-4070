@@ -36,7 +36,7 @@ Password: (see ../database/.env → POSTGRES_PASSWORD)
 | Database | Tables | Owner | Purpose |
 |----------|--------|-------|---------|
 | `myhealth_auth` | 17 | `myhealth` | OAuth tokens, PKCE, patients, job runs |
-| `myhealth_anthem` | 16 + 7 views | `myhealth` | Insurance: EOBs, claims, member submissions |
+| `myhealth_anthem` | 14 + 5 views | `myhealth` | Insurance: EOBs, claims, member submissions |
 | `myhealth_ucla` | 24 + 2 views | `myhealth` | Clinical: encounters, labs, conditions, etc. |
 
 ### Connecting from host
@@ -162,18 +162,20 @@ Claim (one resource)
 
 **Populated by:** `FHIRClient.save_claims_to_db()` via `get_anthem_session()`. Upserted by `claim_submission.id`.
 
-#### Member-Submitted Paper Claims (PDF) → 3 tables
+#### Portal Submission Registry → 1 table
 
-NOT from FHIR — user-created records from paper PDF bills (CMS-1500).
+NOT from FHIR — user-created registry of portal-submitted claims (submission IDs that
+do not exist in Anthem FHIR).
 
 ```
-Paper PDF form (one document)
-├── member_claim                 ← form header: submitter, patient, subscriber, provider, dates, totals
-├── member_claim_item × N        ← line items: CPT code, description, ICD code, units, amount
-└── member_claim_submission      ← portal submission tracking with EOB/claim matching
+member_claim_submission          ← portal submission tracking with EOB/claim matching
 ```
 
-`member_claim_submission` tracks portal-submitted claims with auto-matching: `status` goes `registered → matched → adjudicated`. Matched against `matched_eob_id` and `matched_claim_id` via `services/member_submissions.py::match_registered_submissions()`.
+`member_claim_submission` tracks portal-submitted claims with auto-matching: `status` goes `registered → matched → adjudicated`. Matched against `matched_eob_id` and `matched_claim_id` via `services/member_submissions.py::match_registered_submissions()`. Registered manually via CLI: `myhealth anthem submission add`.
+
+Note: the earlier paper-PDF recon tables (`member_claim`, `member_claim_item`) and their
+`member_claims_recon` / `member_claims_summary` views were dropped 2026-09-07 (never
+populated; no write path in code).
 
 New classification columns on `eob` and `claim_submission`:
 - `submission_origin` (`'member'` | `'provider'`) — determined by `classify_submission_origin()`
@@ -327,7 +329,7 @@ Unique constraint on `(provider, entity_type, entity_id)`.
 
 ## Database: myhealth_anthem
 
-**16 tables + 7 views.**
+**14 tables + 5 views.**
 
 ### Replica Tables (synced from auth)
 
@@ -518,53 +520,6 @@ Unique constraint on `(provider, entity_type, entity_id)`.
 | `provider_ref` | TEXT | — | Yes | — |
 | `role_code` | VARCHAR(20) | — | Yes | — |
 | `role_display` | TEXT | — | Yes | — |
-
-### Table: `member_claim` — Paper Claim Forms
-
-| Column | Type | PK | Nullable | Default |
-|--------|------|-----|----------|---------|
-| `id` | INTEGER | **PK** (auto) | No | — |
-| `submitter_ref` | VARCHAR(255) | — | Yes | `NULL` |
-| `submitted_date` | DATE | — | Yes | `NULL` |
-| `patient_ref` | VARCHAR(255) | — | Yes | `NULL` |
-| `patient_dob` | DATE | — | Yes | `NULL` |
-| `patient_relationship` | VARCHAR(50) | — | Yes | `NULL` |
-| `patient_gender` | VARCHAR(10) | — | Yes | `NULL` |
-| `has_other_insurance` | BOOLEAN | — | Yes | `NULL` |
-| `subscriber_ref` | VARCHAR(255) | — | Yes | `NULL` |
-| `subscriber_id` | VARCHAR(50) | — | Yes | `NULL` |
-| `subscriber_group` | VARCHAR(50) | — | Yes | `NULL` |
-| `subscriber_dob` | DATE | — | Yes | `NULL` |
-| `provider_ref` | VARCHAR(255) | — | Yes | `NULL` |
-| `provider_tax_id` | VARCHAR(20) | — | Yes | `NULL` |
-| `provider_npi` | VARCHAR(20) | — | Yes | `NULL` |
-| `place_of_service` | VARCHAR(10) | — | Yes | `NULL` |
-| `job_related` | BOOLEAN | — | Yes | `NULL` |
-| `invoice_number` | VARCHAR(50) | — | Yes | `NULL` |
-| `invoice_date` | DATE | — | Yes | `NULL` |
-| `date_of_service` | DATE | — | Yes | `NULL` |
-| `referring_provider_ref` | VARCHAR(255) | — | Yes | `NULL` |
-| `primary_icd_code` | VARCHAR(15) | — | Yes | `NULL` |
-| `primary_icd_display` | TEXT | — | Yes | `NULL` |
-| `invoice_total` | DOUBLE PRECISION | — | Yes | `NULL` |
-| `payments_credits` | DOUBLE PRECISION | — | Yes | `NULL` |
-| `balance_due` | DOUBLE PRECISION | — | Yes | `NULL` |
-| `source_pdf` | VARCHAR(255) | — | Yes | `NULL` |
-| `notes` | TEXT | — | Yes | `NULL` |
-| `created_at` | TIMESTAMP | — | No | `NOW()` |
-
-### Table: `member_claim_item`
-
-| Column | Type | PK | Nullable | FK |
-|--------|------|-----|----------|----|
-| `id` | INTEGER | **PK** (auto) | No | — |
-| `claim_id` | INTEGER | — | No | `member_claim.id` |
-| `cpt_code` | VARCHAR(10) | — | Yes | — |
-| `cpt_description` | TEXT | — | Yes | — |
-| `icd_code` | VARCHAR(15) | — | Yes | — |
-| `modifier` | VARCHAR(20) | — | Yes | — |
-| `units` | INTEGER | — | Yes | — |
-| `amount` | DOUBLE PRECISION | — | Yes | — |
 
 ### Table: `member_claim_submission` — Portal Submission Tracking
 
@@ -807,41 +762,31 @@ Detailed column lists are in the expanded section below.
 
 ## Denormalized Views
 
-### myhealth_anthem views (7)
-
-#### `eob_claims`
-Denormalized EOB with patient name, provider name, payee name, and aggregated ICD codes, care team, and totals.
-
-**Columns:** `eob_id`, `status`, `claim_type`, `sub_type`, `outcome`, `created_date`, `billable_period_start/end`, `patient_id`, `patient_name`, `provider`, `provider_name`, `payee_name`, `claim_number`, `payment_amount`, `payment_date`, `last_updated`, `icd_codes` (comma-separated), `icd_displays` (pipe-separated), `care_team_providers` (comma-separated), `care_team_roles`, `total_submitted`, `total_deductible`, `total_benefit`
+### myhealth_anthem views (3)
 
 **SQL:** `eob` LEFT JOIN `oauth_tokens`/`patients`/`entity_names` (×3) + correlated subqueries on `eob_diagnosis`, `eob_care_team`, `eob_total`.
 
-#### `eob_items`
-EOB line items with parent EOB context.
-
-**Columns:** `eob_id`, `item_seq`, `hcpcs_code`, `hcpcs_display`, `modifier_codes`, `serviced_date`, `serviced_period_start/end`, `location_code/display`, `quantity`, all adjudication columns (renamed with `item_` prefix: `item_deductible`, `item_coinsurance`, etc.), plus patient/EOB context columns.
-
 **SQL:** `eob_item` JOIN `eob` LEFT JOIN token/patient/entity tables.
 
-#### `claim_submissions`
-Denormalized claims with patient name, provider name, insurer name, diagnoses (aggregated), care team (aggregated).
+#### `vw_eob`
+Analytics view merging `eob_claims` + `eob_items` into one row per EOB line
+item (LEFT JOIN from `eob` → `eob_item`, so EOBs without items still appear
+with NULL item columns). All `eob_claims` header columns (patient/provider/
+payee names, aggregated ICD codes, care team, totals, lateral `claim_*`
+cross-reference) plus `paid_to_member` / `paid_to_provider` (Anthem marks
+subscriber reimbursements via `payee.party = Patient`; header-level only —
+no item breakdown exists in the FHIR data) plus all `eob_items` line columns
+(`item_seq`, `hcpcs_*`, serviced dates, adjudications). No `fhir_id` — group by
+`claim_number`
+(+ `item_seq` for line-level grain). Claim-level metrics duplicate across
+each EOB's item rows; aggregate with `DISTINCT`/dedupe as needed.
 
-**SQL:** `claim_submission` LEFT JOIN token/patient/entity tables (×3) + correlated subqueries on `claim_diagnosis`, `claim_care_team`.
-
-#### `claim_items`
-Claim line items with parent claim context.
-
-**SQL:** `claim_item` JOIN `claim_submission` LEFT JOIN token/patient/entity tables.
-
-#### `member_claims_recon`
-Reconciliation view: LEFT JOINs `member_claim_item` against `eob_item` matching on `hcpcs_code` = `cpt_code` AND `serviced_date` = `date_of_service`. Shows `recon_status` (`'adjudicated'` vs `'pending'`).
-
-**SQL:** `member_claim` JOIN `member_claim_item` LEFT JOIN `eob_item` on code+date LEFT JOIN `eob` LEFT JOIN entity_names ×5.
-
-#### `member_claims_summary`
-Aggregated reconciliation grouped by paper claim.
-
-**Columns:** `member_claim_id`, `patient_id`, `submitted_date`, `patient_name`, `provider_name`, `provider_npi`, `date_of_service`, `invoice_total`, `payments_credits`, `balance_due`, `line_items` (count), `total_submitted_amount`, `adjudicated_items`, `pending_items`, `total_paid_by_anthem`, `total_member_liability`.
+#### `vw_claims`
+Analytics view merging `claim_submissions` + `claim_items` into one row per
+claim line item (LEFT JOIN from `claim_submission` → `claim_item`). All
+`claim_submissions` header columns (patient/provider/insurer names, aggregated
+diagnoses, care team, lateral `eob_*` cross-reference) plus all `claim_items`
+line columns. No `fhir_id` — group by `claim_number` (+ `item_seq`).
 
 #### `member_claims`
 Unified view of all member-submitted and out-of-network claims. UNION ALL of:
@@ -947,7 +892,7 @@ All prefixed: `uv run --project backend myhealth <cmd>`
 
 ```python
 _COUNTERS = {
-    "anthem": ["eob", "claim_submission", "member_claim"],
+    "anthem": ["eob", "claim_submission"],
     "ucla": ["encounter", "diagnostic_report", "lab_result", "imaging_observation",
              "clinical_observation", "clinical_note", "medication_administration",
              "service_request", "specimen", "communication", "care_team"],
@@ -999,7 +944,7 @@ All in `backend/src/myhealth_fhir/db/models/`:
 | File | Base | Models |
 |------|------|--------|
 | `models_auth.py` | `AuthBase` | `OAuthTokenRecord`, `EntityName`, `PatientRecord`, `PKCEVerifier`, `JobRun` |
-| `models_anthem.py` | `AnthemBase` | `EOB` (+children), `ClaimSubmission` (+children), `MemberClaim`, `MemberClaimItem`, `MemberClaimSubmission`, `EntityName`, `OAuthTokenRecord`, `PatientRecord` |
+| `models_anthem.py` | `AnthemBase` | `EOB` (+children), `ClaimSubmission` (+children), `MemberClaimSubmission`, `EntityName`, `OAuthTokenRecord`, `PatientRecord` |
 | `models_ucla.py` | `UclaBase` | `Encounter`, `DiagnosticReport`, `LabResult`, all clinical models, replica tables |
 
 Session factories in `backend/src/myhealth_fhir/db/__init__.py`.
@@ -1054,14 +999,14 @@ myhealth_auth                   myhealth_anthem                 myhealth_ucla
     │                           │   ├── claim_item               │   │   ├── procedure_record
     │                           │   ├── claim_diagnosis          │   │   ├── medication_request
     │                           │   └── claim_care_team          │   │   ├── medication_administration
-    │                           │── member_claim                 │   │   ├── service_request
-    │                           │   └── member_claim_item        │   │   ├── specimen
+    │                           │                                │   │   ├── service_request
+    │                           │                                │   │   ├── specimen
     │                           │── member_claim_submission      │   │   ├── communication
     │                           │── eob (submission_origin,      │   │   ├── care_team
     │                           │    is_out_of_network)          │   │   ├── care_plan
     ├── job_run                 │── member_claims view           │   │   ├── document_reference
-    │                           │── member_claims_recon          │   │   ├── allergy_intolerance
-    └── _sync on exchange       │── member_claims_summary        │   │   ├── immunization
+    │                           │                                │   │   ├── allergy_intolerance
+    └── _sync on exchange       │                                │   │   ├── immunization
                                 │                                │   │   ├── family_member_history
                                 └── eob_claims → split_part()    │   │   └── medication_statement
                                     → patient_id from ref         │── clinical_overview view
@@ -1074,9 +1019,7 @@ myhealth_auth                   myhealth_anthem                 myhealth_ucla
 - `eob.payee_ref` → `entity_names.entity_ref` — resolves payee name
 - `oauth_tokens.patient_id` = `patients.patient_id` — tokens and patients linked by composite PK
 - `split_part(eob.patient_ref, ':', 3)` = `oauth_tokens.patient_id` — views extract patient ID from ref
-- `member_claim_item.cpt_code` ≈ `eob_item.hcpcs_code` — recon joins on code + date
 - `member_claim_submission.matched_eob_id` → `eob.id` — portal submission matching
-- `member_claim_item.claim_id` → `member_claim.id` — paper claim line items
 - `diagnostic_report.encounter_id` → `encounter.id` — lab panel to visit
 - `lab_result.report_id` → `diagnostic_report.id` — test to panel
 - `*_encounter_id` → `encounter.id` — all clinical data links to visit anchor
