@@ -297,7 +297,7 @@ def _init_db_once():
         with auth_engine.begin() as conn:
             conn.execute(text("DROP VIEW IF EXISTS member_claims_summary, member_claims_recon, claim_items, claim_submissions, eob_items, eob_claims CASCADE"))
         with anthem_engine.begin() as conn:
-            conn.execute(text("DROP VIEW IF EXISTS member_claims, member_claims_summary, member_claims_recon, claim_items, claim_submissions, eob_items, eob_claims CASCADE"))
+            conn.execute(text("DROP VIEW IF EXISTS member_claims, member_claims_summary, member_claims_recon, claim_items, claim_submissions, eob_items, eob_claims, vw_eob_all, vw_claims_all CASCADE"))
         with ucla_engine.begin() as conn:
             conn.execute(text("DROP VIEW IF EXISTS clinical_overview, lab_results CASCADE"))
         _migrate_auth_schema(auth_engine)
@@ -587,13 +587,26 @@ def _migrate_anthem_schema(engine):
             """), {"kind": kind})
         conn.execute(text("""
             ALTER TABLE eob
-              ADD COLUMN IF NOT EXISTS submission_origin VARCHAR(20) NOT NULL DEFAULT 'provider',
-              ADD COLUMN IF NOT EXISTS is_out_of_network BOOLEAN NOT NULL DEFAULT false
+               ADD COLUMN IF NOT EXISTS submission_origin VARCHAR(20) NOT NULL DEFAULT 'provider',
+               ADD COLUMN IF NOT EXISTS is_out_of_network BOOLEAN NOT NULL DEFAULT false
         """))
         conn.execute(text("""
             ALTER TABLE claim_submission
-              ADD COLUMN IF NOT EXISTS submission_origin VARCHAR(20) NOT NULL DEFAULT 'provider',
-              ADD COLUMN IF NOT EXISTS is_out_of_network BOOLEAN NOT NULL DEFAULT false
+               ADD COLUMN IF NOT EXISTS submission_origin VARCHAR(20) NOT NULL DEFAULT 'provider',
+               ADD COLUMN IF NOT EXISTS is_out_of_network BOOLEAN NOT NULL DEFAULT false
+        """))
+        # Add claim_received_date from CARIN BB supportingInfo.clmrecvddate
+        conn.execute(text("ALTER TABLE eob ADD COLUMN IF NOT EXISTS claim_received_date DATE"))
+        conn.execute(text("""
+            UPDATE eob e SET claim_received_date = (
+                SELECT (si->>'timingDate')::date
+                FROM jsonb_array_elements(e.raw_json::jsonb -> 'supportingInfo') si
+                WHERE si->'category'->'coding'->0->>'code' = 'clmrecvddate'
+                LIMIT 1
+            )
+            WHERE e.raw_json IS NOT NULL
+              AND e.claim_received_date IS NULL
+              AND (e.raw_json::jsonb -> 'supportingInfo') IS NOT NULL
         """))
         conn.execute(text("""
             ALTER TABLE member_claim_submission
@@ -692,6 +705,89 @@ def _migrate_anthem_schema(engine):
                    AND raw_json::jsonb -> 'payee' -> 'party' ->> 'reference' LIKE 'Patient/%')
                 OR claim_number ~ '^(DELTADENTAL|VSP|MEDCO)'
         """))
+
+        # ── vw_member_submitted — member-submitted EOB claims (item-level) ──
+        conn.execute(text("DROP VIEW IF EXISTS vw_member_submitted"))
+        conn.execute(text("""
+            CREATE VIEW vw_member_submitted AS
+            SELECT
+              e.id AS eob_id,
+              e.claim_number,
+              e.status,
+              e.claim_type,
+              e.created_date,
+              e.billable_period_start,
+              e.billable_period_end,
+              split_part(e.patient_ref, ':', 3) AS patient_id,
+              en_patient.name AS patient_name,
+              en_prov.name AS provider_name,
+              en_payee.name AS payee_name,
+              e.submission_origin,
+              e.is_out_of_network,
+              ARRAY_TO_STRING(ARRAY_REMOVE(ARRAY[
+                CASE WHEN e.submission_origin = 'member' THEN 'origin' END,
+                CASE WHEN lower(coalesce(en_prov.name,'')) LIKE '%member%' THEN 'provider_name' END,
+                CASE WHEN lower(coalesce(en_payee.name,'')) LIKE '%member%' THEN 'payee_name' END,
+                CASE WHEN EXISTS (
+                         SELECT 1 FROM eob_care_team ct
+                         LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
+                         WHERE ct.eob_id = e.id
+                           AND (lower(coalesce(en_ct.name,'')) LIKE '%member%'
+                                OR lower(coalesce(ct.role_code,'')) LIKE '%member%'
+                                OR lower(coalesce(ct.role_display,'')) LIKE '%member%')
+                       ) THEN 'care_team' END
+              ], NULL), ';') AS member_signals,
+              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM eob_diagnosis d WHERE d.eob_id = e.id), '') AS icd_codes,
+              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM eob_diagnosis d WHERE d.eob_id = e.id), '') AS icd_displays,
+              COALESCE((SELECT STRING_AGG(en_ct.name, ', ')
+                        FROM eob_care_team ct
+                        LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
+                        WHERE ct.eob_id = e.id), '') AS care_team_providers,
+              COALESCE((SELECT STRING_AGG(role_display, ', ') FROM eob_care_team ct WHERE ct.eob_id = e.id), '') AS care_team_roles,
+              i.sequence AS item_seq,
+              i.hcpcs_code,
+              i.hcpcs_display,
+              i.modifier_codes,
+              i.serviced_date,
+              i.quantity,
+              i.submitted_amount,
+              i.allowed_amount,
+              i.paid_provider,
+              i.paid_patient,
+              i.deductible AS item_deductible,
+              i.coinsurance AS item_coinsurance,
+              i.copay AS item_copay,
+              i.noncovered AS item_noncovered,
+              i.discount AS item_discount,
+              i.member_liability,
+              i.payment_status,
+              i.adjustment_reason,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'submitted' LIMIT 1) AS total_submitted,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'benefit' LIMIT 1) AS total_benefit,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'deductible' LIMIT 1) AS total_deductible,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'coinsurance' LIMIT 1) AS total_coinsurance,
+              (SELECT SUM(member_liability) FROM eob_item WHERE eob_id = e.id) AS total_member_liability,
+              (SELECT SUM(noncovered) FROM eob_item WHERE eob_id = e.id) AS total_noncovered
+            FROM eob e
+            JOIN eob_item i ON i.eob_id = e.id
+            LEFT JOIN oauth_tokens ot ON ot.patient_id = split_part(e.patient_ref, ':', 3)
+            LEFT JOIN patients p ON p.entity_ref = e.patient_ref AND p.provider = ot.provider
+            LEFT JOIN entity_names en_patient ON en_patient.entity_ref = p.entity_ref
+            LEFT JOIN entity_names en_prov ON en_prov.entity_ref = e.provider_ref
+            LEFT JOIN entity_names en_payee ON en_payee.entity_ref = e.payee_ref
+            WHERE e.submission_origin = 'member'
+               OR lower(coalesce(en_prov.name,'')) LIKE '%member%'
+               OR lower(coalesce(en_payee.name,'')) LIKE '%member%'
+               OR EXISTS (
+                    SELECT 1 FROM eob_care_team ct
+                    LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
+                    WHERE ct.eob_id = e.id
+                      AND (lower(coalesce(en_ct.name,'')) LIKE '%member%'
+                           OR lower(coalesce(ct.role_code,'')) LIKE '%member%'
+                           OR lower(coalesce(ct.role_display,'')) LIKE '%member%')
+                  )
+        """))
+
         conn.commit()
 
 
@@ -1190,75 +1286,74 @@ def _backfill_fhir_identity_registry(engine, provider: str) -> None:
 def _create_anthem_views(engine):
     """Create denormalized views in the anthem database."""
     with engine.connect() as conn:
-        # vw_eob — analytics view merging eob_claims + eob_items into one row
-        # per EOB line item (LEFT JOIN keeps item-less EOBs with NULL item cols).
-        # No fhir_id; group by claim_number (+ item_seq for line grain).
+        # ── vw_eob — slimmed + reordered: member_submitted, claim_received_date,
+        #    payment_type, submission_origin, is_out_of_network added;
+        #    claim_type, care_team_roles, billable_period_start/end dropped.
         conn.execute(text("DROP VIEW IF EXISTS vw_eob"))
         conn.execute(text("""
             CREATE VIEW vw_eob AS
             SELECT
               e.claim_number,
-              e.status,
-              e.claim_type,
-              e.sub_type,
-              e.outcome,
-              e.created_date,
-              e.billable_period_start,
-              e.billable_period_end,
+              CASE WHEN e.payee_ref LIKE 'anthem:Patient:%'
+                   OR en_payee.name ILIKE 'member submitted %'
+                   THEN true ELSE false END AS member_submitted,
               split_part(e.patient_ref, ':', 3) AS patient_id,
               en_patient.name AS patient_name,
-              ot.provider,
               en_prov.name AS provider_name,
-              en_payee.name AS payee_name,
-              e.payment_amount,
-              e.payment_date,
-              -- member reimbursement: Anthem sets payee.party = Patient when
-              -- the check goes to the subscriber (header-level only, no
-              -- item breakdown exists in the FHIR data)
-              CASE WHEN e.payee_ref LIKE 'anthem:Patient:%'
-                   THEN e.payment_amount END AS paid_to_member,
-              CASE WHEN e.payee_ref NOT LIKE 'anthem:Patient:%'
-                   THEN e.payment_amount END AS paid_to_provider,
-              e.last_updated,
-              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM eob_diagnosis WHERE eob_id = e.id), '') AS icd_codes,
-              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM eob_diagnosis WHERE eob_id = e.id), '') AS icd_displays,
               COALESCE((SELECT STRING_AGG(DISTINCT en_ct.name, ', ')
                         FROM eob_care_team ct
                         LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
                         WHERE ct.eob_id = e.id),
-                     '') AS care_team_providers,
-              COALESCE((SELECT STRING_AGG(role_display, ', ') FROM eob_care_team WHERE eob_id = e.id), '') AS care_team_roles,
-               (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'submitted' LIMIT 1) AS total_submitted,
-               (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'deductible' LIMIT 1) AS total_deductible,
-               (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'benefit' LIMIT 1) AS total_benefit,
-                (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'paidtoprovider' LIMIT 1) AS total_paid,
-                (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'memberliability' LIMIT 1) AS total_member_liability,
-               clm_x.claim_status,
-               clm_x.claim_created_date,
-               clm_x.claim_total_amount,
-               i.sequence AS item_seq,
-               i.hcpcs_code,
-               i.hcpcs_display,
-               i.modifier_codes,
-               i.serviced_date,
-               i.serviced_period_start,
-               i.serviced_period_end,
-               i.location_code,
-               i.location_display,
-               i.quantity,
-               i.net_amount,
-               i.submitted_amount,
-               i.allowed_amount,
-               i.paid_provider,
-               i.paid_patient,
-               i.deductible AS item_deductible,
-               i.coinsurance AS item_coinsurance,
-               i.copay AS item_copay,
-               i.noncovered AS item_noncovered,
-               i.discount AS item_discount,
-               i.member_liability,
-               i.payment_status,
-               i.adjustment_reason
+                   '') AS care_team_providers,
+              en_payee.name AS payee_name,
+              e.status,
+              e.outcome,
+              e.payment_type,
+              e.sub_type,
+              e.created_date,
+              e.claim_received_date,
+              e.payment_date,
+              e.payment_amount,
+              CASE WHEN e.payee_ref LIKE 'anthem:Patient:%'
+                   THEN e.payment_amount END AS paid_to_member,
+              CASE WHEN e.payee_ref NOT LIKE 'anthem:Patient:%'
+                   THEN e.payment_amount END AS paid_to_provider,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'submitted' LIMIT 1) AS total_submitted,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'memberliability' LIMIT 1) AS total_member_liability,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'benefit' LIMIT 1) AS total_benefit,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'deductible' LIMIT 1) AS total_deductible,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'paidtoprovider' LIMIT 1) AS total_paid,
+              e.submission_origin,
+              e.is_out_of_network,
+              i.sequence AS item_seq,
+              i.hcpcs_code,
+              i.hcpcs_display,
+              i.modifier_codes,
+              i.serviced_date,
+              i.serviced_period_start,
+              i.serviced_period_end,
+              i.location_code,
+              i.location_display,
+              i.quantity,
+              i.submitted_amount,
+              i.net_amount,
+              i.allowed_amount,
+              i.paid_provider,
+              i.paid_patient,
+              i.deductible AS item_deductible,
+              i.coinsurance AS item_coinsurance,
+              i.copay AS item_copay,
+              i.noncovered AS item_noncovered,
+              i.discount AS item_discount,
+              i.member_liability,
+              i.payment_status,
+              i.adjustment_reason,
+              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM eob_diagnosis WHERE eob_id = e.id), '') AS icd_codes,
+              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM eob_diagnosis WHERE eob_id = e.id), '') AS icd_displays,
+              clm_x.claim_status,
+              clm_x.claim_created_date,
+              clm_x.claim_total_amount,
+              e.last_updated
             FROM eob e
             LEFT JOIN eob_item i ON i.eob_id = e.id
             LEFT JOIN oauth_tokens ot ON ot.patient_id = split_part(e.patient_ref, ':', 3)
@@ -1277,62 +1372,68 @@ def _create_anthem_views(engine):
             ) clm_x ON true
         """))
 
-        # vw_claims — analytics view merging claim_submissions + claim_items into
-        # one row per claim line item (LEFT JOIN keeps item-less claims with NULL
-        # item cols). No fhir_id; group by claim_number (+ item_seq for line grain).
+        # ── vw_claims — slimmed + reordered: member_submitted, claim_received_date,
+        #    submission_origin, is_out_of_network, payee_type, adjudication_status_code,
+        #    action_date, action_type_code, adjustment_number, payee_name added;
+        #    use, priority, total_currency, discharge_status_code,
+        #    network_identifier_code, claim_type, care_team_roles dropped.
         conn.execute(text("DROP VIEW IF EXISTS vw_claims"))
         conn.execute(text("""
             CREATE VIEW vw_claims AS
             SELECT
               c.claim_number,
               c.claim_adjustment_key,
-              c.status,
-              c.claim_type,
-              c.use,
-              c.created_date,
-              c.billable_period_start,
-              c.billable_period_end,
+              CASE WHEN c.payee_ref LIKE 'anthem:Patient:%'
+                   OR en_payee.name ILIKE 'member submitted %'
+                   THEN true ELSE false END AS member_submitted,
               split_part(c.patient_ref, ':', 3) AS patient_id,
               en_patient.name AS patient_name,
-              ot.provider,
               en_prov.name AS provider_name,
-              en_ins.name AS insurer_name,
-              c.priority,
-              c.total_amount,
-              c.total_currency,
-              c.adjudication_date,
-              c.paid_date,
-              c.network_identifier_code,
-              c.discharge_status_code,
-              c.line_status_display,
-              c.denial_reason_code,
-              c.document_control_number,
-              c.last_updated,
-              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM claim_diagnosis WHERE claim_id = c.id), '') AS icd_codes,
-              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM claim_diagnosis WHERE claim_id = c.id), '') AS icd_displays,
               COALESCE((SELECT STRING_AGG(DISTINCT en_ct.name, ', ')
                         FROM claim_care_team ct
                         LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
                         WHERE ct.claim_id = c.id),
-                     '') AS care_team_providers,
-               COALESCE((SELECT STRING_AGG(role_display, ', ') FROM claim_care_team WHERE claim_id = c.id), '') AS care_team_roles,
-               eob_x.eob_status,
-               eob_x.eob_outcome,
-               eob_x.eob_disposition,
-               eob_x.eob_payment_amount,
-               eob_x.eob_created_date,
-               i.sequence AS item_seq,
-               i.hcpcs_code,
-               i.hcpcs_display,
-               i.modifier_codes,
-               i.serviced_date,
-               i.serviced_period_start,
-               i.serviced_period_end,
-               i.location_code,
-               i.location_display,
-               i.quantity,
-               i.unit_price,
-               i.net_amount
+                   '') AS care_team_providers,
+              en_payee.name AS payee_name,
+              en_ins.name AS insurer_name,
+              c.status,
+              c.line_status_display,
+              c.denial_reason_code,
+              c.adjudication_status_code,
+              c.action_type_code,
+              c.created_date,
+              (SELECT MIN(e2.claim_received_date) FROM eob e2 WHERE e2.claim_number = c.claim_number) AS claim_received_date,
+              c.adjudication_date,
+              c.action_date,
+              c.paid_date,
+              c.billable_period_start,
+              c.billable_period_end,
+              c.total_amount,
+              c.payee_type,
+              c.submission_origin,
+              c.is_out_of_network,
+              c.adjustment_number,
+              c.document_control_number,
+              i.sequence AS item_seq,
+              i.quantity,
+              i.unit_price,
+              i.net_amount,
+              i.hcpcs_code,
+              i.hcpcs_display,
+              i.modifier_codes,
+              i.serviced_date,
+              i.serviced_period_start,
+              i.serviced_period_end,
+              i.location_code,
+              i.location_display,
+              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM claim_diagnosis WHERE claim_id = c.id), '') AS icd_codes,
+              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM claim_diagnosis WHERE claim_id = c.id), '') AS icd_displays,
+              eob_x.eob_status,
+              eob_x.eob_outcome,
+              eob_x.eob_disposition,
+              eob_x.eob_payment_amount,
+              eob_x.eob_created_date,
+              c.last_updated
             FROM claim_submission c
             LEFT JOIN claim_item i ON i.claim_id = c.id
             LEFT JOIN oauth_tokens ot ON ot.patient_id = split_part(c.patient_ref, ':', 3)
@@ -1340,6 +1441,7 @@ def _create_anthem_views(engine):
             LEFT JOIN entity_names en_patient ON en_patient.entity_ref = p.entity_ref
             LEFT JOIN entity_names en_prov ON en_prov.entity_ref = c.provider_ref
             LEFT JOIN entity_names en_ins ON en_ins.entity_ref = c.insurer_ref
+            LEFT JOIN entity_names en_payee ON en_payee.entity_ref = c.payee_ref
             LEFT JOIN LATERAL (
                 SELECT e.status AS eob_status,
                        e.outcome AS eob_outcome,
@@ -1352,87 +1454,6 @@ def _create_anthem_views(engine):
                 LIMIT 1
             ) eob_x ON true
         """))
-
-        # member_claims view — union of FHIR-flagged member/OON EOBs + manual registry
-        # (PG-only: uses raw_json::jsonb extraction; skip on SQLite dev fallback)
-        if is_postgres():
-            conn.execute(text("DROP VIEW IF EXISTS member_claims"))
-            conn.execute(text("""
-                CREATE VIEW member_claims AS
-                SELECT
-                  'fhir' AS source,
-                  e.id AS eob_id,
-                  e.claim_number,
-                  e.status,
-                  e.outcome,
-                  e.created_date,
-                  split_part(e.patient_ref, ':', 3) AS patient_id,
-                   en_patient.name AS patient_name,
-                   en_prov.name AS provider_name,
-                   en_payee.name AS payee_name,
-                  e.submission_origin,
-                  e.is_out_of_network,
-                  (SELECT amount FROM eob_total WHERE eob_id = e.id
-                          AND category_code = 'submitted' LIMIT 1) AS total_submitted,
-                  (SELECT SUM(member_liability) FROM eob_item WHERE eob_id = e.id) AS total_member_liability,
-                  (SELECT SUM(noncovered) FROM eob_item WHERE eob_id = e.id) AS total_noncovered,
-                  NULL::int AS submission_id,
-                  NULL::text AS portal_submission_id,
-                  NULL::date AS service_date,
-                  NULL::text AS cpt_codes,
-                  NULL::float AS total_amount,
-                  NULL::text AS submission_status,
-                  NULL::text AS matched_eob_id,
-                  NULL::text AS matched_claim_id,
-                  NULL::text AS match_claim_number
-                FROM eob e
-                LEFT JOIN oauth_tokens ot ON ot.patient_id = split_part(e.patient_ref, ':', 3)
-                 LEFT JOIN patients p ON p.entity_ref = e.patient_ref AND p.provider = ot.provider
-                 LEFT JOIN entity_names en_patient ON en_patient.entity_ref = p.entity_ref
-                 LEFT JOIN entity_names en_prov ON en_prov.entity_ref = e.provider_ref
-                 LEFT JOIN entity_names en_payee ON en_payee.entity_ref = e.payee_ref
-                WHERE e.submission_origin = 'member' OR e.is_out_of_network = true
-
-                UNION ALL
-
-                SELECT
-                  'registry' AS source,
-                  e.id AS eob_id,
-                  COALESCE(e.claim_number,
-                           (SELECT raw_json::jsonb -> 'identifier' -> 0 ->> 'value'
-                            FROM claim_submission mc WHERE mc.id = ms.matched_claim_id), '') AS claim_number,
-                  e.status,
-                  e.outcome,
-                  e.created_date,
-                  ms.patient_id,
-                    en_patient.name AS patient_name,
-                    COALESCE(en_submission_provider.name, en_prov.name) AS provider_name,
-                   en_payee.name AS payee_name,
-                  NULL::text AS submission_origin,
-                  COALESCE(e.is_out_of_network, false) AS is_out_of_network,
-                  (SELECT amount FROM eob_total WHERE eob_id = e.id
-                          AND category_code = 'submitted' LIMIT 1) AS total_submitted,
-                  (SELECT SUM(member_liability) FROM eob_item WHERE eob_id = e.id) AS total_member_liability,
-                  (SELECT SUM(noncovered) FROM eob_item WHERE eob_id = e.id) AS total_noncovered,
-                  ms.id AS submission_id,
-                  ms.portal_submission_id,
-                  ms.service_date,
-                  ms.cpt_codes,
-                  ms.total_amount,
-                  ms.status AS submission_status,
-                  ms.matched_eob_id,
-                  ms.matched_claim_id,
-                  (SELECT mc2.raw_json::jsonb -> 'identifier' -> 0 ->> 'value'
-                   FROM claim_submission mc2 WHERE mc2.id = ms.matched_claim_id) AS match_claim_number
-                FROM member_claim_submission ms
-                LEFT JOIN eob e ON e.id = ms.matched_eob_id
-                LEFT JOIN oauth_tokens ot ON ot.patient_id = ms.patient_id
-                LEFT JOIN patients p ON p.entity_ref = 'anthem:Patient:' || ms.patient_id AND p.provider = ot.provider
-                 LEFT JOIN entity_names en_patient ON en_patient.entity_ref = p.entity_ref
-                 LEFT JOIN entity_names en_submission_provider ON en_submission_provider.entity_ref = ms.provider_ref
-                 LEFT JOIN entity_names en_prov ON en_prov.entity_ref = e.provider_ref
-                 LEFT JOIN entity_names en_payee ON en_payee.entity_ref = e.payee_ref
-            """))
 
         conn.commit()
 
