@@ -607,7 +607,7 @@ class FHIRClient:
         """
         import httpx
 
-        from myhealth_fhir.services.fhir_client import save_imaging_observations, save_labs_to_db
+        from myhealth_fhir.fhir.ucla_save import save_imaging_observations, save_labs_to_db
 
         auth_mgr = self.get_auth_manager()
         if patient_ids is None:
@@ -857,7 +857,7 @@ class FHIRClient:
                     continue
 
                 if isinstance(save_fn, str) and save_fn == "labs":
-                    from myhealth_fhir.services.fhir_client import save_imaging_observations, save_labs_to_db
+                    from myhealth_fhir.fhir.ucla_save import save_imaging_observations, save_labs_to_db
                     panels, results_count, _ = save_labs_to_db(self, resources, provider=self.config.name)
                     patient_results["DiagnosticReport"] = {"new": panels, "total": len(resources), "sec": round(elapsed, 1)}
                     img_url = f"{self.base_url}/Observation?category=imaging&_count=100&patient={pid}"
@@ -888,10 +888,8 @@ class FHIRClient:
                     except (httpx.HTTPError, ValueError):
                         patient_results["ImagingObservation"] = {"new": 0, "total": 0, "sec": 0, "error": "request failed"}
                 elif isinstance(save_fn, str) and save_fn == "docs":
-                    from myhealth_fhir.services.fhir_client import (
-                        save_clinical_notes_from_docs,
-                        save_document_references_to_db,
-                    )
+                    from myhealth_fhir.fhir.notes import save_clinical_notes_from_docs
+                    from myhealth_fhir.fhir.ucla_save import save_document_references_to_db
                     doc_new = save_document_references_to_db(resources, provider=self.config.name)
                     note_new = save_clinical_notes_from_docs(self, resources, headers, provider=self.config.name)
                     patient_results["DocumentReference"] = {"new": doc_new, "total": len(resources), "sec": round(elapsed, 1)}
