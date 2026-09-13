@@ -4,7 +4,6 @@
 import json
 import logging
 from datetime import UTC, datetime, timedelta
-
 from typing import Any
 
 from fhirpy import SyncFHIRClient
@@ -267,28 +266,6 @@ class FHIRClient:
         """Look up a patient and return their display name."""
         patient = self.get_patient(patient_id)
         return self.extract_patient_name(patient)
-
-    def _cache_patient_identity(self, patient_id: str) -> None:
-        """Fetch and persist an Anthem patient identity when the registry lacks it."""
-        from myhealth_fhir.db import get_anthem_session
-        from myhealth_fhir.db.identity import upsert_patient_name
-        from myhealth_fhir.models.anthem import PatientRecord
-
-        try:
-            patient = self.get_patient(patient_id)
-            name = self.extract_patient_name(patient)
-            if not name or name == patient_id:
-                return
-            with get_anthem_session() as session:
-                ref = upsert_patient_name(session, provider="anthem", patient_id=patient_id, name=name)
-                record = session.get(PatientRecord, (patient_id, "anthem"))
-                if record is None:
-                    record = PatientRecord(patient_id=patient_id, provider="anthem")
-                record.entity_ref = ref
-                session.merge(record)
-                session.commit()
-        except Exception:
-            log.debug("Unable to cache patient identity", exc_info=True)
 
     @staticmethod
     def extract_patient_name(patient: dict) -> str:
@@ -573,7 +550,9 @@ class FHIRClient:
                     eobs = data
 
                 count_before = self._count_eobs(pid)
-                saved_count = self.save_eobs_to_db(eobs)
+                from myhealth_fhir.fhir.anthem_save import save_eobs_to_db
+
+                saved_count = save_eobs_to_db(self, eobs)
                 count_after = self._count_eobs(pid)
                 new_count = max(0, count_after - count_before)
                 updated_count = max(0, saved_count - new_count)
@@ -635,8 +614,9 @@ class FHIRClient:
 
         Returns {patient_id: {"panels": N, "results": N, "imaging": N, "error": str|None}}.
         """
-        from myhealth_fhir.services.fhir_client import save_labs_to_db, save_imaging_observations
         import httpx
+
+        from myhealth_fhir.services.fhir_client import save_imaging_observations, save_labs_to_db
 
         auth_mgr = self.get_auth_manager()
         if patient_ids is None:
@@ -755,6 +735,7 @@ class FHIRClient:
         linkage). Returns {patient_id: {resource_type: count, ...}}.
         """
         import httpx
+
         from myhealth_fhir.db import init_db
         init_db()
 
@@ -867,7 +848,7 @@ class FHIRClient:
                     continue
 
                 if isinstance(save_fn, str) and save_fn == "labs":
-                    from myhealth_fhir.services.fhir_client import save_labs_to_db, save_imaging_observations
+                    from myhealth_fhir.services.fhir_client import save_imaging_observations, save_labs_to_db
                     panels, results_count, _ = save_labs_to_db(self, resources, provider=self.config.name)
                     patient_results["DiagnosticReport"] = {"new": panels, "total": len(resources), "sec": round(elapsed, 1)}
                     img_url = f"{self.base_url}/Observation?category=imaging&_count=100&patient={pid}"
@@ -915,10 +896,11 @@ class FHIRClient:
 
     def _count_eobs(self, patient_id: str) -> int:
         """Return total EOB row count in the DB for a patient."""
-        from myhealth_fhir.db import get_anthem_session
-        from myhealth_fhir.models.anthem import EOB
-        from myhealth_fhir.db.identity import entity_ref
         from sqlalchemy import func
+
+        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.identity import entity_ref
+        from myhealth_fhir.models.anthem import EOB
 
         with get_anthem_session() as session:
             return session.query(func.count(EOB.id)).filter(
@@ -927,104 +909,16 @@ class FHIRClient:
 
     def _count_claims(self, patient_id: str) -> int:
         """Return total ClaimSubmission row count in the DB for a patient."""
-        from myhealth_fhir.db import get_anthem_session
-        from myhealth_fhir.models.anthem import ClaimSubmission
-        from myhealth_fhir.db.identity import entity_ref
         from sqlalchemy import func
+
+        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.identity import entity_ref
+        from myhealth_fhir.models.anthem import ClaimSubmission
 
         with get_anthem_session() as session:
             return session.query(func.count(ClaimSubmission.id)).filter(
                 ClaimSubmission.patient_ref == entity_ref("anthem", "Patient", patient_id)
             ).scalar() or 0
-
-    def save_eobs_to_db(self, eobs: list[dict]) -> int:
-        """Write EOB dicts to the anthem DB. Handles upserts by delete-and-reinsert."""
-        from myhealth_fhir.models.anthem import (
-            EOB,
-            EOBItem,
-            EOBItemAdjudication,
-            EOBDiagnosis,
-            EOBCareTeam,
-            EOBTotal,
-            EOBIdentifier,
-            EOBAdjudication,
-            EOBSupportingInfo,
-            EOBProcedure,
-        )
-        from myhealth_fhir.db import get_anthem_session
-
-        from myhealth_fhir.db.parser import (
-            load_eob,
-            load_item,
-            load_diagnoses,
-            load_care_team,
-            load_totals,
-            load_item_adjudications,
-            load_eob_identifiers,
-            load_eob_adjudications,
-            load_eob_supporting_info,
-            load_eob_procedures,
-        )
-
-        count = 0
-        patient_ids = {
-            rec.get("patient", {}).get("reference", "").split("/", 1)[-1]
-            for rec in eobs if isinstance(rec.get("patient"), dict) and rec["patient"].get("reference")
-        }
-        for patient_id in patient_ids:
-            self._cache_patient_identity(patient_id)
-        with get_anthem_session() as session:
-            for rec in eobs:
-                eob_id = rec["id"]
-                existing = session.get(EOB, eob_id)
-                if existing:
-                    session.delete(existing)
-                    session.flush()
-                eob = EOB(**load_eob(rec))
-                session.add(eob)
-                session.flush()
-
-                for item_rec in rec.get("item", []):
-                    item = EOBItem(**load_item(item_rec, eob_id))
-                    session.add(item)
-                    session.flush()
-                    for adj in load_item_adjudications(item_rec, item.id):
-                        session.add(EOBItemAdjudication(**adj))
-
-                for dx in load_diagnoses(rec, eob_id):
-                    session.add(EOBDiagnosis(**dx))
-
-                for ct in load_care_team(rec, eob_id):
-                    session.add(EOBCareTeam(**ct))
-
-                for t in load_totals(rec, eob_id):
-                    session.add(EOBTotal(**t))
-
-                for ident in load_eob_identifiers(rec, eob_id):
-                    session.add(EOBIdentifier(**ident))
-
-                for adj in load_eob_adjudications(rec, eob_id):
-                    session.add(EOBAdjudication(**adj))
-
-                for si in load_eob_supporting_info(rec, eob_id):
-                    session.add(EOBSupportingInfo(**si))
-
-                for proc in load_eob_procedures(rec, eob_id):
-                    session.add(EOBProcedure(**proc))
-
-                count += 1
-                if count % 20 == 0:
-                    session.flush()
-
-            session.commit()
-        try:
-            from myhealth_fhir.services.member_submissions import match_registered_submissions
-            matched = match_registered_submissions(eobs=eobs, claims=[])
-            if matched:
-                log.info("Matched %d registered member submissions to EOBs", matched)
-        except Exception:
-            log.exception("Member-submission matching failed after EOB save")
-        return count
 
     # -- convenience: Coverage -------------------------------------------
 
@@ -1179,7 +1073,9 @@ class FHIRClient:
                 claims = data
 
                 count_before = self._count_claims(pid)
-                saved_count = self.save_claims_to_db(claims)
+                from myhealth_fhir.fhir.anthem_save import save_claims_to_db
+
+                saved_count = save_claims_to_db(self, claims)
                 count_after = self._count_claims(pid)
                 new_count = max(0, count_after - count_before)
                 updated_count = max(0, saved_count - new_count)
@@ -1244,7 +1140,7 @@ class FHIRClient:
         mutates data.
         """
         from myhealth_fhir.db import get_anthem_session
-        from myhealth_fhir.models.anthem import ClaimSubmission, EOB
+        from myhealth_fhir.models.anthem import EOB, ClaimSubmission
 
         window_start = None
         if not full:
@@ -1331,69 +1227,6 @@ class FHIRClient:
                     m["last_updated"],
                 )
         return result
-
-    def save_claims_to_db(self, claims: list[dict]) -> int:
-        """Write Claim dicts to the anthem DB. Handles upserts by delete-and-reinsert."""
-        from myhealth_fhir.models.anthem import (
-            ClaimSubmission,
-            ClaimItem,
-            ClaimDiagnosis,
-            ClaimCareTeam,
-            ClaimIdentifier,
-        )
-        from myhealth_fhir.db import get_anthem_session
-        from myhealth_fhir.db.parser import (
-            load_claim,
-            load_claim_item,
-            load_claim_diagnoses,
-            load_claim_care_team,
-            load_claim_identifiers,
-        )
-
-        count = 0
-        patient_ids = {
-            rec.get("patient", {}).get("reference", "").split("/", 1)[-1]
-            for rec in claims if isinstance(rec.get("patient"), dict) and rec["patient"].get("reference")
-        }
-        for patient_id in patient_ids:
-            self._cache_patient_identity(patient_id)
-        with get_anthem_session() as session:
-            for rec in claims:
-                claim_id = rec["id"]
-                existing = session.get(ClaimSubmission, claim_id)
-                if existing:
-                    session.delete(existing)
-                    session.flush()
-                claim = ClaimSubmission(**load_claim(rec))
-                session.add(claim)
-                session.flush()
-
-                for item_rec in rec.get("item", []):
-                    item = ClaimItem(**load_claim_item(item_rec, claim_id))
-                    session.add(item)
-
-                for dx in load_claim_diagnoses(rec, claim_id):
-                    session.add(ClaimDiagnosis(**dx))
-
-                for ct in load_claim_care_team(rec, claim_id):
-                    session.add(ClaimCareTeam(**ct))
-
-                for ident in load_claim_identifiers(rec, claim_id):
-                    session.add(ClaimIdentifier(**ident))
-
-                count += 1
-                if count % 20 == 0:
-                    session.flush()
-
-            session.commit()
-        try:
-            from myhealth_fhir.services.member_submissions import match_registered_submissions
-            matched = match_registered_submissions(eobs=[], claims=claims)
-            if matched:
-                log.info("Matched %d registered member submissions to claims", matched)
-        except Exception:
-            log.exception("Member-submission matching failed after claim save")
-        return count
 
     # -- convenience: Organization ----------------------------------------
 
@@ -1482,8 +1315,8 @@ def save_labs_to_db(client, reports: list[dict], provider: str = "ucla"):
     import json
 
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import DiagnosticReport, DiagnosticReportIdentifier, LabResult, LabResultComponent
     from myhealth_fhir.db.ucla_unpack import extract_diagnostic_report, extract_lab_result
+    from myhealth_fhir.models.ucla import DiagnosticReport, DiagnosticReportIdentifier, LabResult, LabResultComponent
 
     new_panels = 0
     new_results = 0
@@ -1843,9 +1676,10 @@ def save_imaging_observations(client, observations: list[dict], provider: str = 
 
 def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import Encounter, EncounterIdentifier, EncounterParticipant
     from myhealth_fhir.db.ucla_unpack import extract_encounter, participant_new_fields
+    from myhealth_fhir.models.ucla import Encounter, EncounterIdentifier, EncounterParticipant
 
     count = 0
     with get_ucla_session() as session:
@@ -1934,9 +1768,10 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import Condition
     from myhealth_fhir.db.ucla_unpack import extract_condition
+    from myhealth_fhir.models.ucla import Condition
 
     count = 0
     with get_ucla_session() as session:
@@ -1999,6 +1834,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.models.ucla import ProcedureRecord
 
@@ -2057,9 +1893,10 @@ def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_medication_statements_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import MedicationStatement
     from myhealth_fhir.db.ucla_unpack import extract_medication_statement
+    from myhealth_fhir.models.ucla import MedicationStatement
 
     count = 0
     with get_ucla_session() as session:
@@ -2110,9 +1947,10 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
 
 def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import MedicationRequest, MedicationRequestDosage, MedicationRequestIdentifier
     from myhealth_fhir.db.ucla_unpack import extract_medication_request
+    from myhealth_fhir.models.ucla import MedicationRequest, MedicationRequestDosage, MedicationRequestIdentifier
 
     count = 0
     with get_ucla_session() as session:
@@ -2175,9 +2013,10 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
 
 def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import AllergyIntolerance
     from myhealth_fhir.db.ucla_unpack import extract_allergy
+    from myhealth_fhir.models.ucla import AllergyIntolerance
 
     count = 0
     with get_ucla_session() as session:
@@ -2236,9 +2075,10 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import Immunization, ImmunizationIdentifier
     from myhealth_fhir.db.ucla_unpack import extract_immunization
+    from myhealth_fhir.models.ucla import Immunization, ImmunizationIdentifier
 
     count = 0
     with get_ucla_session() as session:
@@ -2304,6 +2144,7 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
 
 def save_care_plans_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.models.ucla import CarePlan
 
@@ -2359,6 +2200,7 @@ def save_care_plans_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_medication_administrations_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.models.ucla import MedicationAdministration
 
@@ -2418,9 +2260,10 @@ def save_medication_administrations_to_db(resources: list[dict], provider: str =
 
 def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import ServiceRequest
     from myhealth_fhir.db.ucla_unpack import extract_service_request
+    from myhealth_fhir.models.ucla import ServiceRequest
 
     count = 0
     with get_ucla_session() as session:
@@ -2470,9 +2313,10 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
 
 def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import Specimen
     from myhealth_fhir.db.ucla_unpack import extract_specimen
+    from myhealth_fhir.models.ucla import Specimen
 
     count = 0
     with get_ucla_session() as session:
@@ -2516,9 +2360,10 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import Communication
     from myhealth_fhir.db.ucla_unpack import extract_communication
+    from myhealth_fhir.models.ucla import Communication
 
     count = 0
     with get_ucla_session() as session:
@@ -2576,9 +2421,10 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
 
 def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import CareTeam, CareTeamParticipant
     from myhealth_fhir.db.ucla_unpack import extract_care_team
+    from myhealth_fhir.models.ucla import CareTeam, CareTeamParticipant
 
     count = 0
     with get_ucla_session() as session:
@@ -2630,9 +2476,10 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
 def save_document_references_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import DocumentReference, DocumentReferenceContent, DocumentReferenceIdentifier
     from myhealth_fhir.db.ucla_unpack import extract_document_reference, upgrade_doc_displays
+    from myhealth_fhir.models.ucla import DocumentReference, DocumentReferenceContent, DocumentReferenceIdentifier
 
     count = 0
     with get_ucla_session() as session:
@@ -2694,9 +2541,10 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
 
 def save_family_member_histories_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import FamilyMemberHistory
     from myhealth_fhir.db.ucla_unpack import extract_family_member_history
+    from myhealth_fhir.models.ucla import FamilyMemberHistory
 
     count = 0
     with get_ucla_session() as session:
@@ -2744,9 +2592,10 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
 
 def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucla") -> int:
     import json
+
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import ClinicalObservation, ClinicalObservationComponent
     from myhealth_fhir.db.ucla_unpack import extract_clinical_observation
+    from myhealth_fhir.models.ucla import ClinicalObservation, ClinicalObservationComponent
 
     count = 0
     with get_ucla_session() as session:
@@ -2856,8 +2705,8 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
     import httpx
 
     from myhealth_fhir.db import get_ucla_session
-    from myhealth_fhir.models.ucla import ClinicalNote, ClinicalNoteIdentifier, Encounter
     from myhealth_fhir.db.ucla_unpack import extract_clinical_note, upgrade_doc_displays
+    from myhealth_fhir.models.ucla import ClinicalNote, ClinicalNoteIdentifier, Encounter
 
     def _is_clinical_note(doc: dict) -> bool:
         for c in doc.get("category", []):
@@ -2885,6 +2734,7 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
         if not raw_html:
             return ""
         import html as html_lib
+
         from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(raw_html, "html.parser")
@@ -3039,6 +2889,7 @@ def backfill_clinical_note_attachments(client, provider: str = "ucla", batch_siz
     """
     import base64
     from concurrent.futures import ThreadPoolExecutor, as_completed
+
     from myhealth_fhir.db import get_ucla_session
     from myhealth_fhir.models.ucla import ClinicalNote
 

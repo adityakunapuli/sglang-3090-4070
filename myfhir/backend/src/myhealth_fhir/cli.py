@@ -1,23 +1,23 @@
 """Click CLI for the Anthem/Elevance Health TotalView FHIR API."""
 
 import json
+import os
+import secrets
 import sys
 import webbrowser
-import secrets
-import os
-from datetime import date
-from urllib.parse import urlparse, parse_qs
-from typing import Any
-
 from collections import defaultdict
+from datetime import date
+from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import click
 import httpx
 from tqdm import tqdm
 
 from myhealth_fhir.config.settings import resolve_provider
-from myhealth_fhir.services.auth import get_auth_manager, RefreshDaemon
-from myhealth_fhir.services.fhir_client import get_fhir_client, backfill_clinical_note_attachments
+from myhealth_fhir.fhir.anthem_save import save_claims_to_db, save_eobs_to_db
+from myhealth_fhir.services.auth import RefreshDaemon, get_auth_manager
+from myhealth_fhir.services.fhir_client import backfill_clinical_note_attachments, get_fhir_client
 
 
 @click.group(invoke_without_command=True)
@@ -166,8 +166,9 @@ def make_auth_group(provider_name: str = None):
         """Resolve entity names (providers, practitioners) from FHIR for all stored EOBs."""
         provider = ctx.obj.get("provider", "anthem")
         fhir_client = get_fhir_client(provider)
-        from myhealth_fhir.db import get_anthem_session
         from sqlalchemy import text
+
+        from myhealth_fhir.db import get_anthem_session
 
         with get_anthem_session() as s:
             refs = (
@@ -346,7 +347,7 @@ def eob(ctx, patient_id, status, use, since, lastupdated_since, count, no_pagina
                 eobs_for_patient = data if all_pages else [entry.get("resource", {}) for entry in data.get("entry", [])]
                 results[pid] = eobs_for_patient
                 if not no_db:
-                    client.save_eobs_to_db(eobs_for_patient)
+                    save_eobs_to_db(client, eobs_for_patient)
                     update_checkpoint(pid)
                     try:
                         client.collect_and_resolve_eob_entities(eobs_for_patient)
@@ -566,7 +567,7 @@ def fetch_claims(ctx, patient_id, status, use, since):
                     all_pages=True,
                 )
                 claims = data
-                db_count = client.save_claims_to_db(claims)
+                db_count = save_claims_to_db(client, claims)
                 results[pid] = {"count": db_count, "error": None}
                 auth_mgr.token_store.set_last_claim_fetch(pid)
             except Exception as e:
@@ -853,8 +854,9 @@ def organizations(ctx, name, active, count):
 @click.pass_context
 def member_claims(ctx, source, patient_id):
     """List member-submitted claims + out-of-network EOBs + registry status."""
-    from myhealth_fhir.db import get_anthem_session
     from sqlalchemy import text
+
+    from myhealth_fhir.db import get_anthem_session
 
     where = []
     params: dict = {}
@@ -917,7 +919,6 @@ def submission():
 @click.pass_context
 def submission_add(ctx, portal_id, claim_number, provider, npi, service_date, cpt, amount, patient_id):
     """Register a member-submitted (paper/portal) claim."""
-    from datetime import date
     from myhealth_fhir.db import get_anthem_session
     from myhealth_fhir.models.anthem import MemberClaimSubmission
 
@@ -1238,9 +1239,9 @@ def ucla_save_all(ctx, patient_id, no_db, skip_labs, detailed, wipe):
     auth_mgr = client.get_auth_manager()
 
     if wipe and not no_db:
-        from myhealth_fhir.db import get_ucla_session
-
         from sqlalchemy import text
+
+        from myhealth_fhir.db import get_ucla_session
 
         tables = [
             "lab_result", "diagnostic_report", "imaging_observation",
@@ -2630,7 +2631,6 @@ def print_lab_panel(panel: dict, include_observations: bool = True, detailed: bo
         result_refs = panel.get("result", [])
         if result_refs and fetch_client:
             # Filter out narrative-only observations
-            import tqdm
             obs_list = []
             for ref in result_refs:
                 ref_str = ref.get("reference", "") if isinstance(ref, dict) else str(ref)
