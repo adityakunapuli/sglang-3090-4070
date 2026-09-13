@@ -2,7 +2,9 @@
 
 import json
 import re
-from datetime import date, datetime
+from datetime import datetime
+
+from myhealth_fhir.fhir.parsing import _as_list, _first, coding, parse_date, ref
 
 
 _VENDOR_PREFIX_RE = re.compile(r"^(DELTADENTAL|VSP|MEDCO)")
@@ -20,30 +22,6 @@ AMOUNT_CATS = {
     "discount": "discount",
     "member liability": "member_liability",
 }
-
-
-def parse_date(val):
-    """Parse a FHIR date or dateTime string into a `date` (date part only)."""
-    if not val:
-        return None
-    return date.fromisoformat(val.split("T")[0])
-
-
-def coding(coding_list):
-    """Return the first coding from a FHIR Coding list, or None."""
-    if not coding_list or not isinstance(coding_list, list):
-        return None
-    return coding_list[0]
-
-
-def ref(obj):
-    """Extract the id portion of a FHIR Reference (stripping the resource type prefix)."""
-    if not obj:
-        return None
-    reference = obj.get("reference")
-    if reference and "/" in reference:
-        return reference.split("/", 1)[1]
-    return reference
 
 
 def anthem_ref(obj: dict | None, entity_type: str) -> str | None:
@@ -83,21 +61,6 @@ def claim_number_of(resource: dict) -> str | None:
         if system.endswith("clm_nbr"):
             return ident.get("value")
     return None
-
-
-def _as_list(val):
-    """Normalize a FHIR field that may be a single object or an array into a list."""
-    if val is None:
-        return []
-    if isinstance(val, list):
-        return val
-    return [val]
-
-
-def _first(val):
-    """Return the first element of a FHIR field that may be a single object or an array."""
-    items = _as_list(val)
-    return items[0] if items else None
 
 
 def identifier_rows(resource: dict) -> list[dict]:

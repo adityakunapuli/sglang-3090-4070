@@ -10,6 +10,21 @@ from typing import Any
 from fhirpy import SyncFHIRClient
 from fhirpy.base.exceptions import MultipleResourcesFound, ResourceNotFound
 
+from myhealth_fhir.fhir.parsing import (
+    _cd,
+    _clean_error_message,
+    _coding_first_code,
+    _existing_encounter_id,
+    _extract_observation_value,
+    _extract_patient_id,
+    _fh_error_text,
+    _max_last_updated,
+    _parse_code_display,
+    _parse_dt,
+    _parse_loinc,
+    client_ref,
+)
+
 # Incremental-sync safety margins (sync-hardening fix, layers 1+2):
 #   EOB_OVERLAP_HOURS       — each incremental query reaches back this far
 #                             before the checkpoint, so EOBs/claims updated
@@ -29,43 +44,6 @@ __all__ = [
 ]
 
 log = logging.getLogger("myhealth_fhir.fhir_client")
-
-
-def _clean_error_message(err: Exception | str) -> str:
-    """Format an error into a concise, human-readable description."""
-    msg = str(err).strip()
-    if not msg:
-        return "Unknown error"
-    try:
-        data = json.loads(msg)
-        if isinstance(data, dict):
-            desc = data.get("error_description") or data.get("message") or data.get("error")
-            code = data.get("status_code") or data.get("status")
-            if desc:
-                return f"{desc} (HTTP {code})" if code else str(desc)
-    except Exception:
-        pass
-    return msg
-
-
-def _max_last_updated(resources: list[dict] | None) -> datetime | None:
-    """Newest meta.lastUpdated across a page of FHIR resources (None if absent)."""
-    newest: datetime | None = None
-    for rec in resources or []:
-        if not isinstance(rec, dict):
-            continue
-        raw = (rec.get("meta") or {}).get("lastUpdated")
-        if not raw:
-            continue
-        try:
-            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        if newest is None or dt > newest:
-            newest = dt
-    return newest
 
 
 def get_fhir_client(provider: str = "anthem") -> "FHIRClient":
@@ -1475,147 +1453,6 @@ class FHIRClient:
             return {"error": "No JSON response", "status_code": resp.status_code}
 
 
-def client_ref(resource_type: str, resource_id: str, c: SyncFHIRClient):
-    """Return a fhirpy Reference for resource_type/resource_id on client c."""
-    return c.reference(resource_type, resource_id)
-
-
-# ── Lab result helpers (module-level for CLI import) ──────────────
-
-
-def _parse_dt(value):
-    """Parse an ISO datetime string into a Python datetime object (or None)."""
-    if not value:
-        return None
-    if isinstance(value, str):
-        from datetime import datetime, timezone
-        try:
-            return datetime.fromisoformat(value)
-        except (ValueError, TypeError):
-            # Try stripping Z
-            cleaned = value.replace("Z", "+00:00")
-            try:
-                return datetime.fromisoformat(cleaned)
-            except (ValueError, TypeError):
-                return None
-    return value
-
-
-def _parse_loinc(code_list):
-    """Extract LOINC code from a coding list."""
-    if not isinstance(code_list, list):
-        return None
-    for c in code_list:
-        if isinstance(c, dict) and c.get("system", "").endswith("loinc.org"):
-            return c.get("code")
-    return None
-
-
-def _parse_code_display(code_obj):
-    """Get display or text from a code object."""
-    if not isinstance(code_obj, dict):
-        return None
-    coding = code_obj.get("coding", [])
-    if coding and isinstance(coding[0], dict):
-        return coding[0].get("display")
-    return code_obj.get("text")
-
-
-def _fh_error_text(response) -> str:
-    """Extract a short, log-safe message from a failed FHIR response."""
-    try:
-        body = response.json()
-    except ValueError:
-        body = {}
-    if isinstance(body, dict):
-        issue = body.get("issue")
-        if isinstance(issue, list) and issue and isinstance(issue[0], dict):
-            diag = issue[0].get("diagnostics")
-            if diag:
-                return str(diag)[:300]
-        for key in ("error", "message", "detail"):
-            if body.get(key):
-                return str(body[key])[:300]
-    text = (response.text or "").strip()
-    return text[:120] if text else f"HTTP {response.status_code}"
-
-
-def _extract_observation_value(obs: dict) -> str | None:
-    """Extract a human-readable value from any FHIR value[x] on an Observation-ish dict.
-
-    Handles valueQuantity, valueString, valueBoolean, valueCodeableConcept, valueInteger,
-    valueRange, valueRatio, valueTime, valueDateTime, and returns None when missing/absent.
-    """
-    val_qty = obs.get("valueQuantity")
-    if isinstance(val_qty, dict):
-        num = val_qty.get("value")
-        unit = val_qty.get("unit", "") or val_qty.get("code", "")
-        if num is not None:
-            if isinstance(num, float) and num == int(num):
-                return f"{int(num)} {unit}".strip()
-            return f"{num} {unit}".strip()
-
-    val_str = obs.get("valueString")
-    if val_str:
-        return str(val_str)
-
-    val_bool = obs.get("valueBoolean")
-    if val_bool is not None:
-        return "Yes" if val_bool else "No"
-
-    val_int = obs.get("valueInteger")
-    if val_int is not None:
-        return str(val_int)
-
-    val_decimal = obs.get("valueDecimal")
-    if val_decimal is not None:
-        return str(val_decimal)
-
-    val_time = obs.get("valueTime")
-    if val_time:
-        return str(val_time)
-
-    val_dt = obs.get("valueDateTime")
-    if val_dt:
-        return str(val_dt)
-
-    val_code = obs.get("valueCodeableConcept")
-    if isinstance(val_code, dict):
-        cc = val_code.get("coding", [])
-        if cc:
-            return cc[0].get("display", cc[0].get("code", ""))
-        if val_code.get("text"):
-            return val_code["text"]
-
-    val_range = obs.get("valueRange")
-    if isinstance(val_range, dict):
-        low = val_range.get("low", {})
-        high = val_range.get("high", {})
-        lv = low.get("value") if isinstance(low, dict) else None
-        hv = high.get("value") if isinstance(high, dict) else None
-        lu = (low.get("unit", "") if isinstance(low, dict) else "") or ""
-        if lv is not None and hv is not None:
-            return f"{lv}-{hv} {lu}".strip()
-        if lv is not None:
-            return f">={lv} {lu}".strip()
-        if hv is not None:
-            return f"<={hv} {lu}".strip()
-
-    val_ratio = obs.get("valueRatio")
-    if isinstance(val_ratio, dict):
-        nums = []
-        for part in ("numerator", "denominator"):
-            q = val_ratio.get(part, {})
-            if isinstance(q, dict) and q.get("value") is not None:
-                nums.append(str(q["value"]))
-        if len(nums) == 2:
-            return f"{nums[0]} : {nums[1]}"
-
-    if obs.get("dataAbsentReason"):
-        return "(absent)"
-    return None
-
-
 def _save_actor(session, obj: dict | None, provider: str, fallback_type: str, fallback_id: str) -> str | None:
     """Persist a FHIR actor display and return its canonical reference."""
     from myhealth_fhir.db.identity import display_from_fhir, ref_from_fhir, upsert_entity_name
@@ -2001,123 +1838,6 @@ def save_imaging_observations(client, observations: list[dict], provider: str = 
         session.commit()
 
 
-# ── Shared helpers for clinical resource saving ────────────────────
-
-
-def _extract_patient_id(resource: dict) -> str | None:
-    subj = resource.get("subject", resource.get("patient", {}))
-    if isinstance(subj, dict):
-        ref = subj.get("reference", "")
-        if "/" in ref:
-            return ref.split("/")[-1]
-    return None
-
-
-def _extract_encounter_id(resource: dict) -> str | None:
-    enc = resource.get("encounter")
-    if isinstance(enc, dict):
-        ref = enc.get("reference", "")
-        encounter_id = ref.split("/")[-1] if "/" in ref else ref
-        return encounter_id or None
-    return None
-
-
-def _existing_encounter_id(session, resource: dict) -> str | None:
-    """Keep only encounter references that exist in the local encounter table."""
-    encounter_id = _extract_encounter_id(resource)
-    if not encounter_id:
-        return None
-    from myhealth_fhir.models.ucla import Encounter
-
-    return encounter_id if session.get(Encounter, encounter_id) is not None else None
-
-
-def _coding_first_display(code_obj: dict) -> str | None:
-    coding = code_obj.get("coding", []) if isinstance(code_obj, dict) else []
-    for c in coding:
-        if isinstance(c, dict) and c.get("display"):
-            return c["display"]
-    return code_obj.get("text") if isinstance(code_obj, dict) else None
-
-
-def _coding_first_code(code_obj: dict) -> dict:
-    coding = code_obj.get("coding", []) if isinstance(code_obj, dict) else []
-    for c in coding:
-        if isinstance(c, dict) and c.get("code"):
-            return {"system": c.get("system"), "code": c.get("code"), "display": c.get("display")}
-    return {}
-
-
-def _as_list(val):
-    """Normalize a FHIR field that may be a single object or an array into a list."""
-    if val is None:
-        return []
-    return val if isinstance(val, list) else [val]
-
-
-def _identifier_rows(resource: dict) -> list[dict]:
-    """Flatten FHIR identifier[] into rows for a *_identifier child table."""
-    rows = []
-    for i, ident in enumerate(_as_list(resource.get("identifier"))):
-        if not isinstance(ident, dict):
-            continue
-        rows.append({"seq": i, "system": ident.get("system"), "value": ident.get("value"), "use": ident.get("use")})
-    return rows
-
-
-def _extension_value(resource: dict, url: str):
-    """Return the value* of the first top-level extension matching url (whitespace-insensitive)."""
-    for ext in _as_list(resource.get("extension")):
-        if isinstance(ext, dict) and "".join((ext.get("url") or "").split()) == url:
-            for key in ("valueBoolean", "valueString", "valueInteger", "valueDecimal", "valueDate", "valueDateTime", "valueCode", "valueCoding"):
-                if key in ext:
-                    return ext[key]
-    return None
-
-
-def _component_rows(comp_list) -> tuple[str | None, list[dict]]:
-    """Parse Observation.component[] into (component_value JSON, child-row dicts)."""
-    import json
-
-    component_value = None
-    rows = []
-    for i, comp in enumerate(_as_list(comp_list)):
-        if not isinstance(comp, dict):
-            continue
-        c_code = comp.get("code", {})
-        c_name = _parse_code_display(c_code) if isinstance(c_code, dict) else None
-        c_val = _extract_observation_value(comp)
-        cq = comp.get("valueQuantity")
-        c_unit = cq.get("unit", cq.get("code")) if isinstance(cq, dict) else None
-        c_float = None
-        if isinstance(cq, dict) and cq.get("value") is not None:
-            try:
-                c_float = float(cq["value"])
-            except (TypeError, ValueError):
-                c_float = None
-        rows.append(
-            {
-                "seq": i,
-                "code_loinc": _parse_loinc(c_code.get("coding", []) if isinstance(c_code, dict) else []),
-                "code_display": c_name,
-                "component_value": c_val,
-                "value_float": c_float,
-                "value_unit": c_unit,
-                "reference_range": None,
-                "interpretation_code": None,
-                "interpretation_display": None,
-            }
-        )
-        for it in comp.get("interpretation", []) or []:
-            if isinstance(it, dict) and it.get("coding") and isinstance(it["coding"][0], dict):
-                rows[-1]["interpretation_code"] = it["coding"][0].get("code")
-                rows[-1]["interpretation_display"] = it["coding"][0].get("display")
-                break
-    if rows:
-        component_value = json.dumps([{"code": r["code_display"], "value": r["component_value"], "unit": r["value_unit"]} for r in rows])
-    return component_value, rows
-
-
 # ── Encounter ──────────────────────────────────────────────────────
 
 
@@ -2138,7 +1858,7 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
             reason = res.get("reasonCode", [])
             reason_display = ""
             if reason and isinstance(reason[0], dict):
-                reason_display = _coding_first_display(reason[0])
+                reason_display = _cd(reason[0])
 
             location = ""
             for loc in res.get("location", []):
@@ -2202,7 +1922,7 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                         encounter_id=eid,
                         individual_ref=_save_actor(session, ind, provider, "Practitioner", f"encounter:{eid}:participant"),
                         role_code=role.get("coding", [{}])[0].get("code") if role.get("coding") else None,
-                        role_display=role.get("text", _coding_first_display(role)),
+                        role_display=role.get("text", _cd(role)),
                         **participant_new_fields(part),
                     ))
         session.commit()
@@ -2229,7 +1949,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
             body_site = ""
             for bs in r.get("bodySite", []):
                 if isinstance(bs, dict):
-                    body_site = _coding_first_display(bs)
+                    body_site = _cd(bs)
                     break
             note_text = ""
             for n in r.get("note", []):
@@ -2243,7 +1963,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
             if existing:
                 for k, v in {"clinical_status": r.get("clinicalStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("clinicalStatus"), dict) else None,
                              "verification_status": r.get("verificationStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("verificationStatus"), dict) else None,
-                             "code_display": code_info.get("display", _coding_first_display(code_obj)),
+                             "code_display": code_info.get("display", _cd(code_obj)),
                               "asserter_ref": asserter_ref,
                              "onset_datetime": _parse_dt(r.get("onsetDateTime")),
                              "abatement_datetime": _parse_dt(r.get("abatementDateTime"))}.items():
@@ -2260,7 +1980,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     category=r.get("category", [{}])[0].get("coding", [{}])[0].get("code") if r.get("category") else None,
                     code_system=code_info.get("system"),
                     code_value=code_info.get("code"),
-                    code_display=code_info.get("display", _coding_first_display(code_obj)),
+                    code_display=code_info.get("display", _cd(code_obj)),
                     body_site=body_site, severity_text=r.get("severity", {}).get("coding", [{}])[0].get("display") if isinstance(r.get("severity"), dict) else None,
                     onset_datetime=_parse_dt(r.get("onsetDateTime")),
                     abatement_datetime=_parse_dt(r.get("abatementDateTime")),
@@ -2298,7 +2018,7 @@ def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
             body_site = ""
             for bs in r.get("bodySite", []):
                 if isinstance(bs, dict):
-                    body_site = _coding_first_display(bs)
+                    body_site = _cd(bs)
                     break
             note_text = ""
             for n in r.get("note", []):
@@ -2310,7 +2030,7 @@ def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
             existing = session.get(ProcedureRecord, rid)
             if existing:
                 existing.status = r.get("status")
-                existing.code_display = code_info.get("display", _coding_first_display(code_obj))
+                existing.code_display = code_info.get("display", _cd(code_obj))
                 existing.performed_datetime = _parse_dt(r.get("performedDateTime"))
                 existing.performer_ref = performer_ref
                 existing.raw_json = json.dumps(r)
@@ -2320,7 +2040,7 @@ def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"), category=r.get("category", {}).get("coding", [{}])[0].get("display") if isinstance(r.get("category"), dict) else None,
                     code_system=code_info.get("system"), code_value=code_info.get("code"),
-                    code_display=code_info.get("display", _coding_first_display(code_obj)),
+                    code_display=code_info.get("display", _cd(code_obj)),
                     performed_datetime=_parse_dt(r.get("performedDateTime")),
                     performer_ref=performer_ref, location=r.get("location", {}).get("display") if isinstance(r.get("location"), dict) else None,
                     reason_display=r.get("reasonCode", [{}])[0].get("coding", [{}])[0].get("display") if r.get("reasonCode") else None,
@@ -2362,7 +2082,7 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
             existing = session.get(MedicationStatement, rid)
             if existing:
                 existing.status = r.get("status")
-                existing.medication_display = med_info.get("display", _coding_first_display(med))
+                existing.medication_display = med_info.get("display", _cd(med))
                 for k, v in ms_fields.items():
                     setattr(existing, k, v)
                 existing.raw_json = json.dumps(r)
@@ -2370,7 +2090,7 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
                 session.add(MedicationStatement(
                     fhir_id=rid, patient_id=_extract_patient_id(r),
                     status=r.get("status"), category=r.get("category", {}).get("coding", [{}])[0].get("display") if r.get("category") else None,
-                    medication_display=med_info.get("display", _coding_first_display(med)),
+                    medication_display=med_info.get("display", _cd(med)),
                     medication_code=med_info.get("code"), medication_system=med_info.get("system"),
                     effective_start=_parse_dt(eff.get("start")), effective_end=_parse_dt(eff.get("end")),
                     date_asserted=_parse_dt(r.get("dateAsserted")),
@@ -2416,7 +2136,7 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
             existing = session.get(MedicationRequest, rid)
             if existing:
                 existing.status = r.get("status")
-                existing.medication_display = med_info.get("display", _coding_first_display(med))
+                existing.medication_display = med_info.get("display", _cd(med))
                 existing.requester_ref = requester_ref
                 for k, v in mr_fields.items():
                     setattr(existing, k, v)
@@ -2426,7 +2146,7 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
                     fhir_id=rid, patient_id=_extract_patient_id(r),
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"), intent=r.get("intent"),
-                    medication_display=med_info.get("display", _coding_first_display(med)),
+                    medication_display=med_info.get("display", _cd(med)),
                     medication_code=med_info.get("code"), medication_system=med_info.get("system"),
                     authored_on=_parse_dt(r.get("authoredOn")),
                     requester_ref=requester_ref,
@@ -2474,7 +2194,7 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
                 if isinstance(rx, dict):
                     for m in rx.get("manifestation", []):
                         if isinstance(m, dict):
-                            m_text = _coding_first_display(m) or m.get("text", "")
+                            m_text = _cd(m) or m.get("text", "")
                             manifestation = (manifestation + ", " + m_text) if manifestation else m_text
                     severity = rx.get("severity", severity)
             note_text = ""
@@ -2487,7 +2207,7 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
             existing = session.get(AllergyIntolerance, rid)
             if existing:
                 existing.clinical_status = r.get("clinicalStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("clinicalStatus"), dict) else None
-                existing.code_display = code_info.get("display", _coding_first_display(code_obj))
+                existing.code_display = code_info.get("display", _cd(code_obj))
                 existing.recorder_ref = recorder_ref
                 for k, v in al_fields.items():
                     setattr(existing, k, v)
@@ -2498,7 +2218,7 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     clinical_status=r.get("clinicalStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("clinicalStatus"), dict) else None,
                     verification_status=r.get("verificationStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("verificationStatus"), dict) else None,
                     category=r.get("category"), criticality=r.get("criticality"),
-                    code_display=code_info.get("display", _coding_first_display(code_obj)),
+                    code_display=code_info.get("display", _cd(code_obj)),
                     code_system=code_info.get("system"), code_value=code_info.get("code"),
                     reaction_manifestation=manifestation, reaction_severity=severity,
                     recorded_date=_parse_dt(r.get("recordedDate")),
@@ -2546,7 +2266,7 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
             existing = session.get(Immunization, rid)
             if existing:
                 existing.status = r.get("status")
-                existing.vaccine_display = vac_info.get("display", _coding_first_display(vac))
+                existing.vaccine_display = vac_info.get("display", _cd(vac))
                 existing.performer_ref = performer_ref
                 existing.encounter_id = enc_id
                 for k, v in im_fields.items():
@@ -2556,7 +2276,7 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
                 session.add(Immunization(
                     fhir_id=rid, patient_id=_extract_patient_id(r),
                     status=r.get("status"),
-                    vaccine_display=vac_info.get("display", _coding_first_display(vac)),
+                    vaccine_display=vac_info.get("display", _cd(vac)),
                     vaccine_code=vac_info.get("code"), vaccine_system=vac_info.get("system"),
                     occurrence_datetime=_parse_dt(r.get("occurrenceDateTime")),
                     manufacturer=r.get("manufacturer", {}).get("display") if isinstance(r.get("manufacturer"), dict) else None,
@@ -2654,7 +2374,7 @@ def save_medication_administrations_to_db(resources: list[dict], provider: str =
             route_display = None
             route = dosage.get("route", {})
             if isinstance(route, dict):
-                route_display = _coding_first_display(route)
+                route_display = _cd(route)
             dose_text = None
             dose_qty = dosage.get("dose", {})
             if isinstance(dose_qty, dict):
@@ -2674,14 +2394,14 @@ def save_medication_administrations_to_db(resources: list[dict], provider: str =
             existing = session.get(MedicationAdministration, rid)
             if existing:
                 existing.status = r.get("status")
-                existing.medication_display = med_info.get("display", _coding_first_display(med))
+                existing.medication_display = med_info.get("display", _cd(med))
                 existing.raw_json = json.dumps(r)
             else:
                 session.add(MedicationAdministration(
                     fhir_id=rid, source="fhir", patient_id=_extract_patient_id(r),
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"),
-                    medication_display=med_info.get("display", _coding_first_display(med)),
+                    medication_display=med_info.get("display", _cd(med)),
                     administered_datetime=_parse_dt(r.get("effectiveDateTime") or (
                         r.get("effective", {}).get("value") if isinstance(r.get("effective"), dict) else None
                     )),
@@ -2720,7 +2440,7 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
             existing = session.get(ServiceRequest, rid)
             if existing:
                 existing.status = r.get("status")
-                existing.code_display = code_info.get("display", _coding_first_display(code_obj))
+                existing.code_display = code_info.get("display", _cd(code_obj))
                 existing.note_text = note_text or existing.note_text
                 for k, v in sr_fields.items():
                     setattr(existing, k, v)
@@ -2730,8 +2450,8 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
                     fhir_id=rid, source="fhir", patient_id=_extract_patient_id(r),
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"), intent=r.get("intent"),
-                    category=_coding_first_display(cat) if isinstance(cat, dict) else None,
-                    code_display=code_info.get("display", _coding_first_display(code_obj)),
+                    category=_cd(cat) if isinstance(cat, dict) else None,
+                    code_display=code_info.get("display", _cd(code_obj)),
                     code_system=code_info.get("system"), code_value=code_info.get("code"),
                     authored_on=_parse_dt(r.get("authoredOn")),
                     requester_ref=requester_ref,
@@ -2778,7 +2498,7 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     fhir_id=rid, source="fhir", patient_id=_extract_patient_id(r),
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"),
-                    type_display=type_info.get("display", _coding_first_display(type_obj)),
+                    type_display=type_info.get("display", _cd(type_obj)),
                     type_system=type_info.get("system"), type_code=type_info.get("code"),
                     collected_datetime=_parse_dt(r.get("collection", {}).get("collectedDateTime") if isinstance(r.get("collection"), dict) else None),
                     received_datetime=_parse_dt(r.get("receivedTime")),
@@ -2815,7 +2535,7 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
                 else:
                     cc = p.get("contentCodeableConcept")
                     if isinstance(cc, dict):
-                        payload_parts.append(_coding_first_display(cc) or cc.get("text", ""))
+                        payload_parts.append(_cd(cc) or cc.get("text", ""))
             note_text = ""
             for n in r.get("note", []):
                 if isinstance(n, dict):
@@ -2837,7 +2557,7 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
                     fhir_id=rid, source="fhir", patient_id=_extract_patient_id(r),
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"),
-                    category=_coding_first_display(cat) if isinstance(cat, dict) else None,
+                    category=_cd(cat) if isinstance(cat, dict) else None,
                     subject=r.get("subject", {}).get("display") if isinstance(r.get("subject"), dict) else None,
                     sent_datetime=_parse_dt(r.get("sent")), received_datetime=_parse_dt(r.get("received")),
                     sender_ref=sender_ref, recipient_ref=recipient_ref,
@@ -2871,9 +2591,9 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
                 if not isinstance(p, dict):
                     continue
                 member = p.get("member", {})
-                participants.append(_coding_first_display(member) or member.get("display", "") if isinstance(member, dict) else "")
+                participants.append(_cd(member) or member.get("display", "") if isinstance(member, dict) else "")
                 role = p.get("role", [{}])[0] if p.get("role") else {}
-                participants.append(f"[{_coding_first_display(role)}]" if isinstance(role, dict) and _coding_first_display(role) else "")
+                participants.append(f"[{_cd(role)}]" if isinstance(role, dict) and _cd(role) else "")
             note_text = ""
             for n in r.get("note", []):
                 if isinstance(n, dict):
@@ -2892,7 +2612,7 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     fhir_id=rid, source="fhir", patient_id=_extract_patient_id(r),
                     encounter_id=_existing_encounter_id(session, r),
                     status=r.get("status"),
-                    category=_coding_first_display(cat) if isinstance(cat, dict) else None,
+                    category=_cd(cat) if isinstance(cat, dict) else None,
                     name=r.get("name"),
                     period_start=_parse_dt(r.get("period", {}).get("start")),
                     period_end=_parse_dt(r.get("period", {}).get("end")),
@@ -2926,7 +2646,7 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
             cat_list = []
             for c in r.get("category", []):
                 if isinstance(c, dict):
-                    cd = _coding_first_display(c)
+                    cd = _cd(c)
                     if cd:
                         cat_list.append(cd)
 
@@ -3132,7 +2852,6 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
     """
     import base64
     import json
-    import re
 
     import httpx
 

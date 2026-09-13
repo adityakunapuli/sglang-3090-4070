@@ -21,67 +21,13 @@ the non-column key ``encounter_ref``; consumers resolve it to a local
 
 
 import json
-from datetime import date, datetime, time
 
-
-def _as_list(val):
-    if val is None:
-        return []
-    return val if isinstance(val, list) else [val]
-
-
-def _first(val):
-    items = _as_list(val)
-    return items[0] if items else None
-
-
-def _dt(value):
-    """Parse a FHIR dateTime or date string into a datetime (date → midnight)."""
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, date):
-        return datetime.combine(value, time.min)
-    s = str(value).strip()
-    if not s:
-        return None
-    for candidate in (s.replace("Z", "+00:00"), s, s.split("T")[0]):
-        try:
-            return datetime.fromisoformat(candidate)
-        except ValueError:
-            continue
-    return None
+from myhealth_fhir.fhir.parsing import _as_list, _cc, _cd, _first, _parse_dt, _raw_ref
 
 
 def _date(value):
-    dt = _dt(value)
+    dt = _parse_dt(value)
     return dt.date() if dt else None
-
-
-def _cc(cc):
-    """First coding of a CodeableConcept → ``(code, display)`` or ``(None, None)``."""
-    if not isinstance(cc, dict):
-        return None, None
-    for c in cc.get("coding") or []:
-        if isinstance(c, dict) and (c.get("code") or c.get("display")):
-            return c.get("code"), c.get("display")
-    return None, None
-
-
-def _cd(cc):
-    """First coding display of a CodeableConcept, else its ``text``."""
-    if not isinstance(cc, dict):
-        return None
-    for c in cc.get("coding") or []:
-        if isinstance(c, dict) and c.get("display"):
-            return c["display"]
-    return cc.get("text")
-
-
-def _raw_ref(obj):
-    """Raw FHIR reference string of a Reference object, or None."""
-    return obj.get("reference") if isinstance(obj, dict) else None
 
 
 def _ref_display(obj):
@@ -241,8 +187,8 @@ def participant_new_fields(part):
     period = part.get("period") if isinstance(part.get("period"), dict) else {}
     return {
         "type_code": _cc(ptype)[0] if isinstance(ptype, dict) else None,
-        "period_start": _dt(period.get("start")),
-        "period_end": _dt(period.get("end")),
+        "period_start": _parse_dt(period.get("start")),
+        "period_end": _parse_dt(period.get("end")),
     }
 
 
@@ -320,7 +266,7 @@ def extract_lab_result(obs):
         "based_on_ref": _raw_ref(based_on),
         "specimen_ref": _raw_ref(spec),
         "encounter_ref": _raw_ref(enc),
-        "issued": _dt(obs.get("issued")),
+        "issued": _parse_dt(obs.get("issued")),
         "note_text": _notes(obs),
         "method_display": _cd(method) if isinstance(method, dict) else None,
         "body_site": _cd(body) if isinstance(body, dict) else None,
@@ -342,7 +288,7 @@ def extract_clinical_observation(obs):
     component_value, comp_rows = parse_observation_components(obs.get("component"))
     header = {
         "category_display": _cd(cat) if isinstance(cat, dict) else None,
-        "issued": _dt(obs.get("issued")),
+        "issued": _parse_dt(obs.get("issued")),
         "note_text": _notes(obs),
         "value_code": _cc(vcc)[0] if isinstance(vcc, dict) else None,
         "value_display": _cd(vcc) if isinstance(vcc, dict) else None,
@@ -480,7 +426,7 @@ def extract_allergy(res):
         onset = res["onsetPeriod"].get("start")
     header = {
         "type": res.get("type") if isinstance(res.get("type"), str) else None,
-        "onset_datetime": _dt(onset),
+        "onset_datetime": _parse_dt(onset),
         "code_text": code_obj.get("text") if isinstance(code_obj, dict) else None,
         "reaction_description": "; ".join(parts) if parts else None,
     }
@@ -555,8 +501,8 @@ def _doc_context_fields(doc):
     period = ctx.get("period") if isinstance(ctx.get("period"), dict) else {}
     subject = ctx.get("subject") if isinstance(ctx.get("subject"), dict) else None
     return {
-        "context_period_start": _dt(period.get("start")),
-        "context_period_end": _dt(period.get("end")),
+        "context_period_start": _parse_dt(period.get("start")),
+        "context_period_end": _parse_dt(period.get("end")),
         "subject_display": _ref_display(subject),
     }
 
