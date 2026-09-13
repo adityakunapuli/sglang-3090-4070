@@ -1,6 +1,3 @@
-"""myhealth_fhir package: CLI + FastAPI app for Anthem/Elevance FHIR."""
+"""myhealth_fhir: CLI + FastAPI app for Anthem/Elevance + UCLA FHIR data."""
 
-from .cli import main
-from .main import app
-
-__all__ = ["main", "app"]
+__version__ = "0.1.0"
