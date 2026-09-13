@@ -34,7 +34,7 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
 
     import httpx
 
-    from myhealth_fhir.db import get_ucla_session
+    from myhealth_fhir.db import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_clinical_note, upgrade_doc_displays
     from myhealth_fhir.models.ucla import ClinicalNote, ClinicalNoteIdentifier, Encounter
 
@@ -132,7 +132,7 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
         return "\n".join(lines).strip()
 
     count = 0
-    with get_ucla_session() as session:
+    with get_session_for(provider) as session:
         for doc in resources:
             rid = doc.get("id", "")
             if not rid or not _is_clinical_note(doc):
@@ -220,11 +220,11 @@ def backfill_clinical_note_attachments(client, provider: str = "ucla", batch_siz
     import base64
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    from myhealth_fhir.db import get_ucla_session
+    from myhealth_fhir.db import get_session_for
     from myhealth_fhir.models.ucla import ClinicalNote
 
     stats = {"notes": 0, "updated": 0, "html": 0, "rtf": 0, "failed": 0}
-    with get_ucla_session() as session:
+    with get_session_for(provider) as session:
         rows = session.query(ClinicalNote.id, ClinicalNote.fhir_id, ClinicalNote.raw_html, ClinicalNote.raw_rtf, ClinicalNote.raw_json).filter(
             ClinicalNote.source == "fhir",
             (ClinicalNote.raw_html.is_(None) | ClinicalNote.raw_rtf.is_(None)),
@@ -260,7 +260,7 @@ def backfill_clinical_note_attachments(client, provider: str = "ucla", batch_siz
             results.append(future.result())
 
     for start in range(0, len(results), batch_size):
-        with get_ucla_session() as session:
+        with get_session_for(provider) as session:
             for row, bodies, exc in results[start:start + batch_size]:
                 note_id, fhir_id, old_html, old_rtf, _ = row
                 if exc:
