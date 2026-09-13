@@ -1811,7 +1811,7 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
                 pname = f" ({r.patient_name})" if r.patient_name else ""
                 claim_label = r.claim_number or r.claim_adjustment_key or "?"
                 click.echo(click.style(f"\n── Claim {claim_label} ──", bold=True))
-                click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status} | Type: {r.claim_type}")
+                click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status}")
                 if r.provider_name and r.provider_name != r.patient_id:
                     click.echo(f"  Provider: {r.provider_name}")
                 if r.icd_codes:
@@ -1821,7 +1821,7 @@ def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, i
                 if r.care_team_providers:
                     click.echo(f"  Care Team: {r.care_team_providers}")
                 if r.total_amount:
-                    click.echo(f"  Total: {r.total_amount} {r.total_currency or 'USD'}")
+                    click.echo(f"  Total: {r.total_amount} USD")
                 if r.eob_status:
                     paid = f" | Paid: {r.eob_payment_amount}" if r.eob_payment_amount else ""
                     click.echo(f"  Linked EOB: {r.eob_status} ({r.eob_disposition or '-'}){paid}")
@@ -1878,12 +1878,16 @@ def search_eob(
         conditions.append("care_team_providers LIKE :prov")
         params["prov"] = f"%{provider}%"
     if date_from:
-        col = "created_date" if claims else "(serviced_date OR serviced_period_start)"
-        conditions.append(f"({col} >= :date_from OR billable_period_start >= :date_from)")
+        if claims:
+            conditions.append("created_date >= :date_from")
+        else:
+            conditions.append("(serviced_date >= :date_from OR serviced_period_start >= :date_from OR created_date >= :date_from)")
         params["date_from"] = date_from
     if date_to:
-        col = "created_date" if claims else "(serviced_date OR serviced_period_end)"
-        conditions.append(f"({col} <= :date_to OR billable_period_end <= :date_to)")
+        if claims:
+            conditions.append("created_date <= :date_to")
+        else:
+            conditions.append("(serviced_date <= :date_to OR serviced_period_end <= :date_to OR created_date <= :date_to)")
         params["date_to"] = date_to
     if amt_min is not None:
         col = "net_amount" if not claims else "total_submitted"
@@ -1920,18 +1924,18 @@ def search_eob(
                 seen.add(r.claim_number)
                 pname = f" ({r.patient_name})" if r.patient_name else ""
                 click.echo(click.style(f"\n── EOB {r.claim_number or '?'} ──", bold=True))
-                click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status} | Type: {r.claim_type}")
+                click.echo(f"  Patient: {r.patient_id}{pname} | Status: {r.status}")
                 if r.provider_name and r.provider_name != r.patient_id:
                     click.echo(f"  Provider: {r.provider_name}")
                 if r.payee_name and r.payee_name != r.patient_id:
                     click.echo(f"  Payee: {r.payee_name}")
-                click.echo(f"  Dates: {r.billable_period_start} → {r.billable_period_end}")
+                click.echo(f"  Dates: created {r.created_date} → paid {r.payment_date}")
                 if r.icd_codes:
                     click.echo(f"  ICD: {r.icd_codes}")
                 if r.icd_displays:
                     click.echo(f"  Diagnosis: {r.icd_displays[:180]}")
                 if r.care_team_providers:
-                    click.echo(f"  Providers: {r.care_team_providers} ({r.care_team_roles})")
+                    click.echo(f"  Providers: {r.care_team_providers}")
                 if r.total_submitted or r.total_benefit:
                     click.echo(
                         f"  Submitted: {r.total_submitted} | Benefit: {r.total_benefit} | "

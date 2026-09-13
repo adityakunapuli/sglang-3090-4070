@@ -762,31 +762,58 @@ Detailed column lists are in the expanded section below.
 
 ## Denormalized Views
 
-### myhealth_anthem views (3)
+### myhealth_anthem views (5)
 
-**SQL:** `eob` LEFT JOIN `oauth_tokens`/`patients`/`entity_names` (×3) + correlated subqueries on `eob_diagnosis`, `eob_care_team`, `eob_total`.
+#### `vw_eob` (slimmed + reordered, primary)
+Analytics view merging `eob` + `eob_item` into one row per EOB line item
+(LEFT JOIN keeps item-less EOBs with NULL item columns). Drops `claim_type`,
+`care_team_roles`, `billable_period_start`/`end` (redundant). Adds `member_submitted`
+(Boolean — payee_ref = anthem:Patient: OR payee_name ILIKE 'member submitted %'),
+`claim_received_date` (from CARIN BB supportingInfo.clmrecvddate, present in all
+817 EOBs), `payment_type`, `submission_origin`, `is_out_of_network`. Grouped by
+`claim_number` (+ `item_seq` for line grain). No `fhir_id`.
 
-**SQL:** `eob_item` JOIN `eob` LEFT JOIN token/patient/entity tables.
+Columns: `claim_number`, `member_submitted`, `patient_id`, `patient_name`,
+`provider_name`, `care_team_providers`, `payee_name`, `status`, `outcome`,
+`payment_type`, `sub_type`, `created_date`, `claim_received_date`, `payment_date`,
+`payment_amount`, `paid_to_member`, `paid_to_provider`, `total_submitted`,
+`total_member_liability`, `total_benefit`, `total_deductible`, `total_paid`,
+`submission_origin`, `is_out_of_network`, `item_seq`, `hcpcs_code`, `hcpcs_display`,
+`modifier_codes`, `serviced_date`, `serviced_period_start`, `serviced_period_end`,
+`location_code`, `location_display`, `quantity`, `submitted_amount`, `net_amount`,
+`allowed_amount`, `paid_provider`, `paid_patient`, `item_deductible`, `item_coinsurance`,
+`item_copay`, `item_noncovered`, `item_discount`, `member_liability`, `payment_status`,
+`adjustment_reason`, `icd_codes`, `icd_displays`, `claim_status`, `claim_created_date`,
+`claim_total_amount`, `last_updated` (53 columns).
 
-#### `vw_eob`
-Analytics view merging `eob_claims` + `eob_items` into one row per EOB line
-item (LEFT JOIN from `eob` → `eob_item`, so EOBs without items still appear
-with NULL item columns). All `eob_claims` header columns (patient/provider/
-payee names, aggregated ICD codes, care team, totals, lateral `claim_*`
-cross-reference) plus `paid_to_member` / `paid_to_provider` (Anthem marks
-subscriber reimbursements via `payee.party = Patient`; header-level only —
-no item breakdown exists in the FHIR data) plus all `eob_items` line columns
-(`item_seq`, `hcpcs_*`, serviced dates, adjudications). No `fhir_id` — group by
-`claim_number`
-(+ `item_seq` for line-level grain). Claim-level metrics duplicate across
-each EOB's item rows; aggregate with `DISTINCT`/dedupe as needed.
+#### `vw_claims` (slimmed + reordered, primary)
+Analytics view merging `claim_submission` + `claim_item` into one row per
+claim line item (LEFT JOIN keeps item-less claims with NULL item columns). Drops
+`use`, `priority`, `total_currency`, `discharge_status_code`, `network_identifier_code`,
+`claim_type`, `care_team_roles` (all constant or redundant). Adds `member_submitted`,
+`claim_received_date` (via lateral EOB join, MIN of matched EOBs), `payee_name`,
+`payee_type`, `submission_origin`, `is_out_of_network`, `adjudication_status_code`,
+`action_date`, `action_type_code`, `adjustment_number`. No `fhir_id`.
 
-#### `vw_claims`
-Analytics view merging `claim_submissions` + `claim_items` into one row per
-claim line item (LEFT JOIN from `claim_submission` → `claim_item`). All
-`claim_submissions` header columns (patient/provider/insurer names, aggregated
-diagnoses, care team, lateral `eob_*` cross-reference) plus all `claim_items`
-line columns. No `fhir_id` — group by `claim_number` (+ `item_seq`).
+Columns: `claim_number`, `claim_adjustment_key`, `member_submitted`, `patient_id`,
+`patient_name`, `provider_name`, `care_team_providers`, `payee_name`, `insurer_name`,
+`status`, `line_status_display`, `denial_reason_code`, `adjudication_status_code`,
+`action_type_code`, `created_date`, `claim_received_date`, `adjudication_date`,
+`action_date`, `paid_date`, `billable_period_start`, `billable_period_end`,
+`total_amount`, `payee_type`, `submission_origin`, `is_out_of_network`,
+`adjustment_number`, `document_control_number`, `item_seq`, `quantity`, `unit_price`,
+`net_amount`, `hcpcs_code`, `hcpcs_display`, `modifier_codes`, `serviced_date`,
+`serviced_period_start`, `serviced_period_end`, `location_code`, `location_display`,
+`icd_codes`, `icd_displays`, `eob_status`, `eob_outcome`, `eob_disposition`,
+`eob_payment_amount`, `eob_created_date`, `last_updated` (47 columns).
+
+#### `vw_eob_all` (backup — original column set, minus `provider`)
+Exact copy of the original `vw_eob` definition with the `provider` column
+(`ot.provider` = constant `'anthem'`) removed. Same column order.
+
+#### `vw_claims_all` (backup — original column set, minus `provider`)
+Exact copy of the original `vw_claims` definition with the `provider` column
+removed. Same column order.
 
 #### `member_claims`
 Unified view of all member-submitted and out-of-network claims. UNION ALL of:
@@ -794,6 +821,12 @@ Unified view of all member-submitted and out-of-network claims. UNION ALL of:
 2. `member_claim_submission` LEFT JOIN `eob`
 
 **Columns:** `source` (`'fhir'` or `'registry'`), `eob_id`, `claim_number`, `status`, `outcome`, `created_date`, `patient_id`, `patient_name`, `provider_name`, `payee_name`, `submission_origin`, `is_out_of_network`, `total_submitted`, `total_member_liability`, `total_noncovered`, plus submission tracking columns.
+
+#### `eob` migration: `claim_received_date`
+A new column `claim_received_date` (DATE) was added to the `eob` table via
+migration. Backfilled from raw_json `supportingInfo[].timingDate` where
+`category_code='clmrecvddate'` (present in all 817 EOBs). The parser's
+`load_eob` now extracts it from new FHIR fetches.
 
 ---
 

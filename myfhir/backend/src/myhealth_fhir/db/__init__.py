@@ -711,19 +711,61 @@ def _migrate_anthem_schema(engine):
         conn.execute(text("""
             CREATE VIEW vw_member_submitted AS
             SELECT
+              -- Claim identifiers & status
               e.id AS eob_id,
               e.claim_number,
               e.status,
-              e.claim_type,
+              e.submission_origin,
+              e.is_out_of_network,
+              -- Money: billed vs allowed
+              i.submitted_amount,
+              i.allowed_amount,
+              -- Money: where it went
+              i.paid_provider,
+              i.paid_patient,
+              i.member_liability,
+              i.noncovered AS item_noncovered,
+              -- Money: breakdown
+              i.deductible AS item_deductible,
+              i.coinsurance AS item_coinsurance,
+              i.copay AS item_copay,
+              i.discount AS item_discount,
+              -- Item procedures & service date
+              i.sequence AS item_seq,
+              i.hcpcs_code,
+              i.hcpcs_display,
+              i.modifier_codes,
+              i.quantity,
+              i.serviced_date,
+              -- Diagnoses
+              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM eob_diagnosis d WHERE d.eob_id = e.id), '') AS icd_codes,
+              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM eob_diagnosis d WHERE d.eob_id = e.id), '') AS icd_displays,
+              -- Payment details
+              i.payment_status,
+              i.adjustment_reason,
+              -- Provider context
+              en_prov.name AS provider_name,
+              en_payee.name AS payee_name,
+              COALESCE((SELECT STRING_AGG(en_ct.name, ', ')
+                        FROM eob_care_team ct
+                        LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
+                        WHERE ct.eob_id = e.id), '') AS care_team_providers,
+              COALESCE((SELECT STRING_AGG(role_display, ', ') FROM eob_care_team ct WHERE ct.eob_id = e.id), '') AS care_team_roles,
+              -- Patient
+              split_part(e.patient_ref, ':', 3) AS patient_id,
+              en_patient.name AS patient_name,
+              -- EOB dates
               e.created_date,
               e.billable_period_start,
               e.billable_period_end,
-              split_part(e.patient_ref, ':', 3) AS patient_id,
-              en_patient.name AS patient_name,
-              en_prov.name AS provider_name,
-              en_payee.name AS payee_name,
-              e.submission_origin,
-              e.is_out_of_network,
+              -- EOB-level totals (repeated per row)
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'submitted' LIMIT 1) AS total_submitted,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'benefit' LIMIT 1) AS total_benefit,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'deductible' LIMIT 1) AS total_deductible,
+              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'coinsurance' LIMIT 1) AS total_coinsurance,
+              (SELECT SUM(member_liability) FROM eob_item WHERE eob_id = e.id) AS total_member_liability,
+              (SELECT SUM(noncovered) FROM eob_item WHERE eob_id = e.id) AS total_noncovered,
+              -- Signals (member-submission detection audit trail)
               ARRAY_TO_STRING(ARRAY_REMOVE(ARRAY[
                 CASE WHEN e.submission_origin = 'member' THEN 'origin' END,
                 CASE WHEN lower(coalesce(en_prov.name,'')) LIKE '%member%' THEN 'provider_name' END,
@@ -736,38 +778,7 @@ def _migrate_anthem_schema(engine):
                                 OR lower(coalesce(ct.role_code,'')) LIKE '%member%'
                                 OR lower(coalesce(ct.role_display,'')) LIKE '%member%')
                        ) THEN 'care_team' END
-              ], NULL), ';') AS member_signals,
-              COALESCE((SELECT STRING_AGG(icd_code, ', ') FROM eob_diagnosis d WHERE d.eob_id = e.id), '') AS icd_codes,
-              COALESCE((SELECT STRING_AGG(icd_display, ' | ') FROM eob_diagnosis d WHERE d.eob_id = e.id), '') AS icd_displays,
-              COALESCE((SELECT STRING_AGG(en_ct.name, ', ')
-                        FROM eob_care_team ct
-                        LEFT JOIN entity_names en_ct ON en_ct.entity_ref = ct.provider_ref
-                        WHERE ct.eob_id = e.id), '') AS care_team_providers,
-              COALESCE((SELECT STRING_AGG(role_display, ', ') FROM eob_care_team ct WHERE ct.eob_id = e.id), '') AS care_team_roles,
-              i.sequence AS item_seq,
-              i.hcpcs_code,
-              i.hcpcs_display,
-              i.modifier_codes,
-              i.serviced_date,
-              i.quantity,
-              i.submitted_amount,
-              i.allowed_amount,
-              i.paid_provider,
-              i.paid_patient,
-              i.deductible AS item_deductible,
-              i.coinsurance AS item_coinsurance,
-              i.copay AS item_copay,
-              i.noncovered AS item_noncovered,
-              i.discount AS item_discount,
-              i.member_liability,
-              i.payment_status,
-              i.adjustment_reason,
-              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'submitted' LIMIT 1) AS total_submitted,
-              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'benefit' LIMIT 1) AS total_benefit,
-              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'deductible' LIMIT 1) AS total_deductible,
-              (SELECT amount FROM eob_total WHERE eob_id = e.id AND category_code = 'coinsurance' LIMIT 1) AS total_coinsurance,
-              (SELECT SUM(member_liability) FROM eob_item WHERE eob_id = e.id) AS total_member_liability,
-              (SELECT SUM(noncovered) FROM eob_item WHERE eob_id = e.id) AS total_noncovered
+              ], NULL), ';') AS member_signals
             FROM eob e
             JOIN eob_item i ON i.eob_id = e.id
             LEFT JOIN oauth_tokens ot ON ot.patient_id = split_part(e.patient_ref, ':', 3)

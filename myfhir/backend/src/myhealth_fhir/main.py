@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
+from myhealth_fhir.api.claims import router as claims_router
 from myhealth_fhir.api.dashboard import router
 from myhealth_fhir.db import init_db
 
@@ -43,6 +44,7 @@ app = FastAPI(
 )
 
 app.include_router(router)
+app.include_router(claims_router)
 logging.basicConfig(level=logging.INFO)
 
 

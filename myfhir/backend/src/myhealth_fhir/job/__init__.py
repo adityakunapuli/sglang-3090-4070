@@ -17,6 +17,7 @@ from myhealth_fhir.db import get_auth_session, get_session_for
 from myhealth_fhir.db.models_auth import JobRun
 from myhealth_fhir.services.auth import RefreshDaemon, get_auth_manager
 from myhealth_fhir.services.fhir_client import get_fhir_client
+from myhealth_fhir.services.progress import registry
 
 log = logging.getLogger("myhealth_fhir.job")
 
@@ -42,6 +43,38 @@ _COUNTERS = {
 # Everything else (saved/new/updated/db_total/sec/status/error/...) is
 # bookkeeping and excluded so the "fetched" totals aren't inflated.
 _SUMMARY_METRIC_KEYS = {"count", "panels", "results", "imaging"}
+
+# Layer 3 of the sync-hardening fix: at most this often, ignore incremental
+# checkpoints entirely and pull every EOB/claim from the API. Catches
+# anything the incremental windows ever missed and reconciles the whole
+# claim history against stored EOBs.
+FULL_RESYNC_DAYS = 7
+
+# Concurrency guard: at most one active data-pull per provider at a time,
+# whether triggered by the scheduler or an on-demand (dashboard) request.
+_ACTIVE_RUNS: set[str] = set()
+_ACTIVE_LOCK = threading.Lock()
+
+
+def is_provider_running(provider: str) -> bool:
+    """Return True if a data-pull is currently in progress for the provider."""
+    with _ACTIVE_LOCK:
+        return provider in _ACTIVE_RUNS
+
+
+def try_begin_run(provider: str) -> bool:
+    """Atomically mark a provider run as in-progress; False if one is already active."""
+    with _ACTIVE_LOCK:
+        if provider in _ACTIVE_RUNS:
+            return False
+        _ACTIVE_RUNS.add(provider)
+        return True
+
+
+def end_run(provider: str) -> None:
+    """Mark a provider run as finished."""
+    with _ACTIVE_LOCK:
+        _ACTIVE_RUNS.discard(provider)
 
 
 def _count_rows(provider: str) -> dict[str, int]:
@@ -124,9 +157,56 @@ def _job_run_summary(provider: str, results: dict) -> dict:
     return {"fetched": fetched}
 
 
+def _last_full_resync(provider: str) -> datetime | None:
+    """When the provider last ran a checkpoint-blind full resync.
+
+    Full resyncs are flagged via ``counts.full_resync`` on their JobRun row,
+    so the decision survives daemon/app restarts.
+    """
+    try:
+        with get_auth_session() as session:
+            rows = (
+                session.query(JobRun)
+                .filter(JobRun.provider == provider)
+                .order_by(JobRun.started_at.desc())
+                .limit(500)
+                .all()
+            )
+        for row in rows:
+            counts = row.counts or {}
+            if isinstance(counts, dict) and counts.get("full_resync"):
+                ts = row.started_at
+                return ts.replace(tzinfo=UTC) if ts.tzinfo is None else ts
+    except Exception as e:
+        log.warning("Could not read last full-resync time for %s: %s", provider, e)
+    return None
+
+
+def _should_full_resync(provider: str) -> bool:
+    """True when no full resync is on record, or the last one is a week old."""
+    last = _last_full_resync(provider)
+    return last is None or (datetime.now(UTC) - last).days >= FULL_RESYNC_DAYS
+
+
 def run_provider(provider: str, skip_labs: bool = False) -> dict:
+    """Run a single provider pull, guarded so only one run per provider is active.
+
+    If a run for this provider is already in progress (scheduler or on-demand),
+    the duplicate is skipped rather than run concurrently.
+    """
+    if not try_begin_run(provider):
+        log.warning("Provider %s already has an active run; skipping duplicate", provider)
+        return {"provider": provider, "status": "skipped", "counts": {}}
+    try:
+        return _run_provider_impl(provider, skip_labs)
+    finally:
+        end_run(provider)
+
+
+def _run_provider_impl(provider: str, skip_labs: bool = False) -> dict:
     """Run a single provider pull. Returns job-run summary dict."""
     started = datetime.now(UTC)
+    registry.reset(provider, stage="starting", message="Starting sync")
 
     try:
         with get_auth_session() as session:
@@ -144,6 +224,8 @@ def run_provider(provider: str, skip_labs: bool = False) -> dict:
     results: dict = {}
     claims: dict = {}
     clinical: dict = {}
+    full_resync = False
+    recon: dict | None = None
 
     try:
         from myhealth_fhir.config.settings import resolve_provider
@@ -152,8 +234,25 @@ def run_provider(provider: str, skip_labs: bool = False) -> dict:
         client = get_fhir_client(provider)
 
         if config.kind == "anthem":
-            results = client.fetch_and_store_eobs_all_patients()
-            claims = client.fetch_and_store_claims_all_patients()
+            full_resync = _should_full_resync(provider)
+            if full_resync:
+                log.info(
+                    "Provider %s: checkpoint-blind full resync (weekly safety net)",
+                    provider,
+                )
+            results = client.fetch_and_store_eobs_all_patients(
+                auto_incremental=not full_resync
+            )
+            claims = client.fetch_and_store_claims_all_patients(
+                auto_incremental=not full_resync
+            )
+            # Layer 4: after claims land, flag adjudicated claims that still
+            # have no matching EOB row (e.g. 20262502A2197-class gaps).
+            try:
+                recon = client.reconcile_missing_eobs(full=full_resync)
+            except Exception:
+                log.exception("EOB reconciliation failed for %s", provider)
+                recon = None
         else:
             results = client.fetch_and_store_labs_all_patients()
             if not skip_labs:
@@ -175,6 +274,14 @@ def run_provider(provider: str, skip_labs: bool = False) -> dict:
         summary["error"] = error
     # New records = total delta across the provider's tracked tables.
     summary["new_total"] = sum(totals_after.values()) - sum(totals_before.values())
+    summary["full_resync"] = full_resync
+    if recon is not None and recon.get("missing_count"):
+        summary["reconciliation"] = {
+            "missing_eob_claims": recon["missing_count"],
+            "window": recon.get("window"),
+            "truncated": recon.get("truncated", False),
+            "claims": recon.get("missing", [])[:25],
+        }
 
     if run_id is not None:
         try:
@@ -189,6 +296,11 @@ def run_provider(provider: str, skip_labs: bool = False) -> dict:
         except Exception as e:
             log.warning("Could not persist job_run finish for %s: %s", provider, e)
 
+    registry.finish(
+        provider,
+        status="done" if status == "success" else "failed",
+        message=error or ("Sync complete" if status == "success" else "Sync failed"),
+    )
     return {"provider": provider, "status": status, "counts": summary}
 
 

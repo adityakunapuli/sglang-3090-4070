@@ -9,9 +9,14 @@ Replaces the old (dropped) ``routes.py``. Serves only what the dashboard needs:
 
 from __future__ import annotations
 
+import asyncio
+import json
+import logging
+import threading
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from myhealth_fhir.config.settings import list_providers, resolve_provider
@@ -19,6 +24,9 @@ from myhealth_fhir.db import get_auth_session, get_session_for
 from myhealth_fhir.db.models_auth import JobRun
 from myhealth_fhir.services.auth import get_auth_manager
 from myhealth_fhir.services.fhir_client import get_fhir_client
+from myhealth_fhir.services.progress import registry
+
+log = logging.getLogger("myhealth_fhir.api")
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 _PROVIDERS = list_providers()
@@ -43,6 +51,15 @@ def _parse_code(raw: str) -> str:
     return raw
 
 
+def _iso_utc(dt: datetime | None) -> str | None:
+    """Serialize a possibly-naive (stored-as-UTC) datetime to an explicit UTC ISO string."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC).isoformat()
+
+
 def _last_run(provider: str) -> dict | None:
     """Return the most recent JobRun row for a provider as a plain dict."""
     with get_auth_session() as session:
@@ -55,8 +72,8 @@ def _last_run(provider: str) -> dict | None:
         if row is None:
             return None
         return {
-            "started_at": row.started_at.isoformat() if row.started_at else None,
-            "finished_at": row.finished_at.isoformat() if row.finished_at else None,
+            "started_at": _iso_utc(row.started_at),
+            "finished_at": _iso_utc(row.finished_at),
             "status": row.status,
             "counts": row.counts,
             "error": row.error,
@@ -190,3 +207,76 @@ def list_available_providers() -> dict:
             for name in _PROVIDERS
         ]
     }
+
+
+@router.post("/sync/{provider}")
+def sync_now(provider: str) -> dict:
+    """Trigger an on-demand iterative data sync for a single provider.
+
+    Starts the provider's pull in a background thread and returns immediately.
+    A 409 is returned if a sync for that provider is already in progress.
+    """
+    if provider not in _PROVIDERS:
+        raise HTTPException(status_code=404, detail=f"Unknown provider '{provider}'")
+    from myhealth_fhir.job import is_provider_running, run_provider
+
+    if is_provider_running(provider):
+        raise HTTPException(status_code=409, detail="A sync is already in progress for this provider")
+
+    def _worker() -> None:
+        try:
+            run_provider(provider)
+        except Exception:
+            log.exception("Manual sync for provider %s failed", provider)
+
+    # Reset synchronously so a progress stream opened right after this returns
+    # sees a live "running" state (no idle gap before the worker thread starts).
+    registry.reset(provider, stage="starting", message="Starting sync")
+    threading.Thread(target=_worker, name=f"manual-sync-{provider}", daemon=True).start()
+    return {"started": True, "provider": provider, "message": f"Sync started for {provider}"}
+
+
+@router.get("/sync/{provider}/progress")
+async def sync_progress(provider: str):
+    """Stream live sync progress for a provider as Server-Sent Events.
+
+    Emits a JSON snapshot on every change, a heartbeat comment every ~15s while
+    the connection is otherwise quiet, and closes once the run reaches a terminal
+    state (done/failed/skipped) — or if no run has started within ~15s of connect.
+    """
+    if provider not in _PROVIDERS:
+        raise HTTPException(status_code=404, detail=f"Unknown provider '{provider}'")
+
+    async def event_stream():
+        last: dict | None = None
+        last_send = asyncio.get_event_loop().time()
+        idle_seconds = 0.0
+        yield ": connected\n\n"
+        while True:
+            snap = registry.snapshot(provider)
+            now = asyncio.get_event_loop().time()
+            if snap["status"] == "idle":
+                idle_seconds += 0.5
+                if idle_seconds > 15:
+                    yield f"data: {json.dumps({**snap, 'status': 'none'})}\n\n"
+                    return
+                await asyncio.sleep(0.5)
+                continue
+            idle_seconds = 0.0
+            if snap != last:
+                last = snap
+                yield f"data: {json.dumps(snap)}\n\n"
+                last_send = now
+            elif now - last_send >= 15:
+                yield ": heartbeat\n\n"
+                last_send = now
+            if snap["status"] in ("done", "failed", "skipped"):
+                await asyncio.sleep(1.0)
+                return
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )

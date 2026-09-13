@@ -74,6 +74,7 @@ class EOB(AnthemBase):
     outcome: Mapped[str | None] = mapped_column(Text)
     disposition: Mapped[str | None] = mapped_column(Text)
     created_date: Mapped[date | None] = mapped_column(Date)
+    claim_received_date: Mapped[date | None] = mapped_column(Date)
     billable_period_start: Mapped[date | None] = mapped_column(Date)
     billable_period_end: Mapped[date | None] = mapped_column(Date)
     patient_ref: Mapped[str | None] = mapped_column(Text)

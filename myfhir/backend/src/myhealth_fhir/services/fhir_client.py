@@ -4,9 +4,22 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import UTC, datetime, timedelta
 
 from fhirpy import SyncFHIRClient
 from fhirpy.base.exceptions import MultipleResourcesFound, ResourceNotFound
+
+# Incremental-sync safety margins (sync-hardening fix, layers 1+2):
+#   EOB_OVERLAP_HOURS       — each incremental query reaches back this far
+#                             before the checkpoint, so EOBs/claims updated
+#                             during or after the previous run are re-fetched
+#                             instead of falling into a gap. Upserts make the
+#                             overlap idempotent and cheap.
+#   CHECKPOINT_MARGIN_HOURS — after a successful fetch the checkpoint advances
+#                             to max(_lastUpdated seen) minus this margin,
+#                             never to "now".
+EOB_OVERLAP_HOURS = 72
+CHECKPOINT_MARGIN_HOURS = 1
 
 __all__ = [
     "FHIRClient",
@@ -32,6 +45,26 @@ def _clean_error_message(err: Exception | str) -> str:
     except Exception:
         pass
     return msg
+
+
+def _max_last_updated(resources: list[dict] | None) -> datetime | None:
+    """Newest meta.lastUpdated across a page of FHIR resources (None if absent)."""
+    newest: datetime | None = None
+    for rec in resources or []:
+        if not isinstance(rec, dict):
+            continue
+        raw = (rec.get("meta") or {}).get("lastUpdated")
+        if not raw:
+            continue
+        try:
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        if newest is None or dt > newest:
+            newest = dt
+    return newest
 
 
 def get_fhir_client(provider: str = "anthem") -> FHIRClient:
@@ -65,6 +98,24 @@ class FHIRClient:
         from myhealth_fhir.services.auth import get_auth_manager
 
         return get_auth_manager(self.config.name)
+
+    def _report_stage(self, stage: str, total: int = 0, message: str = "") -> None:
+        """Report a new sync stage (best-effort; no-ops if no listener is present)."""
+        try:
+            from myhealth_fhir.services.progress import registry
+
+            registry.set_stage(self.config.name, stage, total=total, message=message)
+        except Exception:
+            pass
+
+    def _report_patient(self, pid: str, index: int, message: str | None = None) -> None:
+        """Advance per-patient progress (best-effort; no-ops if no listener is present)."""
+        try:
+            from myhealth_fhir.services.progress import registry
+
+            registry.advance(self.config.name, pid, index, message=message)
+        except Exception:
+            pass
 
     def get_client_obj(self, patient_id: str | None = None) -> SyncFHIRClient:
         """Build (and cache) a fhirpy SyncFHIRClient with a valid Bearer token."""
@@ -467,7 +518,9 @@ class FHIRClient:
                     patient_ids = [token.patient_id]
 
         results: dict = {}
-        for pid in patient_ids:
+        self._report_stage("EOBs", total=len(patient_ids))
+        for _i, pid in enumerate(patient_ids):
+            self._report_patient(pid, _i)
             token = None
             try:
                 token = auth_mgr.get_valid_token(patient_id=pid)
@@ -507,12 +560,18 @@ class FHIRClient:
                 }
                 continue
 
-            # Per-patient incremental date resolution if not explicitly overridden
+            # Per-patient incremental date resolution if not explicitly overridden.
+            # Layer 1: rewind the checkpoint by the overlap window so records
+            # updated around the previous run are re-fetched, never skipped.
             pid_lastupdated = lastupdated_gte
             if pid_lastupdated is None and auto_incremental:
                 last_fetch = auth_mgr.token_store.get_last_eob_fetch(pid)
                 if last_fetch:
-                    pid_lastupdated = last_fetch.strftime("%Y-%m-%d")
+                    if last_fetch.tzinfo is None:
+                        last_fetch = last_fetch.replace(tzinfo=UTC)
+                    pid_lastupdated = (
+                        last_fetch - timedelta(hours=EOB_OVERLAP_HOURS)
+                    ).strftime("%Y-%m-%d")
 
             try:
                 data = self.list_explanation_of_benefits(
@@ -548,7 +607,17 @@ class FHIRClient:
                     "db_total": count_after,
                     "error": None,
                 }
-                auth_mgr.token_store.set_last_eob_fetch(pid)
+                # Layer 2: advance the checkpoint to the newest _lastUpdated
+                # actually seen (minus a safety margin), NOT "now" — "now"
+                # would skip anything adjudicated between the query and this
+                # write. The 72h overlap covers the margin and any stragglers.
+                newest_updated = _max_last_updated(eobs)
+                checkpoint = (
+                    newest_updated - timedelta(hours=CHECKPOINT_MARGIN_HOURS)
+                    if newest_updated is not None
+                    else datetime.now(UTC) - timedelta(hours=CHECKPOINT_MARGIN_HOURS)
+                )
+                auth_mgr.token_store.set_last_eob_fetch(pid, checkpoint)
                 log.info(
                     "Stored %d EOBs (%d new, %d updated) for patient %s (total %d)",
                     saved_count,
@@ -599,7 +668,9 @@ class FHIRClient:
                     patient_ids = [token.patient_id]
 
         results: dict = {}
-        for pid in patient_ids:
+        self._report_stage("Labs", total=len(patient_ids))
+        for _i, pid in enumerate(patient_ids):
+            self._report_patient(pid, _i)
             try:
                 token = auth_mgr.get_valid_token(patient_id=pid)
             except RuntimeError as e:
@@ -778,7 +849,9 @@ class FHIRClient:
             return all_resources, None
 
         results: dict = {}
-        for pid in patient_ids:
+        self._report_stage("Clinical", total=len(patient_ids))
+        for _i, pid in enumerate(patient_ids):
+            self._report_patient(pid, _i)
             try:
                 token = auth_mgr.get_valid_token(patient_id=pid)
             except RuntimeError as e:
@@ -801,6 +874,7 @@ class FHIRClient:
             }
             patient_results: dict = {}
             for rt, rt_params, save_fn in resource_types:
+                self._report_patient(pid, _i, message=rt)
                 rt_params_with_patient = dict(rt_params)
                 rt_params_with_patient["patient"] = pid
 
@@ -1060,7 +1134,9 @@ class FHIRClient:
                     patient_ids = [token.patient_id]
 
         results: dict = {}
-        for pid in patient_ids:
+        self._report_stage("Claims", total=len(patient_ids))
+        for _i, pid in enumerate(patient_ids):
+            self._report_patient(pid, _i)
             token = None
             try:
                 token = auth_mgr.get_valid_token(patient_id=pid)
@@ -1100,12 +1176,17 @@ class FHIRClient:
                 }
                 continue
 
-            # Per-patient incremental date resolution if not explicitly overridden
+            # Per-patient incremental date resolution if not explicitly overridden.
+            # Layer 1 (same overlap window as the EOB sync).
             pid_lastupdated = lastupdated_gte
             if pid_lastupdated is None and auto_incremental:
                 last_fetch = auth_mgr.token_store.get_last_claim_fetch(pid)
                 if last_fetch:
-                    pid_lastupdated = last_fetch.strftime("%Y-%m-%d")
+                    if last_fetch.tzinfo is None:
+                        last_fetch = last_fetch.replace(tzinfo=UTC)
+                    pid_lastupdated = (
+                        last_fetch - timedelta(hours=EOB_OVERLAP_HOURS)
+                    ).strftime("%Y-%m-%d")
 
             try:
                 data = self.list_claims(
@@ -1132,7 +1213,15 @@ class FHIRClient:
                     "db_total": count_after,
                     "error": None,
                 }
-                auth_mgr.token_store.set_last_claim_fetch(pid)
+                # Layer 2 (same as EOB sync): checkpoint = newest _lastUpdated
+                # seen minus safety margin, never "now".
+                newest_updated = _max_last_updated(claims)
+                checkpoint = (
+                    newest_updated - timedelta(hours=CHECKPOINT_MARGIN_HOURS)
+                    if newest_updated is not None
+                    else datetime.now(UTC) - timedelta(hours=CHECKPOINT_MARGIN_HOURS)
+                )
+                auth_mgr.token_store.set_last_claim_fetch(pid, checkpoint)
                 log.info(
                     "Stored %d claims (%d new, %d updated) for patient %s (total %d)",
                     saved_count,
@@ -1157,6 +1246,112 @@ class FHIRClient:
                 }
 
         return results
+
+    def reconcile_missing_eobs(self, full: bool = False, limit: int = 100) -> dict:
+        """Layer 4: DB-level reconciliation — adjudicated claims with no EOB.
+
+        A claim is considered covered when an ``eob`` row exists with the
+        same ``claim_number`` (the same join the vw_claims views use). Only
+        claims with ``use='claim'``, ``status='active'`` and a claim_number
+        are considered; preauthorizations are legitimately EOB-less.
+
+        Window: unless ``full=True`` (weekly checkpoint-blind resync), only
+        claims updated since the earliest per-patient EOB checkpoint minus
+        the overlap window are checked — the same window the incremental
+        sync just covered. Everything older is swept by the weekly full
+        resync.
+
+        Read-only: flags gaps in the job-run summary and logs; it never
+        mutates data.
+        """
+        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.models_anthem import ClaimSubmission, EOB
+
+        window_start = None
+        if not full:
+            auth_mgr = self.get_auth_manager()
+            pids = auth_mgr.token_store.list_patient_ids() or []
+            checkpoints = [
+                cp
+                for cp in (
+                    auth_mgr.token_store.get_last_eob_fetch(p) for p in pids
+                )
+                if cp is not None
+            ]
+            if checkpoints:
+                earliest = min(checkpoints)
+                if earliest.tzinfo is None:
+                    earliest = earliest.replace(tzinfo=UTC)
+                window_start = (
+                    earliest - timedelta(hours=EOB_OVERLAP_HOURS)
+                ).replace(tzinfo=None)
+
+        with get_anthem_session() as session:
+            q = (
+                session.query(
+                    ClaimSubmission.id,
+                    ClaimSubmission.claim_number,
+                    ClaimSubmission.patient_ref,
+                    ClaimSubmission.created_date,
+                    ClaimSubmission.total_amount,
+                    ClaimSubmission.submission_origin,
+                    ClaimSubmission.adjudication_status_code,
+                    ClaimSubmission.denial_reason_code,
+                    ClaimSubmission.last_updated,
+                )
+                .outerjoin(EOB, EOB.claim_number == ClaimSubmission.claim_number)
+                .filter(
+                    ClaimSubmission.use == "claim",
+                    ClaimSubmission.status == "active",
+                    ClaimSubmission.claim_number.isnot(None),
+                    EOB.id.is_(None),
+                )
+            )
+            if window_start is not None:
+                q = q.filter(ClaimSubmission.last_updated >= window_start)
+            q = q.order_by(ClaimSubmission.last_updated.desc()).limit(limit + 1)
+            rows = q.all()
+
+        missing = [
+            {
+                "claim_id": r.id,
+                "claim_number": r.claim_number,
+                "patient_ref": r.patient_ref,
+                "created_date": r.created_date.isoformat() if r.created_date else None,
+                "total_amount": r.total_amount,
+                "submission_origin": r.submission_origin,
+                "adjudication_status_code": r.adjudication_status_code,
+                "denial_reason_code": r.denial_reason_code,
+                "last_updated": (
+                    r.last_updated.isoformat() if r.last_updated else None
+                ),
+            }
+            for r in rows
+        ]
+        truncated = len(missing) > limit
+        result = {
+            "window": "all-time" if full else str(window_start),
+            "missing_count": len(missing),
+            "truncated": truncated,
+            "missing": missing[:limit],
+        }
+        if missing:
+            log.warning(
+                "EOB reconciliation: %d active claim(s) have no matching EOB "
+                "(window=%s%s)",
+                len(missing),
+                "all-time" if full else str(window_start),
+                ", list truncated" if truncated else "",
+            )
+            for m in missing[:limit]:
+                log.warning(
+                    "  missing EOB: claim %s number=%s origin=%s updated=%s",
+                    m["claim_id"],
+                    m["claim_number"],
+                    m["submission_origin"],
+                    m["last_updated"],
+                )
+        return result
 
     def save_claims_to_db(self, claims: list[dict]) -> int:
         """Write Claim dicts to the anthem DB. Handles upserts by delete-and-reinsert."""

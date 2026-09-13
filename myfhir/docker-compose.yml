@@ -1,5 +1,10 @@
 # MyHealth FHIR Dashboard — scheduled data-pull backend + dashboard frontend.
 #
+# Dev / live-edit architecture:
+#   backend  — uv-based Python 3.13, source mounted (./backend), uvicorn --reload
+#   frontend — node:22 running the Vite DEV server (no nginx, no build step),
+#              source mounted (./frontend) for HMR. Vite proxies /api -> backend.
+#
 # Targets the shared PostgreSQL instance (../database/docker-compose.yml, service
 # name `db` on the external `proxy` network). Backend is internal-only; only the
 # frontend port is published.
@@ -38,6 +43,9 @@ services:
       # API data-pull scheduler. Token keep-alive runs independently every 5m.
       JOB_DAEMON: "1"
       JOB_INTERVAL_MINUTES: ${JOB_INTERVAL_MINUTES:-1380}
+    volumes:
+      # Live source mount: edits to backend/src hot-reload (uvicorn --reload).
+      - ./backend:/app
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/status',timeout=5)\""]
       interval: 30s
@@ -47,15 +55,20 @@ services:
       - proxy
 
   frontend:
-    build:
-      context: frontend/
+    image: node:22-alpine
     container_name: myfhir_frontend
     restart: unless-stopped
+    working_dir: /app
+    # Vite dev server (HMR). npm install is idempotent; node_modules is shared
+    # with the host via the mount. Vite proxies /api -> http://backend:8000.
+    command: ["sh", "-c", "npm install --no-audit --no-fund && npm run dev"]
     ports:
-      - "8517:80"
+      - "8517:5173"
+    volumes:
+      # Live source mount: edits to frontend/src hot-reload via HMR.
+      - ./frontend:/app
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - proxy
 

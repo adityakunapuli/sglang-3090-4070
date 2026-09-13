@@ -396,7 +396,7 @@ def extract_medication_request(res):
         "reported": res.get("reported") if isinstance(res.get("reported"), bool) else None,
         "prior_prescription_ref": _raw_ref(prior),
         "group_identifier_value": group_ident.get("value") if group_ident else None,
-        "substitution_allowed": substitution.get("allowed") if isinstance(substitution.get("allowed"), bool) else None,
+        "substitution_allowed": substitution.get("allowed") if isinstance(substitution, dict) and isinstance(substitution.get("allowed"), bool) else None,
     }
     dosage_rows = []
     for i, di in enumerate(_as_list(res.get("dosageInstruction"))):

@@ -224,6 +224,16 @@ def load_eob(rec):
         except (ValueError, TypeError):
             pass
 
+    # Claim received date from CARIN BB supportingInfo.clmrecvddate
+    claim_received_date = None
+    for si in _as_list(rec.get("supportingInfo")):
+        if not isinstance(si, dict):
+            continue
+        cat = coding((si.get("category") or {}).get("coding"))
+        if cat and cat.get("code") == "clmrecvddate":
+            claim_received_date = parse_date(si.get("timingDate"))
+            break
+
     return {
         "id": rec["id"],
         "claim_number": cl_num,
@@ -235,6 +245,7 @@ def load_eob(rec):
         "outcome": rec.get("outcome"),
         "disposition": rec.get("disposition"),
         "created_date": parse_date(rec.get("created")),
+        "claim_received_date": claim_received_date,
         "billable_period_start": parse_date(billable.get("start")),
         "billable_period_end": parse_date(billable.get("end")),
         "patient_ref": anthem_ref(rec.get("patient"), "Patient"),
