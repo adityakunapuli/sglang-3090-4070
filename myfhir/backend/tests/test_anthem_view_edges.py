@@ -15,7 +15,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from myhealth_fhir.db import get_anthem_engine, _create_anthem_views
+from myhealth_fhir.db.engine import get_anthem_engine
+from myhealth_fhir.db.schema.views import _create_anthem_views
 from myhealth_fhir.db.models_anthem import (
     OAuthTokenRecord,
     PatientRecord,

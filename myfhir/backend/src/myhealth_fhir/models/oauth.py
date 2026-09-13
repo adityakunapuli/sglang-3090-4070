@@ -217,8 +217,8 @@ class TokenStore:
             session.commit()
 
         # Sync replica to anthem/ucla DBs
-        from myhealth_fhir.db import _sync_oauth_tokens_replica
-        _sync_oauth_tokens_replica()
+        from myhealth_fhir.services.oauth_sync import sync_oauth_tokens_replica
+        sync_oauth_tokens_replica()
 
     def load(self, patient_id: str | None = None) -> OAuthToken | None:
         """Load a token for a patient, or the most-recently-updated one if no id given."""
