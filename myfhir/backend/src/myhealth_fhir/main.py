@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     init_db()
 
     if os.environ.get("JOB_DAEMON", "1") != "0":
-        from myhealth_fhir.job import start_job_thread
+        from myhealth_fhir.job.runner import start_job_thread
 
         interval = int(os.environ.get("JOB_INTERVAL_MINUTES", "360"))
         try:

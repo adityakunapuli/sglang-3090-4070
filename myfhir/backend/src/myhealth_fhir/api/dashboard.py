@@ -126,9 +126,9 @@ def _token_health(provider: str) -> dict:
 
 def _totals(provider: str) -> dict[str, int]:
     """Read cached row counts for a provider's downstream tables."""
-    from myhealth_fhir.job import _COUNTERS
+    from myhealth_fhir.job.runner import COUNTERS
 
-    tables = _COUNTERS.get(provider, [])
+    tables = COUNTERS.get(provider, [])
     from sqlalchemy import text
 
     totals: dict[str, int] = {}
@@ -217,7 +217,7 @@ def sync_now(provider: str) -> dict:
     """
     if provider not in _PROVIDERS:
         raise HTTPException(status_code=404, detail=f"Unknown provider '{provider}'")
-    from myhealth_fhir.job import is_provider_running, run_provider
+    from myhealth_fhir.job.runner import is_provider_running, run_provider
 
     if is_provider_running(provider):
         raise HTTPException(status_code=409, detail="A sync is already in progress for this provider")

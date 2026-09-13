@@ -189,7 +189,7 @@ def formulary(drug: str | None, count: int):
 def job(daemon, interval_minutes, providers, skip_labs):
     """Run the data-pull job (EOBs/claims for Anthem, labs/clinical for Epic providers)."""
     from myhealth_fhir.config.settings import list_providers
-    from myhealth_fhir.job import job_loop, run_job_once
+    from myhealth_fhir.job.runner import job_loop, run_job_once
 
     if not providers:
         providers = list_providers()
