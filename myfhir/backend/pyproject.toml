@@ -57,15 +57,11 @@ ignore = [
     "D417", # allow missing parameter docstrings
 ]
 
-# NOTE: TC (flake8-type-checking) intentionally NOT selected — it would
-# require importing `typing.TYPE_CHECKING`, which is banned below by TID.
-
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
-banned-module-level-imports = ["typing"]
 
 [tool.ruff.format]
 quote-style = "double"

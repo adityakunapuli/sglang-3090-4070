@@ -5,7 +5,6 @@ lifespan (``start_job_thread``). Writes a per-run ``JobRun`` row to the auth DB
 so the dashboard can surface last-run status and totals.
 """
 
-from __future__ import annotations
 
 import logging
 import threading

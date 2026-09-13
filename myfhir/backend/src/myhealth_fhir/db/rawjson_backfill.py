@@ -12,7 +12,6 @@ host and is safe to run concurrently with the ETL:
   minimal.
 """
 
-from __future__ import annotations
 
 import json
 import logging

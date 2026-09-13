@@ -1,10 +1,11 @@
 """FHIR client for Anthem/Elevance Health TotalView API."""
 
-from __future__ import annotations
 
 import json
 import logging
 from datetime import UTC, datetime, timedelta
+
+from typing import Any
 
 from fhirpy import SyncFHIRClient
 from fhirpy.base.exceptions import MultipleResourcesFound, ResourceNotFound
@@ -67,7 +68,7 @@ def _max_last_updated(resources: list[dict] | None) -> datetime | None:
     return newest
 
 
-def get_fhir_client(provider: str = "anthem") -> FHIRClient:
+def get_fhir_client(provider: str = "anthem") -> "FHIRClient":
     """Return a cached FHIRClient for the given provider name."""
     from myhealth_fhir.config.settings import resolve_provider
 
@@ -80,7 +81,7 @@ def get_fhir_client(provider: str = "anthem") -> FHIRClient:
 class FHIRClient:
     """Synchronous FHIR client wrapping fhirpy with OAuth2 token management."""
 
-    instances: dict[str, FHIRClient] = {}
+    instances: "dict[str, FHIRClient]" = {}
 
     def __init__(self, config=None):
         """Initialize the client with a ProviderConfig (defaults to anthem)."""
@@ -497,7 +498,7 @@ class FHIRClient:
         created_date_gte: str | None = None,
         lastupdated_gte: str | None = None,
         no_paginate: bool = False,
-        on_auth_failure: any = None,
+        on_auth_failure: Any = None,
         auto_incremental: bool = True,
     ) -> dict:
         """Fetch EOBs for all stored (or given) patient IDs and write to DB immediately.
@@ -646,7 +647,7 @@ class FHIRClient:
     def fetch_and_store_labs_all_patients(
         self,
         patient_ids: list[str] | None = None,
-        on_auth_failure: any = None,
+        on_auth_failure: Any = None,
         **params,
     ) -> dict:
         """Fetch labs for all stored (or given) patient IDs and write to DB.
@@ -768,7 +769,7 @@ class FHIRClient:
         self,
         patient_ids: list[str] | None = None,
         skip_labs: bool = False,
-        on_auth_failure: any = None,
+        on_auth_failure: Any = None,
     ) -> dict:
         """Fetch ALL clinical FHIR resources for each patient and persist to DB.
 
@@ -1112,7 +1113,7 @@ class FHIRClient:
         status: str | None = None,
         use: str | None = None,
         lastupdated_gte: str | None = None,
-        on_auth_failure: any = None,
+        on_auth_failure: Any = None,
         auto_incremental: bool = True,
     ) -> dict:
         """Fetch Claim resources for all stored (or given) patient IDs and write to DB.

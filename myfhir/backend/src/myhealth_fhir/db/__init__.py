@@ -16,9 +16,6 @@ Usage:
 
   with get_auth_session() as session:
       tokens = session.query(OAuthTokenRecord).all()
-
-Backward compat:
-  from myhealth_fhir.db import get_session  # defaults to anthem (most callers)
 """
 
 import os
@@ -26,6 +23,7 @@ import json
 import base64
 import threading
 from pathlib import Path
+from typing import Any
 from urllib.parse import quote
 
 from dotenv import load_dotenv
@@ -73,37 +71,6 @@ from myhealth_fhir.db.models_ucla import (
     Specimen,
     UclaBase,
 )
-
-# ── Thread-local context for backward-compatible get_session() ────
-
-_provider_context = threading.local()
-
-
-class provider_context:
-    """Context manager that sets the thread-local provider for get_session().
-
-    Usage:
-        with provider_context("ucla"):
-            with get_session() as s:
-                s.query(LabResult)...
-    """
-
-    def __init__(self, provider: str):
-        self.provider = provider
-        self._prev = None
-
-    def __enter__(self):
-        self._prev = getattr(_provider_context, "provider", None)
-        _provider_context.provider = self.provider
-
-    def __exit__(self, *args):
-        _provider_context.provider = self._prev
-
-
-def _resolve_provider() -> str:
-    """Resolve the provider for backward-compatible get_session()."""
-    return getattr(_provider_context, "provider", "anthem")
-
 
 # ── URL Resolution ────────────────────────────────────────────────
 
@@ -155,7 +122,7 @@ def _load_project_env() -> None:
 
 # ── Engines (cached) ──────────────────────────────────────────────
 
-_engines: dict[str, any] = {}
+_engines: dict[str, Any] = {}
 _init_lock = threading.RLock()
 _initialized = False
 
@@ -191,11 +158,6 @@ def get_auth_engine():
     return _engines["auth"]
 
 
-def get_engine():
-    """Backward compat — returns anthem engine by default."""
-    return get_anthem_engine()
-
-
 # ── Session resolution ─────────────────────────────────────────────
 
 # Maps a provider name to its downstream database. Adding a new Epic
@@ -220,17 +182,6 @@ def get_session_for(provider: str) -> Session:
     return get_anthem_session()
 
 
-def get_clinical_session(provider: str) -> Session:
-    """Return the session for an Epic (clinical) provider's database.
-
-    ``ucla`` → myhealth_ucla. Unknown clinical providers fall back to ucla.
-    """
-    database = PROVIDER_DB.get(provider)
-    if database == "myhealth_anthem":
-        return get_anthem_session()
-    return get_ucla_session()
-
-
 # ── Sessions ──────────────────────────────────────────────────────
 
 
@@ -247,20 +198,6 @@ def get_ucla_session() -> Session:
 def get_auth_session() -> Session:
     """Session for the auth (OAuth tokens) database."""
     return Session(get_auth_engine())
-
-
-def get_session() -> Session:
-    """Backward compat — resolves to the appropriate session based on context.
-
-    Defaults to anthem. Use provider_context("ucla") to override.
-    Prefer explicit get_anthem_session() / get_ucla_session() / get_auth_session().
-    """
-    provider = _resolve_provider()
-    if provider == "ucla":
-        return get_ucla_session()
-    if provider == "auth":
-        return get_auth_session()
-    return get_anthem_session()
 
 
 def is_postgres() -> bool:

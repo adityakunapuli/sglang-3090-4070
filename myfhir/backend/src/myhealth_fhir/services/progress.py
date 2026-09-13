@@ -11,7 +11,6 @@ duration of a run (plus a short tail so a late-connecting client can read the
 final status). Nothing here is persisted.
 """
 
-from __future__ import annotations
 
 import threading
 import time

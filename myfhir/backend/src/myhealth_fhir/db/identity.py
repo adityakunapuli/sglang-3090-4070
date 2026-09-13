@@ -1,6 +1,5 @@
 """Canonical identity references and registry persistence helpers."""
 
-from __future__ import annotations
 
 
 def entity_ref(provider: str, entity_type: str, entity_id: str) -> str:

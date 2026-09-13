@@ -1,6 +1,5 @@
 """OAuth2 token management for the Anthem/Elevance Health FHIR API."""
 
-from __future__ import annotations
 
 import base64
 import hashlib
@@ -19,7 +18,7 @@ from myhealth_fhir.models.oauth import OAuthToken, TokenStore
 log = logging.getLogger("myhealth_fhir.auth")
 
 
-def get_auth_manager(provider: str = "anthem") -> AuthManager:
+def get_auth_manager(provider: str = "anthem") -> "AuthManager":
     """Return a cached AuthManager for the given provider name."""
     config = resolve_provider(provider)
     if provider not in AuthManager.instances:
@@ -34,7 +33,7 @@ class AuthManager:
     MAX_REFRESH_RETRIES = 2
     RETRY_DELAY = 1.0
 
-    instances: dict[str, AuthManager] = {}
+    instances: "dict[str, AuthManager]" = {}
 
     def __init__(self, config: ProviderConfig):
         """Initialize the AuthManager with a ProviderConfig and a DB-backed TokenStore."""

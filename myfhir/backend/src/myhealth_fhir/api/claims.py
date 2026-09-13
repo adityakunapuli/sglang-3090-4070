@@ -8,7 +8,6 @@ Endpoints:
 - ``GET  /api/claims/member-submitted`` — YTD grid with full FHIR match data
 """
 
-from __future__ import annotations
 
 import logging
 from datetime import UTC, date, datetime

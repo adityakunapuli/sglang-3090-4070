@@ -19,7 +19,6 @@ the non-column key ``encounter_ref``; consumers resolve it to a local
 ``encounter_id`` (FK safety) before applying.
 """
 
-from __future__ import annotations
 
 import json
 from datetime import date, datetime, time

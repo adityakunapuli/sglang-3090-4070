@@ -7,7 +7,6 @@ Replaces the old (dropped) ``routes.py``. Serves only what the dashboard needs:
 - ``POST /api/auth/{provider}/exchange`` — exchange a pasted redirect URL for tokens
 """
 
-from __future__ import annotations
 
 import asyncio
 import json

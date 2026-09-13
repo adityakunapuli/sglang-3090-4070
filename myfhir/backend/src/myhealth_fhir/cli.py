@@ -7,6 +7,8 @@ import secrets
 import os
 from datetime import date
 from urllib.parse import urlparse, parse_qs
+from typing import Any
+
 from collections import defaultdict
 
 import click
@@ -536,7 +538,7 @@ def fetch_claims(ctx, patient_id, status, use, since):
         return do_login(provider, reason=f"re-authenticate patient {pid}")
 
     if patient_list:
-        results: dict[str, any] = {}
+        results: dict[str, Any] = {}
         for pid in tqdm(patient_list, desc="Fetching claims", unit="patient"):
             token = None
             try:
@@ -2564,7 +2566,7 @@ def _get_abnormal_flag(obs: dict) -> str:
     return " ".join(result_parts) if result_parts else ""
 
 
-def print_lab_panel(panel: dict, include_observations: bool = True, detailed: bool = False, child_observations: list | None = None, fetch_client: any = None):
+def print_lab_panel(panel: dict, include_observations: bool = True, detailed: bool = False, child_observations: list | None = None, fetch_client: Any = None):
     """Print a DiagnosticReport lab panel with child observations.
 
     If child_observations is not provided and include_observations is True,

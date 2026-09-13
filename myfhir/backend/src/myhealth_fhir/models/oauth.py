@@ -1,10 +1,10 @@
 """OAuth2 token model and DB-backed TokenStore (multi-patient)."""
 
-from __future__ import annotations
 
 import json
 import logging
 import os
+from typing import Any, Self
 from datetime import UTC, datetime
 
 from myhealth_fhir.db import get_auth_session, init_db
@@ -107,14 +107,14 @@ class OAuthToken:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> OAuthToken:
+    def from_dict(cls, data: dict) -> Self:
         """Construct an OAuthToken from a legacy dict (as written by old JSON storage)."""
         if isinstance(data.get("obtained_at"), str):
             data["obtained_at"] = datetime.fromisoformat(data["obtained_at"])
         return cls(**data)
 
     @classmethod
-    def from_record(cls, record: any, patient_name: str | None = None) -> OAuthToken:
+    def from_record(cls, record: Any, patient_name: str | None = None) -> Self:
         """Construct an OAuthToken from an OAuthTokenRecord ORM row."""
         obtained = record.obtained_at
         if obtained is not None and obtained.tzinfo is None:
