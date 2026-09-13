@@ -550,7 +550,7 @@ def print_lab_panel(panel: dict, include_observations: bool = True, detailed: bo
                 try:
                     obs = fetch_client.get("Observation", obs_id)
                     obs_list.append(obs)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             result_refs = []  # Mark as fetched
 
