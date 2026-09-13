@@ -16,8 +16,9 @@ from tqdm import tqdm
 
 from myhealth_fhir.config.settings import resolve_provider
 from myhealth_fhir.fhir.anthem_save import save_claims_to_db, save_eobs_to_db
+from myhealth_fhir.fhir.notes import backfill_clinical_note_attachments
 from myhealth_fhir.services.auth import RefreshDaemon, get_auth_manager
-from myhealth_fhir.services.fhir_client import backfill_clinical_note_attachments, get_fhir_client
+from myhealth_fhir.services.fhir_client import get_fhir_client
 
 
 @click.group(invoke_without_command=True)
