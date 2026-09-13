@@ -145,16 +145,15 @@ src/myhealth_fhir/
 ├── __init__.py              # __version__ only — no imports
 ├── main.py                  # FastAPI app (unchanged)
 ├── cli/
-│   ├── __init__.py          # click group assembly; exposes main, anthem_main
-│   ├── main.py              # root group: job, server, db, mcd, formulary
-│   ├── anthem.py            # anthem/eob/claims/coverage/patients/organizations/update
-│   ├── ucla.py              # ucla_* commands
+│   ├── __init__.py          # click group assembly; exposes main, anthem_main (composition root)
+│   ├── main.py              # root group: job, server, db, mcd, formulary, anthem, ucla
+│   ├── anthem.py            # anthem/eob/claims/coverage/patients/submission/update
+│   ├── ucla.py              # ucla_* commands (patients, save-labs, save-all, ehi, report)
 │   ├── auth.py              # make_auth_group + do_login/status/refresh/clear/daemon
 │   ├── search.py            # search_claims, search_eob
-│   ├── submissions.py       # submission group
 │   └── output.py            # print_* + _get_observation_value_str etc.
-├── config.py                # provider registry (flatten config/ package)
 ├── db/
+│   ├── __init__.py          # docstring only (shim deleted Phase 6a)
 │   ├── engine.py            # URL resolution, engines, sessions, PROVIDER_DB, get_session_for
 │   └── schema/
 │       ├── bootstrap.py     # init_db / _init_db_once (thin until Alembic)
@@ -179,6 +178,7 @@ src/myhealth_fhir/
 │   ├── report_generator.py  # path unchanged (gitignored — see P17)
 │   └── validate_docx_layout.py
 ├── job/
+│   ├── __init__.py          # docstring only
 │   └── runner.py            # ← job/__init__.py (COUNTERS made public)
 └── api/                     # dashboard.py, claims.py (unchanged)
 ```

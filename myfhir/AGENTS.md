@@ -36,20 +36,38 @@ User Browser ──► Provider OAuth Login ──► Redirect to REDIRECT_URI?c
 Dashboard (Vite + React, nginx SPA)
   │  /api/* proxied to backend (internal network only)
 Backend (FastAPI + CLI)
-  ├── config/settings.py        # provider registry: anthem (kind=anthem) + epic
-  ├── api/dashboard.py          # GET /api/status, GET /api/auth/{provider}/start,
-  │   │                         # POST /api/auth/{provider}/exchange
-  ├── main.py                   # FastAPI app, lifespan starts job daemon thread
-  ├── job/                      # run_provider / run_all / run_job_once / job_loop /
-  │   │                         # start_job_thread; writes job_run summaries
-  ├── services/auth.py          # AuthManager (PKCE, multi-patient tokens) + RefreshDaemon
-  ├── services/fhir_client.py   # FHIRClient (Anthem EOB/claims, Epic clinical)
-  ├── models/oauth.py           # OAuthToken + TokenStore (Postgres)
-  └── db/                       # 3 sessions + models (auth/anthem/ucla)
-DB (shared PostgreSQL)          # myhealth_auth / myhealth_anthem / myhealth_ucla
-  └── now also: pkce_verifiers (PKCE verifier/state by provider),
-                job_run (per-provider run summaries)
+  ├── cli/                   # CLI entry points (composition root: __init__.py)
+  │   ├── main.py            # root group: job, server, db, mcd, formulary, anthem, ucla
+  │   ├── anthem.py          # anthem/eob/claims/coverage/patients/submission/update
+  │   ├── ucla.py            # ucla_* commands
+  │   ├── auth.py            # make_auth_group + do_* helpers
+  │   ├── search.py          # search_claims, search_eob
+  │   └── output.py          # print_* formatters (no command registration)
+  ├── api/                   # FastAPI endpoints
+  ├── fhir/                  # FHIR layer (separate package, no __init__.py)
+  │   ├── client.py          # FHIRClient: HTTP, auth glue, pagination, checkpoints
+  │   ├── parsing.py         # shared FHIR-dict helpers (absorbs parser.py/ucla_unpack helpers)
+  │   ├── anthem_save.py     # save_eobs/claims_to_db
+  │   ├── ucla_save.py       # 19 save_*_to_db functions
+  │   └── notes.py           # clinical notes + backfill
+  ├── services/              # auth, OAuth, submissions, EHI import, reports
+  ├── db/                    # 3 PostgreSQL sessions + schema ops
+  │   ├── engine.py          # engines, sessions, get_session_for
+  │   └── schema/            # bootstrap, migrations, views
+  ├── models/                # ORM models (re-exports in __init__.py)
+  ├── job/                   # job runner (runner.py)
+  └── main.py                # FastAPI app, lifespan starts job daemon
+DB (shared PostgreSQL)       # myhealth_auth / myhealth_anthem / myhealth_ucla
+  └── pkce_verifiers, job_run tables
 ```
+
+## Layering rules (enforced by import discipline)
+- **cli/** must only import from fhir/, services/, db/, models/, config. No cross-deps within cli/ beyond main↔others.
+- **fhir/** must not import cli/ or api/. Only services/, db/, models/.
+- **services/** must not import cli/ or fhir/ save functions. Only db/, models/, config/.
+- **db/** is the leaf layer (except self-references). No top-level imports of cli/api/services.
+- **No re-exports from db/__init__.py** (shim deleted Phase 6a); always use direct module paths.
+- **fhir/ is a namespace package** (no `__init__.py`) to avoid accidental top-level imports.
 
 ## Provider Configuration
 - `config/settings.py` defines the registry via `resolve_provider(name)`.

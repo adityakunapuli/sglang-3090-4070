@@ -183,7 +183,7 @@ def auth_exchange(provider: str, body: ExchangeRequest) -> dict:
     try:
         token = manager.exchange_code(code)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Token exchange failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Token exchange failed: {e}") from e
 
     pid = token.patient_id or "default"
     patient_name = token.patient_name

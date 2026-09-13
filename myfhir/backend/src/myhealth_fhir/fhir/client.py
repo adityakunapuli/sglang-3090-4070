@@ -127,19 +127,7 @@ class FHIRClient:
             return True
         if '"status_code":403' in msg or '"status_code": 403' in msg or "'status_code': 403" in msg:
             return True
-        if any(term in msg for term in (
-            "invalid token",
-            "token is invalid",
-            "token has expired",
-            "expired token",
-            "invalid_token",
-            "access token is invalid",
-            "401 unauthorized",
-            "401 client error",
-        )):
-            return True
-
-        return False
+        return bool(any(term in msg for term in ("invalid token", "token is invalid", "token has expired", "expired token", "invalid_token", "access token is invalid", "401 unauthorized", "401 client error")))
 
     def with_retry(self, func, patient_id: str | None = None):
         """Run func, retrying once after a forced token refresh on HTTP 401/403."""
@@ -535,10 +523,7 @@ class FHIRClient:
                     count=100,
                     all_pages=not no_paginate,
                 )
-                if no_paginate:
-                    eobs = [entry.get("resource", {}) for entry in data.get("entry", [])]
-                else:
-                    eobs = data
+                eobs = [entry.get("resource", {}) for entry in data.get("entry", [])] if no_paginate else data
 
                 count_before = self._count_eobs(pid)
                 from myhealth_fhir.fhir.anthem_save import save_eobs_to_db

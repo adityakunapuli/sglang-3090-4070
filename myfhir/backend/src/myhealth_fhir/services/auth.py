@@ -123,8 +123,7 @@ class AuthManager:
             "Authorization": f"Basic {encoded}",
         }
         with httpx.Client(timeout=30.0) as client:
-            resp = client.post(self.config.token_url, data=data, headers=headers)
-        return resp
+            return client.post(self.config.token_url, data=data, headers=headers)
 
     def parse_token_response(self, body: dict, previous_token: OAuthToken | None = None) -> OAuthToken:
         """Parse a token endpoint JSON response into an OAuthToken and persist it."""
@@ -236,6 +235,7 @@ class AuthManager:
                     time.sleep(self.RETRY_DELAY * (attempt + 1))
                 else:
                     raise
+        return None
 
     def get_valid_token(
         self,
@@ -269,10 +269,7 @@ class AuthManager:
 
     def status(self, patient_id: str | None = None) -> dict:
         """Return a status summary for one or all stored patients."""
-        if patient_id:
-            tokens = [self.token_store.load(patient_id=patient_id)]
-        else:
-            tokens = self.token_store.list_tokens()
+        tokens = [self.token_store.load(patient_id=patient_id)] if patient_id else self.token_store.list_tokens()
 
         if not tokens or all(t is None for t in tokens):
             cmd = self.config.auth_command()

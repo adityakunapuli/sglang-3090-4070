@@ -16,6 +16,7 @@ from myhealth_fhir.cli.output import (
 from myhealth_fhir.fhir.anthem_save import save_claims_to_db, save_eobs_to_db
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.services.auth import get_auth_manager
+import contextlib
 
 # ── Anthem-specific resource commands ──────────────────────────
 
@@ -112,10 +113,8 @@ def eob(ctx, patient_id, status, use, since, lastupdated_since, count, no_pagina
                 if not no_db:
                     save_eobs_to_db(client, eobs_for_patient)
                     update_checkpoint(pid)
-                    try:
+                    with contextlib.suppress(Exception):
                         client.collect_and_resolve_eob_entities(eobs_for_patient)
-                    except Exception:
-                        pass
     else:
         results = client.fetch_and_store_eobs_all_patients(
             status=status,
@@ -673,7 +672,7 @@ def submission_add(ctx, portal_id, claim_number, provider, npi, service_date, cp
             svc_date = date.fromisoformat(service_date)
         except ValueError:
             click.echo(click.style(f"Invalid date: {service_date}", fg="red"), err=True)
-            raise SystemExit(1)
+            raise SystemExit(1) from None
 
     with get_anthem_session() as session:
         row = MemberClaimSubmission(

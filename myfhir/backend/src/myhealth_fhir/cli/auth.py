@@ -13,6 +13,7 @@ from myhealth_fhir.cli.output import extract_code, print_token_status
 from myhealth_fhir.config.settings import resolve_provider
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.services.auth import RefreshDaemon, get_auth_manager
+import contextlib
 
 # ── Authentication Commands (shared by provider groups) ────────
 
@@ -150,10 +151,8 @@ def do_login(provider: str, reason: str = "authenticate") -> bool:
     if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
         click.echo(click.style(f"\n[Step 1] Opening browser to {display_name} login...", bold=True, fg="yellow"))
         click.echo(f"  {authorize_url}")
-        try:
+        with contextlib.suppress(Exception):
             webbrowser.open(authorize_url)
-        except Exception:
-            pass
     else:
         click.echo(
             click.style(

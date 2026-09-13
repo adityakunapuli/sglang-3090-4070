@@ -52,6 +52,9 @@ select = [
     "D",   # pydocstyle
     "TID", # flake8-tidy-imports
     "Q",   # flake8-quotes
+    "B",   # flake8-bugbear (B904 exception chaining, etc.)
+    "RET", # flake8-return (unnecessary assignment, missing return)
+    "SIM", # flake8-simplify (ternary, suppress, etc.)
 ]
 ignore = [
     "D417", # allow missing parameter docstrings

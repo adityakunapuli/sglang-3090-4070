@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 
 from myhealth_fhir.fhir.parsing import _as_list, _first, coding, parse_date, ref
+import contextlib
 
 _VENDOR_PREFIX_RE = re.compile(r"^(DELTADENTAL|VSP|MEDCO)")
 
@@ -181,10 +182,8 @@ def load_eob(rec):
     last_updated = None
     meta = rec.get("meta", {})
     if isinstance(meta, dict) and meta.get("lastUpdated"):
-        try:
+        with contextlib.suppress(ValueError, TypeError):
             last_updated = datetime.fromisoformat(meta["lastUpdated"].replace("Z", "+00:00"))
-        except (ValueError, TypeError):
-            pass
 
     # Claim received date from CARIN BB supportingInfo.clmrecvddate
     claim_received_date = None
@@ -561,10 +560,8 @@ def load_claim(rec):
     last_updated = None
     meta = rec.get("meta", {})
     if isinstance(meta, dict) and meta.get("lastUpdated"):
-        try:
+        with contextlib.suppress(ValueError, TypeError):
             last_updated = datetime.fromisoformat(meta["lastUpdated"].replace("Z", "+00:00"))
-        except (ValueError, TypeError):
-            pass
 
     priority_coding = coding(rec.get("priority", {}).get("coding"))
 

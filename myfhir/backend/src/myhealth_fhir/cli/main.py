@@ -68,10 +68,7 @@ def db_backfill_raw_json(only, dry_run):
     """Re-parse stored raw_json and populate unpacked columns/child tables."""
     from myhealth_fhir.db.rawjson_backfill import backfill_anthem, backfill_ucla
 
-    if only == "anthem":
-        stats = backfill_anthem(dry_run=dry_run)
-    else:
-        stats = backfill_ucla(dry_run=dry_run)
+    stats = backfill_anthem(dry_run=dry_run) if only == "anthem" else backfill_ucla(dry_run=dry_run)
     click.echo(f"{only}: {json.dumps(stats)}")
 
 
@@ -191,10 +188,7 @@ def job(daemon, interval_minutes, providers, skip_labs):
     from myhealth_fhir.config.settings import list_providers
     from myhealth_fhir.job.runner import job_loop, run_job_once
 
-    if not providers:
-        providers = list_providers()
-    else:
-        providers = list(providers)
+    providers = list_providers() if not providers else list(providers)
 
     if interval_minutes is None:
         interval_minutes = int(os.environ.get("JOB_INTERVAL_MINUTES", "360"))
