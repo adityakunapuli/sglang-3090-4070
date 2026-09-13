@@ -6,17 +6,17 @@ not db infrastructure). Called once from ``db.schema.bootstrap`` during
 """
 
 from myhealth_fhir.db.engine import get_anthem_session, get_auth_session, get_ucla_session
-from myhealth_fhir.db.models_anthem import (
+from myhealth_fhir.models.anthem import (
     EntityName,
     OAuthTokenRecord as AnthemOAuthTokenRecord,
     PatientRecord as AnthemPatientRecord,
 )
-from myhealth_fhir.db.models_auth import (
+from myhealth_fhir.models.auth import (
     EntityName as AuthEntityName,
     OAuthTokenRecord as AuthOAuthTokenRecord,
     PatientRecord as AuthPatientRecord,
 )
-from myhealth_fhir.db.models_ucla import (
+from myhealth_fhir.models.ucla import (
     EntityName as UclaEntityName,
     OAuthTokenRecord as UclaOAuthTokenRecord,
     PatientRecord as UclaPatientRecord,

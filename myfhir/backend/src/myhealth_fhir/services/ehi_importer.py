@@ -148,7 +148,7 @@ class EHIImporter:
         if self.no_db:
             return
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import Encounter
+        from myhealth_fhir.models.ucla import Encounter
 
         with get_ucla_session() as session:
             rows = session.query(Encounter.id, Encounter.source_id).all()
@@ -184,7 +184,7 @@ class EHIImporter:
         }
 
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import ClinicalNote, Encounter
+        from myhealth_fhir.models.ucla import ClinicalNote, Encounter
 
         imported = 0
         with get_ucla_session() as session:
@@ -261,7 +261,7 @@ class EHIImporter:
         mar_rows = _read_tsv(mar_path)
 
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import MedicationAdministration
+        from myhealth_fhir.models.ucla import MedicationAdministration
 
         imported = 0
         with get_ucla_session() as session:
@@ -326,7 +326,7 @@ class EHIImporter:
         rows = _read_tsv(pat_path)
 
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import Encounter
+        from myhealth_fhir.models.ucla import Encounter
 
         imported = 0
         by_csn = {str(v): k for k, v in self._csn_to_encounter.items()}
@@ -369,7 +369,7 @@ class EHIImporter:
         rows = _read_tsv(fs_path)
 
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import ClinicalObservation
+        from myhealth_fhir.models.ucla import ClinicalObservation
 
         imported = 0
         with get_ucla_session() as session:
@@ -405,7 +405,7 @@ class EHIImporter:
         proc_path = self.tables_dir / "ORDER_PROC.tsv"
 
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import MedicationRequest, ServiceRequest
+        from myhealth_fhir.models.ucla import MedicationRequest, ServiceRequest
 
         meds = 0
         procs = 0
@@ -463,7 +463,7 @@ class EHIImporter:
         rows = _read_tsv(imm_path)
 
         from myhealth_fhir.db import get_ucla_session
-        from myhealth_fhir.db.models_ucla import Immunization
+        from myhealth_fhir.models.ucla import Immunization
 
         imported = 0
         with get_ucla_session() as session:

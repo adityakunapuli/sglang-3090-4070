@@ -631,7 +631,7 @@ def registry_display(session, raw_ref, provider, entity_type="Patient"):
     if not raw_ref:
         return None
     from myhealth_fhir.db.identity import ref_from_fhir
-    from myhealth_fhir.db.models_ucla import EntityName
+    from myhealth_fhir.models.ucla import EntityName
 
     canon = ref_from_fhir(raw_ref, provider, entity_type)
     if not canon:

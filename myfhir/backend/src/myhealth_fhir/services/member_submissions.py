@@ -9,7 +9,7 @@ import logging
 from datetime import date
 
 from myhealth_fhir.db import get_anthem_session
-from myhealth_fhir.db.models_anthem import EntityName, MemberClaimSubmission
+from myhealth_fhir.models.anthem import EntityName, MemberClaimSubmission
 from myhealth_fhir.db.parser import claim_number_of
 from myhealth_fhir.db.identity import ref_from_fhir
 

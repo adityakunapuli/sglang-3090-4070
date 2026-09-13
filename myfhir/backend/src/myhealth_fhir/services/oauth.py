@@ -178,7 +178,7 @@ class TokenStore:
 
     def save(self, token: OAuthToken) -> None:
         """Upsert a token row keyed by (patient_id, provider)."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord, PatientRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord, PatientRecord
 
         patient_id = self.pid(token)
         with get_auth_session() as session:
@@ -222,7 +222,7 @@ class TokenStore:
 
     def load(self, patient_id: str | None = None) -> OAuthToken | None:
         """Load a token for a patient, or the most-recently-updated one if no id given."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord, PatientRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord, PatientRecord
 
         with get_auth_session() as session:
             if patient_id:
@@ -240,7 +240,7 @@ class TokenStore:
             patient_record = session.get(PatientRecord, (record.patient_id, self.provider))
             patient_name = None
             if patient_record and patient_record.entity_ref:
-                from myhealth_fhir.db.models_auth import EntityName
+                from myhealth_fhir.models.auth import EntityName
 
                 entity = session.get(EntityName, patient_record.entity_ref)
                 patient_name = entity.name if entity else None
@@ -248,7 +248,7 @@ class TokenStore:
 
     def list_patient_ids(self) -> list[str]:
         """Return all stored patient ids for this provider (excluding `_default`)."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         with get_auth_session() as session:
             rows = session.query(OAuthTokenRecord.patient_id).filter(OAuthTokenRecord.provider == self.provider).all()
@@ -256,7 +256,7 @@ class TokenStore:
 
     def list_all_patient_ids(self) -> list[str]:
         """Return every stored token key, including the legacy `_default` key."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         with get_auth_session() as session:
             rows = session.query(OAuthTokenRecord.patient_id).filter(OAuthTokenRecord.provider == self.provider).all()
@@ -264,7 +264,7 @@ class TokenStore:
 
     def list_tokens(self) -> list[OAuthToken]:
         """Return all stored tokens for this provider as OAuthToken instances."""
-        from myhealth_fhir.db.models_auth import EntityName, OAuthTokenRecord, PatientRecord
+        from myhealth_fhir.models.auth import EntityName, OAuthTokenRecord, PatientRecord
 
         with get_auth_session() as session:
             records = session.query(OAuthTokenRecord).filter(OAuthTokenRecord.provider == self.provider).all()
@@ -278,7 +278,7 @@ class TokenStore:
 
     def clear(self, patient_id: str | None = None) -> None:
         """Delete stored tokens for one patient or all patients for this provider."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         with get_auth_session() as session:
             q = session.query(OAuthTokenRecord).filter(OAuthTokenRecord.provider == self.provider)
@@ -289,14 +289,14 @@ class TokenStore:
 
     def count(self) -> int:
         """Return the number of stored tokens for this provider."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         with get_auth_session() as session:
             return session.query(OAuthTokenRecord).filter(OAuthTokenRecord.provider == self.provider).count()
 
     def get_last_eob_fetch(self, patient_id: str) -> datetime | None:
         """Return the last EOB fetch timestamp for a patient, or None."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         with get_auth_session() as session:
             record = session.get(OAuthTokenRecord, (patient_id, self.provider))
@@ -309,7 +309,7 @@ class TokenStore:
 
     def set_last_eob_fetch(self, patient_id: str, dt: datetime | None = None) -> None:
         """Record the last EOB fetch timestamp for a patient (defaults to now)."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         if dt is None:
             dt = datetime.now(UTC)
@@ -323,7 +323,7 @@ class TokenStore:
 
     def get_last_claim_fetch(self, patient_id: str) -> datetime | None:
         """Return the last Claim fetch timestamp for a patient, or None."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         with get_auth_session() as session:
             record = session.get(OAuthTokenRecord, (patient_id, self.provider))
@@ -336,7 +336,7 @@ class TokenStore:
 
     def set_last_claim_fetch(self, patient_id: str, dt: datetime | None = None) -> None:
         """Record the last Claim fetch timestamp for a patient (defaults to now)."""
-        from myhealth_fhir.db.models_auth import OAuthTokenRecord
+        from myhealth_fhir.models.auth import OAuthTokenRecord
 
         if dt is None:
             dt = datetime.now(UTC)

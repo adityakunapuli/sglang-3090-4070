@@ -919,7 +919,7 @@ def submission_add(ctx, portal_id, claim_number, provider, npi, service_date, cp
     """Register a member-submitted (paper/portal) claim."""
     from datetime import date
     from myhealth_fhir.db import get_anthem_session
-    from myhealth_fhir.db.models_anthem import MemberClaimSubmission
+    from myhealth_fhir.models.anthem import MemberClaimSubmission
 
     if not patient_id:
         auth_mgr = get_auth_manager(ctx.obj.get("provider", "anthem"))
@@ -963,13 +963,13 @@ def submission_add(ctx, portal_id, claim_number, provider, npi, service_date, cp
 def submission_list(ctx):
     """List all manual member-submission registry rows and their match status."""
     from myhealth_fhir.db import get_anthem_session
-    from myhealth_fhir.db.models_anthem import MemberClaimSubmission
+    from myhealth_fhir.models.anthem import MemberClaimSubmission
 
     with get_anthem_session() as session:
         rows = session.query(MemberClaimSubmission).order_by(MemberClaimSubmission.id.desc()).all()
     click.echo(click.style(f"\nRegistered submissions: {len(rows)}", bold=True, fg="cyan"))
     for r in rows:
-        from myhealth_fhir.db.models_anthem import EntityName
+        from myhealth_fhir.models.anthem import EntityName
         with get_anthem_session() as session:
             provider_name = session.get(EntityName, r.provider_ref).name if r.provider_ref and session.get(EntityName, r.provider_ref) else None
         click.echo(f"  #{r.id}: {r.portal_submission_id or '(no portal id)'} "

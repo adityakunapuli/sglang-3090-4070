@@ -15,9 +15,9 @@ from myhealth_fhir.db.engine import (
     get_ucla_engine,
     is_postgres,
 )
-from myhealth_fhir.db.models_anthem import AnthemBase
-from myhealth_fhir.db.models_auth import AuthBase
-from myhealth_fhir.db.models_ucla import UclaBase
+from myhealth_fhir.models.anthem import AnthemBase
+from myhealth_fhir.models.auth import AuthBase
+from myhealth_fhir.models.ucla import UclaBase
 from myhealth_fhir.db.schema.migrations import (
     _backfill_auth_patient_registry,
     _backfill_fhir_identity_registry,

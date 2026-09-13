@@ -10,7 +10,7 @@ import json
 
 from sqlalchemy import text
 
-from myhealth_fhir.db.models_ucla import UclaBase
+from myhealth_fhir.models.ucla import UclaBase
 
 def _migrate_auth_schema(engine):
     """Add normalized patient references and migrate legacy patient names."""

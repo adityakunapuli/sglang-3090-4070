@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from myhealth_fhir.db import get_anthem_session
-from myhealth_fhir.db.models_anthem import (
+from myhealth_fhir.models.anthem import (
     ClaimSubmission,
     EOB,
     EOBItem,
@@ -68,7 +68,7 @@ def register_member_claim(body: RegisterClaimRequest) -> dict:
         eob = session.query(EOB).filter(EOB.claim_number == claim_number).first()
         if not eob:
             # Also try via claim_submission table
-            from myhealth_fhir.db.models_anthem import ClaimSubmission
+            from myhealth_fhir.models.anthem import ClaimSubmission
             claim_sub = session.query(ClaimSubmission).filter(ClaimSubmission.claim_number == claim_number).first()
             if claim_sub:
                 eob = session.query(EOB).filter(EOB.claim_number == claim_number).first()

@@ -46,11 +46,11 @@ def _registry_model(session):
     """Select the registry ORM model matching the session's database."""
     url = str(session.get_bind().url)
     if "myhealth_ucla" in url:
-        from myhealth_fhir.db.models_ucla import EntityName
+        from myhealth_fhir.models.ucla import EntityName
     elif "myhealth_auth" in url:
-        from myhealth_fhir.db.models_auth import EntityName
+        from myhealth_fhir.models.auth import EntityName
     else:
-        from myhealth_fhir.db.models_anthem import EntityName
+        from myhealth_fhir.models.anthem import EntityName
     return EntityName
 
 

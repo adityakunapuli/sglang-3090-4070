@@ -39,7 +39,7 @@ def _header_fields(parsed: dict) -> dict:
 def backfill_anthem(dry_run: bool = False) -> dict:
     """Re-parse stored raw_json on EOB and Claim rows in myhealth_anthem."""
     from myhealth_fhir.db import get_anthem_session
-    from myhealth_fhir.db.models_anthem import (
+    from myhealth_fhir.models.anthem import (
         EOB,
         EOBAdjudication,
         EOBIdentifier,
