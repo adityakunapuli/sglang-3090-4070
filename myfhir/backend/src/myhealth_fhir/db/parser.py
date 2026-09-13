@@ -6,7 +6,6 @@ from datetime import datetime
 
 from myhealth_fhir.fhir.parsing import _as_list, _first, coding, parse_date, ref
 
-
 _VENDOR_PREFIX_RE = re.compile(r"^(DELTADENTAL|VSP|MEDCO)")
 
 

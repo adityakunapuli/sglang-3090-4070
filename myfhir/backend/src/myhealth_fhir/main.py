@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse
 
 from myhealth_fhir.api.claims import router as claims_router
 from myhealth_fhir.api.dashboard import router
-from myhealth_fhir.db import init_db
+from myhealth_fhir.db.schema.bootstrap import init_db
 
 
 @asynccontextmanager

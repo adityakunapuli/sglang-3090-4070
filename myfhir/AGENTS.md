@@ -186,3 +186,9 @@ if desired.
   importer records measurement name + recorded time only.
 - `Media/` in an EHI export (PDFs, images, audio) is intentionally not
   imported (no BLOB storage); CLARITY_EDG (drug dictionary) is also excluded.
+## Import layout (Phase 6a decision)
+- Engines/sessions: `myhealth_fhir.db.engine` — never `from myhealth_fhir.db import ...`.
+- Schema bootstrap: `myhealth_fhir.db.schema.bootstrap` (`init_db`); migrations/views live in
+  `db.schema.migrations` / `db.schema.views`.
+- The `db/__init__.py` compatibility shim was removed (grep-zero enforced); `db/__init__.py`
+  is a docstring only. Don't reintroduce re-exports.

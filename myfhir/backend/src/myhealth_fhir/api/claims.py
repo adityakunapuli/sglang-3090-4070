@@ -10,21 +10,20 @@ Endpoints:
 
 
 import logging
-from datetime import UTC, date, datetime
+from datetime import date
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 
-from myhealth_fhir.db import get_anthem_session
+from myhealth_fhir.db.engine import get_anthem_session
 from myhealth_fhir.models.anthem import (
-    ClaimSubmission,
     EOB,
+    EntityName,
     EOBItem,
     EOBTotal,
-    EntityName,
     MemberClaimSubmission,
 )
-from sqlalchemy import text
 
 log = logging.getLogger("myhealth_fhir.api.claims")
 router = APIRouter(prefix="/api/claims", tags=["member-submitted claims"])

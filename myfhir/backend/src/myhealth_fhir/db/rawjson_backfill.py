@@ -38,16 +38,7 @@ def _header_fields(parsed: dict) -> dict:
 
 def backfill_anthem(dry_run: bool = False) -> dict:
     """Re-parse stored raw_json on EOB and Claim rows in myhealth_anthem."""
-    from myhealth_fhir.db import get_anthem_session
-    from myhealth_fhir.models.anthem import (
-        EOB,
-        EOBAdjudication,
-        EOBIdentifier,
-        EOBSupportingInfo,
-        EOBProcedure,
-        ClaimIdentifier,
-        ClaimSubmission,
-    )
+    from myhealth_fhir.db.engine import get_anthem_session
     from myhealth_fhir.db.parser import (
         load_claim,
         load_claim_identifiers,
@@ -56,6 +47,15 @@ def backfill_anthem(dry_run: bool = False) -> dict:
         load_eob_identifiers,
         load_eob_procedures,
         load_eob_supporting_info,
+    )
+    from myhealth_fhir.models.anthem import (
+        EOB,
+        ClaimIdentifier,
+        ClaimSubmission,
+        EOBAdjudication,
+        EOBIdentifier,
+        EOBProcedure,
+        EOBSupportingInfo,
     )
 
     stats = {"eob_total": 0, "eob_updated": 0, "eob_skipped": 0,

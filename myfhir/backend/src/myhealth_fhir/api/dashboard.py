@@ -19,7 +19,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from myhealth_fhir.config.settings import list_providers, resolve_provider
-from myhealth_fhir.db import get_auth_session, get_session_for
+from myhealth_fhir.db.engine import get_auth_session, get_session_for
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.models.auth import JobRun
 from myhealth_fhir.services.auth import get_auth_manager

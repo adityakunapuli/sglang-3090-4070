@@ -34,7 +34,7 @@ def save_clinical_notes_from_docs(client, resources, headers, provider: str = "u
 
     import httpx
 
-    from myhealth_fhir.db import get_session_for
+    from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_clinical_note, upgrade_doc_displays
     from myhealth_fhir.models.ucla import ClinicalNote, ClinicalNoteIdentifier, Encounter
 
@@ -220,7 +220,7 @@ def backfill_clinical_note_attachments(client, provider: str = "ucla", batch_siz
     import base64
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    from myhealth_fhir.db import get_session_for
+    from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.models.ucla import ClinicalNote
 
     stats = {"notes": 0, "updated": 0, "html": 0, "rtf": 0, "failed": 0}

@@ -4,10 +4,11 @@
 import json
 import logging
 import os
-from typing import Any, Self
 from datetime import UTC, datetime
+from typing import Any, Self
 
-from myhealth_fhir.db import get_auth_session, init_db
+from myhealth_fhir.db.schema.bootstrap import init_db
+from myhealth_fhir.db.engine import get_auth_session
 from myhealth_fhir.db.identity import upsert_patient_name
 
 log = logging.getLogger("myhealth_fhir.oauth")

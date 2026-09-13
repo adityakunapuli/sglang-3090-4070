@@ -2,12 +2,13 @@
 
 import click
 
+import myhealth_fhir.cli.anthem as _anthem_mod  # noqa: F401  (registers @anthem commands)
+
 # 1) Load the core module (groups + factories), then command modules (registration side effects).
 import myhealth_fhir.cli.auth as _auth  # noqa: F401  (auth factory; wiring happens in main)
 import myhealth_fhir.cli.main as _main_mod  # noqa: F401  (defines main/anthem/ucla/db groups)
-import myhealth_fhir.cli.anthem as _anthem_mod  # noqa: F401  (registers @anthem commands)
-import myhealth_fhir.cli.ucla as _ucla_mod  # noqa: F401  (registers @ucla commands)
 import myhealth_fhir.cli.search as _search_mod  # noqa: F401  (registers @main search commands)
+import myhealth_fhir.cli.ucla as _ucla_mod  # noqa: F401  (registers @ucla commands)
 
 # 2) Bind the click groups (post-registration) — NOT before, submodule imports shadow these names.
 from myhealth_fhir.cli.main import anthem, main

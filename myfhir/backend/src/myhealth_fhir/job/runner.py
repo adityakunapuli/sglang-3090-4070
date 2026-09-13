@@ -12,7 +12,7 @@ import time
 from datetime import UTC, datetime
 
 from myhealth_fhir.config.settings import list_providers
-from myhealth_fhir.db import get_auth_session, get_session_for
+from myhealth_fhir.db.engine import get_auth_session, get_session_for
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.models.auth import JobRun
 from myhealth_fhir.services.auth import RefreshDaemon, get_auth_manager

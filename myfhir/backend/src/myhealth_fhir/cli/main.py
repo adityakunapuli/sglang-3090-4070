@@ -4,9 +4,9 @@ import json
 import os
 
 import click
-from myhealth_fhir.cli.auth import do_auth, make_auth_group
 from tqdm import tqdm
 
+from myhealth_fhir.cli.auth import do_auth, make_auth_group
 from myhealth_fhir.fhir.client import get_fhir_client
 
 

@@ -14,7 +14,6 @@ from myhealth_fhir.config.settings import resolve_provider
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.services.auth import RefreshDaemon, get_auth_manager
 
-
 # ── Authentication Commands (shared by provider groups) ────────
 
 
@@ -98,7 +97,7 @@ def make_auth_group(provider_name: str = None):
         fhir_client = get_fhir_client(provider)
         from sqlalchemy import text
 
-        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.engine import get_anthem_session
 
         with get_anthem_session() as s:
             refs = (

@@ -15,9 +15,6 @@ from myhealth_fhir.db.engine import (
     get_ucla_engine,
     is_postgres,
 )
-from myhealth_fhir.models.anthem import AnthemBase
-from myhealth_fhir.models.auth import AuthBase
-from myhealth_fhir.models.ucla import UclaBase
 from myhealth_fhir.db.schema.migrations import (
     _backfill_auth_patient_registry,
     _backfill_fhir_identity_registry,
@@ -28,6 +25,9 @@ from myhealth_fhir.db.schema.migrations import (
     _migrate_ucla_schema,
 )
 from myhealth_fhir.db.schema.views import _create_anthem_views, _create_ucla_views
+from myhealth_fhir.models.anthem import AnthemBase
+from myhealth_fhir.models.auth import AuthBase
+from myhealth_fhir.models.ucla import UclaBase
 from myhealth_fhir.services.oauth_sync import sync_oauth_tokens_replica
 
 _initialized = False

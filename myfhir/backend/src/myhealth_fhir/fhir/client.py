@@ -290,7 +290,7 @@ class FHIRClient:
 
     def resolve_entity_name(self, entity_id: str) -> str | None:
         """Resolve a Practitioner/Organization id to a cached or freshly fetched name."""
-        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.engine import get_anthem_session
         from myhealth_fhir.models.anthem import EntityName
 
         for etype in ("Practitioner", "Organization"):
@@ -726,8 +726,7 @@ class FHIRClient:
         linkage). Returns {patient_id: {resource_type: count, ...}}.
         """
         import httpx
-
-        from myhealth_fhir.db import init_db
+        from myhealth_fhir.db.schema.bootstrap import init_db
         init_db()
 
         auth_mgr = self.get_auth_manager()
@@ -905,7 +904,7 @@ class FHIRClient:
         """Return total EOB row count in the DB for a patient."""
         from sqlalchemy import func
 
-        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.engine import get_anthem_session
         from myhealth_fhir.db.identity import entity_ref
         from myhealth_fhir.models.anthem import EOB
 
@@ -918,7 +917,7 @@ class FHIRClient:
         """Return total ClaimSubmission row count in the DB for a patient."""
         from sqlalchemy import func
 
-        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.engine import get_anthem_session
         from myhealth_fhir.db.identity import entity_ref
         from myhealth_fhir.models.anthem import ClaimSubmission
 
@@ -1146,7 +1145,7 @@ class FHIRClient:
         Read-only: flags gaps in the job-run summary and logs; it never
         mutates data.
         """
-        from myhealth_fhir.db import get_anthem_session
+        from myhealth_fhir.db.engine import get_anthem_session
         from myhealth_fhir.models.anthem import EOB, ClaimSubmission
 
         window_start = None

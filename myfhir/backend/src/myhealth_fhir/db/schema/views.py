@@ -7,6 +7,7 @@ container restarts and masquerades as a regression.
 
 from sqlalchemy import text
 
+
 def _create_anthem_views(engine):
     """Create denormalized views in the anthem database."""
     with engine.connect() as conn:

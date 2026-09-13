@@ -1,12 +1,12 @@
 """Unit tests for member-submitted claim classification helpers."""
 from myhealth_fhir.db.parser import (
+    claim_number_of,
     classify_submission_origin,
     is_out_of_network,
-    claim_number_of,
-    load_eob,
-    load_claim,
     load_care_team,
+    load_claim,
     load_claim_care_team,
+    load_eob,
 )
 
 

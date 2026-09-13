@@ -19,7 +19,7 @@ from myhealth_fhir.cli.main import main
 @click.option("--raw", is_flag=True, help="Tab-separated output for CSV export")
 def search_claims(patient, code, icd, diagnosis, provider, date_from, date_to, items, limit, raw):
     """Search stored claim submissions (vw_claims view, line-item grain)."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
 
     view = "vw_claims"
     conditions = []
@@ -124,7 +124,7 @@ def search_eob(
     patient, hcpcs, icd, diagnosis, provider, date_from, date_to, amt_min, amt_max, status, claims, limit, raw
 ):
     """Search denormalized EOB data (vw_eob view, line-item grain)."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
 
     view = "vw_eob"
     conditions = []

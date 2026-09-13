@@ -8,10 +8,10 @@ them to adjudicated records using strict matching.
 import logging
 from datetime import date
 
-from myhealth_fhir.db import get_anthem_session
-from myhealth_fhir.models.anthem import EntityName, MemberClaimSubmission
-from myhealth_fhir.db.parser import claim_number_of
+from myhealth_fhir.db.engine import get_anthem_session
 from myhealth_fhir.db.identity import ref_from_fhir
+from myhealth_fhir.db.parser import claim_number_of
+from myhealth_fhir.models.anthem import EntityName, MemberClaimSubmission
 
 log = logging.getLogger(__name__)
 

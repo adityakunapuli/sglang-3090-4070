@@ -1,9 +1,8 @@
 """UCLA Health resource commands (patients, save-*, medications, encounters, ehi, report)."""
 
 
-import httpx
-
 import click
+import httpx
 from tqdm import tqdm
 
 from myhealth_fhir.cli.auth import do_auth
@@ -19,7 +18,6 @@ from myhealth_fhir.cli.output import (
 )
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.fhir.notes import backfill_clinical_note_attachments
-
 
 # ── UCLA-specific resource commands ────────────────────────────
 
@@ -203,7 +201,7 @@ def ucla_save_labs(ctx, patient_id, date_since, date_until, category, no_db, det
         return
 
     # ── Fetch + Save to DB ───────────────────────────────────────────
-    from myhealth_fhir.db import init_db
+    from myhealth_fhir.db.schema.bootstrap import init_db
     init_db()
 
     if patient_id:
@@ -280,7 +278,7 @@ def ucla_save_all(ctx, patient_id, no_db, skip_labs, detailed, wipe):
     if wipe and not no_db:
         from sqlalchemy import text
 
-        from myhealth_fhir.db import get_ucla_session
+        from myhealth_fhir.db.engine import get_ucla_session
 
         tables = [
             "lab_result", "diagnostic_report", "imaging_observation",

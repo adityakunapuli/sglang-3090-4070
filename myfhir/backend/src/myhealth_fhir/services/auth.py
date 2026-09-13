@@ -52,7 +52,7 @@ class AuthManager:
 
     def _save_pkce_verifier(self, verifier: str, state: str | None = None) -> None:
         """Persist the PKCE verifier to the auth DB so it survives restarts."""
-        from myhealth_fhir.db import get_auth_session
+        from myhealth_fhir.db.engine import get_auth_session
         from myhealth_fhir.models.auth import PKCEVerifier
 
         with get_auth_session() as session:
@@ -67,7 +67,7 @@ class AuthManager:
 
     def _load_pkce_verifier(self) -> None:
         """Load a persisted PKCE verifier from the auth DB."""
-        from myhealth_fhir.db import get_auth_session
+        from myhealth_fhir.db.engine import get_auth_session
         from myhealth_fhir.models.auth import PKCEVerifier
 
         try:
@@ -80,7 +80,7 @@ class AuthManager:
 
     def _clear_pkce_verifier(self) -> None:
         """Clear the persisted PKCE verifier after successful token exchange."""
-        from myhealth_fhir.db import get_auth_session
+        from myhealth_fhir.db.engine import get_auth_session
         from myhealth_fhir.models.auth import PKCEVerifier
 
         self.pkce_code_verifier = None

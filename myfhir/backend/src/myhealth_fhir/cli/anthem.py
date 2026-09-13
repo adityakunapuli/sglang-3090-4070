@@ -17,7 +17,6 @@ from myhealth_fhir.fhir.anthem_save import save_claims_to_db, save_eobs_to_db
 from myhealth_fhir.fhir.client import get_fhir_client
 from myhealth_fhir.services.auth import get_auth_manager
 
-
 # ── Anthem-specific resource commands ──────────────────────────
 
 
@@ -597,7 +596,7 @@ def member_claims(ctx, source, patient_id):
     """List member-submitted claims + out-of-network EOBs + registry status."""
     from sqlalchemy import text
 
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
 
     where = []
     params: dict = {}
@@ -660,7 +659,7 @@ def submission():
 @click.pass_context
 def submission_add(ctx, portal_id, claim_number, provider, npi, service_date, cpt, amount, patient_id):
     """Register a member-submitted (paper/portal) claim."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
     from myhealth_fhir.models.anthem import MemberClaimSubmission
 
     if not patient_id:
@@ -704,7 +703,7 @@ def submission_add(ctx, portal_id, claim_number, provider, npi, service_date, cp
 @click.pass_context
 def submission_list(ctx):
     """List all manual member-submission registry rows and their match status."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
     from myhealth_fhir.models.anthem import MemberClaimSubmission
 
     with get_anthem_session() as session:

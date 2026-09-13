@@ -11,15 +11,15 @@ the bare names from the qualified domain module instead.
 """
 
 from myhealth_fhir.models.anthem import (
+    EOB,
     AnthemBase,
     ClaimCareTeam,
     ClaimDiagnosis,
     ClaimIdentifier,
     ClaimItem,
     ClaimSubmission,
-    EOB,
-    EOBCareTeam,
     EOBAdjudication,
+    EOBCareTeam,
     EOBDiagnosis,
     EOBIdentifier,
     EOBItem,
@@ -27,18 +27,30 @@ from myhealth_fhir.models.anthem import (
     EOBProcedure,
     EOBSupportingInfo,
     EOBTotal,
-    EntityName as AnthemEntityName,
     MemberClaimSubmission,
+)
+from myhealth_fhir.models.anthem import (
+    EntityName as AnthemEntityName,
+)
+from myhealth_fhir.models.anthem import (
     OAuthTokenRecord as AnthemOAuthTokenRecord,
+)
+from myhealth_fhir.models.anthem import (
     PatientRecord as AnthemPatientRecord,
 )
 from myhealth_fhir.models.auth import (
     AuthBase,
-    EntityName as AuthEntityName,
     JobRun,
-    OAuthTokenRecord as AuthOAuthTokenRecord,
-    PatientRecord as AuthPatientRecord,
     PKCEVerifier,
+)
+from myhealth_fhir.models.auth import (
+    EntityName as AuthEntityName,
+)
+from myhealth_fhir.models.auth import (
+    OAuthTokenRecord as AuthOAuthTokenRecord,
+)
+from myhealth_fhir.models.auth import (
+    PatientRecord as AuthPatientRecord,
 )
 from myhealth_fhir.models.ucla import (
     AllergyIntolerance,
@@ -59,11 +71,10 @@ from myhealth_fhir.models.ucla import (
     Encounter,
     EncounterIdentifier,
     EncounterParticipant,
-    EntityName as UclaEntityName,
     FamilyMemberHistory,
+    ImagingObservation,
     Immunization,
     ImmunizationIdentifier,
-    ImagingObservation,
     LabResult,
     LabResultComponent,
     MedicationAdministration,
@@ -71,12 +82,19 @@ from myhealth_fhir.models.ucla import (
     MedicationRequestDosage,
     MedicationRequestIdentifier,
     MedicationStatement,
-    OAuthTokenRecord as UclaOAuthTokenRecord,
-    PatientRecord as UclaPatientRecord,
     ProcedureRecord,
     ServiceRequest,
     Specimen,
     UclaBase,
+)
+from myhealth_fhir.models.ucla import (
+    EntityName as UclaEntityName,
+)
+from myhealth_fhir.models.ucla import (
+    OAuthTokenRecord as UclaOAuthTokenRecord,
+)
+from myhealth_fhir.models.ucla import (
+    PatientRecord as UclaPatientRecord,
 )
 
 __all__ = [

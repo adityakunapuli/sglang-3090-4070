@@ -4,8 +4,9 @@ Scans generated clinical packet Word documents and asserts zero broken tables,
 zero trailing empty cell blocks, zero unparsed blockquotes, and strict descending date orders.
 """
 import sys
-import re
+
 import docx
+
 
 def validate_docx_file(docx_path: str) -> bool:
     print(f"=== AUDITING LAYOUT INTEGRITY FOR {docx_path} ===")

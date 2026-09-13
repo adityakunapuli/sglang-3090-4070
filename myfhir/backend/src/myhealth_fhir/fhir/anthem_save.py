@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 def _cache_patient_identity(client, patient_id: str) -> None:
     """Fetch and persist an Anthem patient identity when the registry lacks it."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
     from myhealth_fhir.db.identity import upsert_patient_name
     from myhealth_fhir.models.anthem import PatientRecord
 
@@ -36,7 +36,7 @@ def _cache_patient_identity(client, patient_id: str) -> None:
 
 def save_eobs_to_db(client, eobs: list[dict]) -> int:
     """Write EOB dicts to the anthem DB. Handles upserts by delete-and-reinsert."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
     from myhealth_fhir.db.parser import (
         load_care_team,
         load_diagnoses,
@@ -125,7 +125,7 @@ def save_eobs_to_db(client, eobs: list[dict]) -> int:
 
 def save_claims_to_db(client, claims: list[dict]) -> int:
     """Write Claim dicts to the anthem DB. Handles upserts by delete-and-reinsert."""
-    from myhealth_fhir.db import get_anthem_session
+    from myhealth_fhir.db.engine import get_anthem_session
     from myhealth_fhir.db.parser import (
         load_claim,
         load_claim_care_team,
