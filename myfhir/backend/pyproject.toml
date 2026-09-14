@@ -15,6 +15,7 @@ dependencies = [
     "fhirpy>=2.2.0",
     "fhirclient>=4.4.0",
     "sqlalchemy>=2.0.51",
+    "alembic>=1.13.0",
     "psycopg>=3.2.0",
     "psycopg-binary>=3.2.0",
     "tqdm>=4.66.0",
@@ -42,6 +43,8 @@ dev = [
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+# Machine-generated Alembic migration bodies are not reformatted.
+extend-exclude = ["**/db/alembic/*/versions/"]
 
 [tool.ruff.lint]
 select = [
@@ -59,6 +62,12 @@ select = [
 ignore = [
     "D417", # allow missing parameter docstrings
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Alembic baselines are machine-generated (raw-SQL view DDL, no docstrings) —
+# don't lint the auto-generated migration bodies or the conventional env.py.
+"**/db/alembic/*/versions/*.py" = ["E501", "Q000", "D", "W291"]
+"**/db/alembic/*/env.py" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

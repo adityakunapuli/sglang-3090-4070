@@ -45,22 +45,40 @@ def init_db():
 
 
 def _init_db_once():
-    """Perform one process-wide schema initialization pass."""
-    # Auth DB
-    auth_engine = get_auth_engine()
-    AuthBase.metadata.create_all(auth_engine)
+    """Perform one process-wide schema initialization pass.
 
-    # Data databases
+    Schema (tables + views) is owned by Alembic (``myhealth_fhir.db.alembic``):
+    on PostgreSQL we run ``alembic upgrade head`` per database, which builds the
+    full baseline on a fresh DB and is a no-op on an already-stamped one. The
+    imperative ``create_all`` is retained only for the SQLite dev fallback
+    (the baseline is PostgreSQL-typed). The data backfills and OAuth replica
+    sync below are idempotent and remain for backward-compat safety.
+    """
+    from myhealth_fhir.db.alembic import run_all
+
+    auth_engine = get_auth_engine()
     anthem_engine = get_anthem_engine()
-    AnthemBase.metadata.create_all(anthem_engine)
     ucla_engine = get_ucla_engine()
-    UclaBase.metadata.create_all(ucla_engine)
 
     if is_postgres():
+        # Schema via Alembic (baseline = current shape; stamped live DBs no-op).
+        run_all()
         with auth_engine.begin() as conn:
-            conn.execute(text("DROP VIEW IF EXISTS member_claims_summary, member_claims_recon, claim_items, claim_submissions, eob_items, eob_claims CASCADE"))
+            conn.execute(
+                text(
+                    "DROP VIEW IF EXISTS "
+                    "member_claims_summary, member_claims_recon, claim_items, "
+                    "claim_submissions, eob_items, eob_claims CASCADE"
+                )
+            )
         with anthem_engine.begin() as conn:
-            conn.execute(text("DROP VIEW IF EXISTS member_claims, member_claims_summary, member_claims_recon, claim_items, claim_submissions, eob_items, eob_claims, vw_eob_all, vw_claims_all CASCADE"))
+            conn.execute(
+                text(
+                    "DROP VIEW IF EXISTS member_claims, member_claims_summary, "
+                    "member_claims_recon, claim_items, claim_submissions, "
+                    "eob_items, eob_claims, vw_eob_all, vw_claims_all CASCADE"
+                )
+            )
         with ucla_engine.begin() as conn:
             conn.execute(text("DROP VIEW IF EXISTS clinical_overview, lab_results CASCADE"))
         _migrate_auth_schema(auth_engine)
@@ -71,11 +89,15 @@ def _init_db_once():
         _backfill_auth_patient_registry(auth_engine)
         _backfill_fhir_identity_registry(anthem_engine, "anthem")
         _backfill_fhir_identity_registry(ucla_engine, "ucla")
+    else:
+        # SQLite dev fallback: the Alembic baseline is PostgreSQL-typed, so the
+        # dev SQLite path keeps the imperative create_all.
+        AuthBase.metadata.create_all(auth_engine)
+        AnthemBase.metadata.create_all(anthem_engine)
+        UclaBase.metadata.create_all(ucla_engine)
 
     _create_anthem_views(anthem_engine)
     _create_ucla_views(ucla_engine)
 
     # Sync oauth_tokens replicas
     sync_oauth_tokens_replica()
-
-

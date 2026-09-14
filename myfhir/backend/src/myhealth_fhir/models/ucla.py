@@ -96,7 +96,7 @@ class Encounter(UclaBase):
     reason_code: Mapped[str | None] = mapped_column(String(20))  # SNOMED/ICD code
     reason_display: Mapped[str | None] = mapped_column(Text)  # Human-readable reason
     location: Mapped[str | None] = mapped_column(Text)  # Location name
-    source: Mapped[str | None] = mapped_column(String(10))  # fhir | ehi
+    source: Mapped[str | None] = mapped_column(String(10), server_default="fhir")  # fhir | ehi
     source_id: Mapped[str | None] = mapped_column(Text)  # EHI PAT_ENC_CSN_ID / FHIR encounter id
     type_code: Mapped[str | None] = mapped_column(String(100))
     type_display: Mapped[str | None] = mapped_column(Text)
@@ -320,7 +320,7 @@ class ClinicalObservation(UclaBase):
     effective_datetime: Mapped[datetime | None] = mapped_column(DateTime)
     status: Mapped[str | None] = mapped_column(String(20))
     component_value: Mapped[str | None] = mapped_column(Text)  # JSON: parsed Observation.component[]
-    source: Mapped[str | None] = mapped_column(String(10))  # fhir | ehi
+    source: Mapped[str | None] = mapped_column(String(10), server_default="fhir")  # fhir | ehi
     source_id: Mapped[str | None] = mapped_column(Text)  # EHI measurement id / FHIR Observation id
     raw_json: Mapped[str | None] = mapped_column(Text)
     loaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -379,7 +379,7 @@ class ClinicalNote(UclaBase):
     author_ref: Mapped[str | None] = mapped_column(Text)  # Authoring provider name (entity ref)
     authored_datetime: Mapped[datetime | None] = mapped_column(DateTime)
     effective_datetime: Mapped[datetime | None] = mapped_column(DateTime)
-    source: Mapped[str | None] = mapped_column(String(10))  # fhir | ehi
+    source: Mapped[str | None] = mapped_column(String(10), server_default="fhir")  # fhir | ehi
     source_id: Mapped[str | None] = mapped_column(Text)  # EHI NOTE_ID / FHIR resource id
     raw_json: Mapped[str | None] = mapped_column(Text)
     loaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -596,7 +596,7 @@ class Condition(UclaBase):
     recorded_date: Mapped[datetime | None] = mapped_column(DateTime)
     asserter_ref: Mapped[str | None] = mapped_column(String(255))
     note_text: Mapped[str | None] = mapped_column(Text)
-    source: Mapped[str | None] = mapped_column(String(10))  # fhir | ehi
+    source: Mapped[str | None] = mapped_column(String(10), server_default="fhir")  # fhir | ehi
     source_id: Mapped[str | None] = mapped_column(Text)  # EHI PROBLEM_ID
     raw_json: Mapped[str | None] = mapped_column(Text)
     loaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -673,7 +673,7 @@ class MedicationRequest(UclaBase):
     status: Mapped[str | None] = mapped_column(String(30))
     intent: Mapped[str | None] = mapped_column(String(30))
     medication_display: Mapped[str | None] = mapped_column(Text)
-    medication_code: Mapped[str | None] = mapped_column(String(30))
+    medication_code: Mapped[str | None] = mapped_column(String(100))
     medication_system: Mapped[str | None] = mapped_column(Text)
     authored_on: Mapped[datetime | None] = mapped_column(DateTime)
     requester_ref: Mapped[str | None] = mapped_column(String(255))
@@ -684,7 +684,7 @@ class MedicationRequest(UclaBase):
     validity_end: Mapped[datetime | None] = mapped_column(DateTime)
     reason_display: Mapped[str | None] = mapped_column(Text)
     note_text: Mapped[str | None] = mapped_column(Text)
-    source: Mapped[str | None] = mapped_column(String(10))  # fhir | ehi
+    source: Mapped[str | None] = mapped_column(String(10), server_default="fhir")  # fhir | ehi
     source_id: Mapped[str | None] = mapped_column(Text)  # EHI ORDER_MED_ID
     raw_json: Mapped[str | None] = mapped_column(Text)
     loaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -793,7 +793,7 @@ class Immunization(UclaBase):
     performer_ref: Mapped[str | None] = mapped_column(String(255))
     reason_code: Mapped[str | None] = mapped_column(Text)
     note_text: Mapped[str | None] = mapped_column(Text)
-    source: Mapped[str | None] = mapped_column(String(10))  # fhir | ehi
+    source: Mapped[str | None] = mapped_column(String(10), server_default="fhir")  # fhir | ehi
     source_id: Mapped[str | None] = mapped_column(Text)  # EHI IMM_ADMIN row id
     raw_json: Mapped[str | None] = mapped_column(Text)
     loaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
