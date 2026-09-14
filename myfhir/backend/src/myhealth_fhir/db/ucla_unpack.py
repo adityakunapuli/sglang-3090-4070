@@ -62,7 +62,7 @@ def _ident_rows(resource, fk_key, fk_value):
 
 
 def _ext_bool(resource, url):
-    """valueBoolean of the first top-level extension matching ``url`` (None if absent)."""
+    """ValueBoolean of the first top-level extension matching ``url`` (None if absent)."""
     for ext in _as_list(resource.get("extension")):
         if isinstance(ext, dict) and "".join((ext.get("url") or "").split()) == url:
             v = ext.get("valueBoolean")
@@ -590,7 +590,8 @@ def registry_display(session, raw_ref, provider, entity_type="Patient"):
 
 def upgrade_doc_displays(session, fields, doc, provider):
     """Fill subject_display / author_display from the registry when the reference
-    object carried no display."""
+    object carried no display.
+    """
     subj = (doc.get("context") or {}).get("subject") if isinstance(doc.get("context"), dict) else None
     if not fields.get("subject_display") and isinstance(subj, dict) and subj.get("reference"):
         fields["subject_display"] = registry_display(session, subj["reference"], provider, "Patient")

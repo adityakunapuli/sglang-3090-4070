@@ -37,7 +37,8 @@ def anthem_ref(obj: dict | None, entity_type: str) -> str | None:
 def anthem_ref_auto(obj: dict | None, default_type: str = "Organization") -> str | None:
     """Like anthem_ref, but infers the entity type from the reference itself
     (e.g. 'Patient/123' -> Patient). Anthem payees may be Organization OR the
-    member (Patient) when the reimbursement check goes to the subscriber."""
+    member (Patient) when the reimbursement check goes to the subscriber.
+    """
     if not obj:
         return None
     reference = obj.get("reference")
@@ -51,7 +52,8 @@ def claim_number_of(resource: dict) -> str | None:
     """Return the unique claim ID (identifier type ``uc``), or None.
 
     Some Anthem Claim resources omit the type coding entirely and carry only
-    a system URL (.../EDW/clm_nbr) — fall back to matching on that."""
+    a system URL (.../EDW/clm_nbr) — fall back to matching on that.
+    """
     for ident in _as_list(resource.get("identifier")):
         c = coding(ident.get("type", {}).get("coding"))
         if c and c["code"] == "uc":
