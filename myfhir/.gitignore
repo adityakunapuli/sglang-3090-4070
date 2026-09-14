@@ -47,3 +47,6 @@ BENEFITS.md
 # meant for container stacks; without this negation the entire
 # backend/src/myhealth_fhir/db/ source package is silently untracked.
 !backend/src/myhealth_fhir/db/
+# Same over-broad pattern swallows the config/ source package (provider
+# registry) — re-include it; it holds env-var NAMES only, no secrets/PHI.
+!backend/src/myhealth_fhir/config/
