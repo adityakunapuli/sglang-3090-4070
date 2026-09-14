@@ -143,7 +143,8 @@ def _job_run_summary(provider: str, results: dict) -> dict:
             if isinstance(value, dict):  # resource_type groups
                 for rt, sub in value.items():
                     if isinstance(sub, dict):
-                        n = int(sub.get("new") or 0)
+                        # rows written this run = new inserts + refreshed rows
+                        n = int(sub.get("new") or 0) + int(sub.get("updated") or 0)
                         fetched.setdefault(rt, 0)
                         fetched[rt] += n
             elif isinstance(value, (int, float)) and key in _SUMMARY_METRIC_KEYS:

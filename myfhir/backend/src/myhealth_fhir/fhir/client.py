@@ -874,13 +874,13 @@ class FHIRClient:
                 elif isinstance(save_fn, str) and save_fn == "docs":
                     from myhealth_fhir.fhir.notes import save_clinical_notes_from_docs
                     from myhealth_fhir.fhir.ucla_save import save_document_references_to_db
-                    doc_new = save_document_references_to_db(resources, provider=self.config.name)
+                    doc_new, doc_upd = save_document_references_to_db(resources, provider=self.config.name)
                     note_new = save_clinical_notes_from_docs(self, resources, headers, provider=self.config.name)
-                    patient_results["DocumentReference"] = {"new": doc_new, "total": len(resources), "sec": round(elapsed, 1)}
+                    patient_results["DocumentReference"] = {"new": doc_new, "updated": doc_upd, "total": len(resources), "sec": round(elapsed, 1)}
                     patient_results["ClinicalNote"] = {"new": note_new, "total": len(resources), "sec": round(elapsed, 1)}
                 else:
-                    new_count = save_fn(resources, provider=self.config.name)
-                    patient_results[rt] = {"new": new_count, "total": len(resources), "sec": round(elapsed, 1)}
+                    inserted, updated = save_fn(resources, provider=self.config.name)
+                    patient_results[rt] = {"new": inserted, "updated": updated, "total": len(resources), "sec": round(elapsed, 1)}
 
             results[pid] = patient_results
         return results

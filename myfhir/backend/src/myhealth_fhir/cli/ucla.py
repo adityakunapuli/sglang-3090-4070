@@ -383,7 +383,10 @@ def ucla_save_all(ctx, patient_id, no_db, skip_labs, detailed, wipe):
             click.echo(click.style(f"\n{patient_label(pid)}:", bold=True))
             for rt, counts in sorted(info.items()):
                 if isinstance(counts, dict):
-                    click.echo(f"  {rt}: {counts.get('new', 0)} new, {counts.get('total', 0)} total ({counts.get('sec', '?')}s)")
+                    new = counts.get("new", 0)
+                    upd = counts.get("updated", 0)
+                    tot = counts.get("total", 0)
+                    click.echo(f"  {rt}: {new} new, {upd} updated, {tot} total ({counts.get('sec', '?')}s)")
         else:
             parts = []
             for k, v in sorted(info.items()):

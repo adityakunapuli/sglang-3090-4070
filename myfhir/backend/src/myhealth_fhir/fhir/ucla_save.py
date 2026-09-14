@@ -408,13 +408,14 @@ def save_imaging_observations(client, observations: list[dict], provider: str = 
 # ── Encounter ──────────────────────────────────────────────────────
 
 
-def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Encounter rows into the ucla DB by resource id; returns the count."""
+def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Encounter rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_encounter, participant_new_fields
     from myhealth_fhir.models.ucla import Encounter, EncounterIdentifier, EncounterParticipant
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for res in resources:
             eid = res.get("id", "")
@@ -444,6 +445,7 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                 upsert_patient_name(session, provider=provider, patient_id=patient_ref.rsplit(":", 1)[-1], name=subject.get("display"))
             enc_fields, enc_children = extract_encounter(res)
             if existing:
+                updated += 1
                 existing.patient_id = patient_id
                 existing.patient_ref = patient_ref
                 existing.status = res.get("status")
@@ -470,7 +472,7 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     **enc_fields,
                 )
                 session.add(enc)
-                count += 1
+                inserted += 1
             session.flush()
 
             session.query(EncounterIdentifier).filter(EncounterIdentifier.encounter_id == eid).delete(synchronize_session=False)
@@ -493,19 +495,20 @@ def save_encounters_to_db(resources: list[dict], provider: str = "ucla") -> int:
                         **participant_new_fields(part),
                     ))
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── Condition ──────────────────────────────────────────────────────
 
 
-def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Condition rows into the ucla DB by resource id; returns the count."""
+def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Condition rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_condition
     from myhealth_fhir.models.ucla import Condition
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -528,6 +531,7 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
             existing = session.get(Condition, rid)
             if existing:
+                updated += 1
                 for k, v in {"clinical_status": r.get("clinicalStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("clinicalStatus"), dict) else None,
                              "verification_status": r.get("verificationStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("verificationStatus"), dict) else None,
                              "code_display": code_info.get("display", _cd(code_obj)),
@@ -556,20 +560,21 @@ def save_conditions_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     note_text=note_text, raw_json=json.dumps(r),
                     **cond_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── Procedure ──────────────────────────────────────────────────────
 
 
-def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Procedure rows into the ucla DB by resource id; returns the count."""
+def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Procedure rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.models.ucla import ProcedureRecord
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -596,6 +601,7 @@ def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
 
             existing = session.get(ProcedureRecord, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.code_display = code_info.get("display", _cd(code_obj))
                 existing.performed_datetime = _parse_dt(r.get("performedDateTime"))
@@ -614,21 +620,22 @@ def save_procedures_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     outcome_text=r.get("outcome"), body_site=body_site, note_text=note_text,
                     raw_json=json.dumps(r),
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── MedicationStatement ────────────────────────────────────────────
 
 
-def save_medication_statements_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR MedicationStatement rows into the ucla DB by resource id; returns the count."""
+def save_medication_statements_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR MedicationStatement rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_medication_statement
     from myhealth_fhir.models.ucla import MedicationStatement
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -648,6 +655,7 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
             ms_fields, _ = extract_medication_statement(r)
             existing = session.get(MedicationStatement, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.medication_display = med_info.get("display", _cd(med))
                 for k, v in ms_fields.items():
@@ -667,21 +675,22 @@ def save_medication_statements_to_db(resources: list[dict], provider: str = "ucl
                     note_text=note_text, raw_json=json.dumps(r),
                     **ms_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── MedicationRequest ──────────────────────────────────────────────
 
 
-def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR MedicationRequest rows into the ucla DB by resource id; returns the count."""
+def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR MedicationRequest rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_medication_request
     from myhealth_fhir.models.ucla import MedicationRequest, MedicationRequestDosage, MedicationRequestIdentifier
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -702,6 +711,7 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
             mr_fields, mr_children = extract_medication_request(r)
             existing = session.get(MedicationRequest, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.medication_display = med_info.get("display", _cd(med))
                 existing.requester_ref = requester_ref
@@ -725,7 +735,7 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
                     note_text=note_text, raw_json=json.dumps(r),
                     **mr_fields,
                 ))
-                count += 1
+                inserted += 1
             session.flush()
             session.query(MedicationRequestIdentifier).filter(MedicationRequestIdentifier.medreq_id == rid).delete(synchronize_session=False)
             for row in mr_children.get("medication_request_identifier", []):
@@ -734,19 +744,20 @@ def save_medication_requests_to_db(resources: list[dict], provider: str = "ucla"
             for row in mr_children.get("medication_request_dosage", []):
                 session.add(MedicationRequestDosage(**row))
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── AllergyIntolerance ─────────────────────────────────────────────
 
 
-def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR AllergyIntolerance rows into the ucla DB by resource id; returns the count."""
+def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR AllergyIntolerance rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_allergy
     from myhealth_fhir.models.ucla import AllergyIntolerance
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -773,6 +784,7 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
             al_fields, _ = extract_allergy(r)
             existing = session.get(AllergyIntolerance, rid)
             if existing:
+                updated += 1
                 existing.clinical_status = r.get("clinicalStatus", {}).get("coding", [{}])[0].get("code") if isinstance(r.get("clinicalStatus"), dict) else None
                 existing.code_display = code_info.get("display", _cd(code_obj))
                 existing.recorder_ref = recorder_ref
@@ -793,21 +805,22 @@ def save_allergies_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     note_text=note_text, raw_json=json.dumps(r),
                     **al_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── Immunization ───────────────────────────────────────────────────
 
 
-def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Immunization rows into the ucla DB by resource id; returns the count."""
+def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Immunization rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_immunization
     from myhealth_fhir.models.ucla import Immunization, ImmunizationIdentifier
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -832,6 +845,7 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
             enc_id = _existing_encounter_id(session, {"encounter": {"reference": enc_ref}}) if enc_ref else None
             existing = session.get(Immunization, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.vaccine_display = vac_info.get("display", _cd(vac))
                 existing.performer_ref = performer_ref
@@ -858,23 +872,24 @@ def save_immunizations_to_db(resources: list[dict], provider: str = "ucla") -> i
                     note_text=note_text, raw_json=json.dumps(r),
                     **im_fields,
                 ))
-                count += 1
+                inserted += 1
             session.query(ImmunizationIdentifier).filter(ImmunizationIdentifier.immunization_id == rid).delete(synchronize_session=False)
             for row in im_children.get("immunization_identifier", []):
                 session.add(ImmunizationIdentifier(**row))
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── CarePlan ───────────────────────────────────────────────────────
 
 
-def save_care_plans_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR CarePlan rows into the ucla DB by resource id; returns the count."""
+def save_care_plans_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR CarePlan rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.models.ucla import CarePlan
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -898,6 +913,7 @@ def save_care_plans_to_db(resources: list[dict], provider: str = "ucla") -> int:
             author_ref = _save_actor(session, r.get("author"), provider, "Practitioner", rid)
             existing = session.get(CarePlan, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.title = r.get("title")
                 existing.author_ref = author_ref
@@ -916,20 +932,21 @@ def save_care_plans_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     activity_text="; ".join(a for a in activities if a) if activities else None,
                     note_text=note_text, raw_json=json.dumps(r),
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── MedicationAdministration (MAR) ─────────────────────────────────
 
 
-def save_medication_administrations_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR MedicationAdministration rows into the ucla DB by resource id; returns the count."""
+def save_medication_administrations_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR MedicationAdministration rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.models.ucla import MedicationAdministration
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -960,6 +977,7 @@ def save_medication_administrations_to_db(resources: list[dict], provider: str =
 
             existing = session.get(MedicationAdministration, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.medication_display = med_info.get("display", _cd(med))
                 existing.raw_json = json.dumps(r)
@@ -975,21 +993,22 @@ def save_medication_administrations_to_db(resources: list[dict], provider: str =
                     route_display=route_display, dose_display=dose_text,
                     performer_ref=performer_ref, note_text=note_text, raw_json=json.dumps(r),
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── ServiceRequest (orders) ────────────────────────────────────────
 
 
-def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR ServiceRequest rows into the ucla DB by resource id; returns the count."""
+def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR ServiceRequest rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_service_request
     from myhealth_fhir.models.ucla import ServiceRequest
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1006,6 +1025,7 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
             cat = r.get("category", [{}])[0] if r.get("category") else {}
             existing = session.get(ServiceRequest, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.code_display = code_info.get("display", _cd(code_obj))
                 existing.note_text = note_text or existing.note_text
@@ -1027,21 +1047,22 @@ def save_service_requests_to_db(resources: list[dict], provider: str = "ucla") -
                     note_text=note_text, raw_json=json.dumps(r),
                     **sr_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── Specimen ───────────────────────────────────────────────────────
 
 
-def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Specimen rows into the ucla DB by resource id; returns the count."""
+def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Specimen rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_specimen
     from myhealth_fhir.models.ucla import Specimen
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1056,6 +1077,7 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
             sp_fields, _ = extract_specimen(r)
             existing = session.get(Specimen, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 for k, v in sp_fields.items():
                     setattr(existing, k, v)
@@ -1073,21 +1095,22 @@ def save_specimens_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     note_text=note_text, raw_json=json.dumps(r),
                     **sp_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── Communication (messages, phone encounters) ─────────────────────
 
 
-def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Communication rows into the ucla DB by resource id; returns the count."""
+def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Communication rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_communication
     from myhealth_fhir.models.ucla import Communication
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1114,6 +1137,7 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
             co_fields, _ = extract_communication(r)
             existing = session.get(Communication, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.payload_text = "; ".join(p for p in payload_parts if p) or existing.payload_text
                 for k, v in co_fields.items():
@@ -1133,21 +1157,22 @@ def save_communications_to_db(resources: list[dict], provider: str = "ucla") -> 
                     note_text=note_text, raw_json=json.dumps(r),
                     **co_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── CareTeam ───────────────────────────────────────────────────────
 
 
-def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR CareTeam rows into the ucla DB by resource id; returns the count."""
+def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR CareTeam rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_care_team
     from myhealth_fhir.models.ucla import CareTeam, CareTeamParticipant
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1169,6 +1194,7 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
             ct_fields, ct_children = extract_care_team(r)
             existing = session.get(CareTeam, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.participants_display = " ".join(x for x in participants if x) or existing.participants_display
                 for k, v in ct_fields.items():
@@ -1187,21 +1213,22 @@ def save_care_teams_to_db(resources: list[dict], provider: str = "ucla") -> int:
                     note_text=note_text, raw_json=json.dumps(r),
                     **ct_fields,
                 ))
-                count += 1
+                inserted += 1
             session.query(CareTeamParticipant).filter(CareTeamParticipant.care_team_id == rid).delete(synchronize_session=False)
             for row in ct_children.get("care_team_participant", []):
                 session.add(CareTeamParticipant(**row))
         session.commit()
-    return count
+    return (inserted, updated)
 
 
-def save_document_references_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR DocumentReference rows into the ucla DB by resource id; returns the count."""
+def save_document_references_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR DocumentReference rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_document_reference, upgrade_doc_displays
     from myhealth_fhir.models.ucla import DocumentReference, DocumentReferenceContent, DocumentReferenceIdentifier
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1223,6 +1250,7 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
             upgrade_doc_displays(session, dr_fields, r, provider)
             existing = session.get(DocumentReference, rid)
             if existing:
+                updated += 1
                 existing.status = r.get("status")
                 existing.description = r.get("description")
                 existing.author_ref = author_ref
@@ -1245,7 +1273,7 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
                     raw_json=json.dumps(r),
                     **dr_fields,
                 ))
-                count += 1
+                inserted += 1
             session.query(DocumentReferenceContent).filter(DocumentReferenceContent.doc_id == rid).delete(synchronize_session=False)
             for row in dr_children.get("document_reference_content", []):
                 session.add(DocumentReferenceContent(**row))
@@ -1253,19 +1281,20 @@ def save_document_references_to_db(resources: list[dict], provider: str = "ucla"
             for row in dr_children.get("document_reference_identifier", []):
                 session.add(DocumentReferenceIdentifier(**row))
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── FamilyMemberHistory ────────────────────────────────────────────
 
 
-def save_family_member_histories_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR FamilyMemberHistory rows into the ucla DB by resource id; returns the count."""
+def save_family_member_histories_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR FamilyMemberHistory rows into the ucla DB by resource id; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_family_member_history
     from myhealth_fhir.models.ucla import FamilyMemberHistory
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1285,6 +1314,7 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
             fm_fields, _ = extract_family_member_history(r)
             existing = session.get(FamilyMemberHistory, rid)
             if existing:
+                updated += 1
                 existing.condition_display = "; ".join(c for c in conditions if c) if conditions else None
                 existing.family_member_ref = family_member_ref
                 for k, v in fm_fields.items():
@@ -1301,21 +1331,22 @@ def save_family_member_histories_to_db(resources: list[dict], provider: str = "u
                     note_text=note_text, raw_json=json.dumps(r),
                     **fm_fields,
                 ))
-                count += 1
+                inserted += 1
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── ClinicalObservation (vitals, surveys, etc.) ────────────────────
 
 
-def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucla") -> int:
-    """Upsert FHIR Observation (vital signs / clinical) rows into the ucla DB by resource id; returns the count."""
+def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucla") -> tuple[int, int]:
+    """Upsert FHIR Observation (vital signs / clinical) rows into the ucla DB; returns (inserted, updated)."""
     from myhealth_fhir.db.engine import get_session_for
     from myhealth_fhir.db.ucla_unpack import extract_clinical_observation
     from myhealth_fhir.models.ucla import ClinicalObservation, ClinicalObservationComponent
 
-    count = 0
+    inserted = 0
+    updated = 0
     with get_session_for(provider) as session:
         for r in resources:
             rid = r.get("id", "")
@@ -1364,6 +1395,7 @@ def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucl
 
             existing = session.get(ClinicalObservation, rid)
             if existing:
+                updated += 1
                 existing.value_text = str(value_float) + " " + value_unit if value_float is not None else value_text
                 for k, v in co_fields.items():
                     if k == "component_value":
@@ -1389,14 +1421,14 @@ def save_clinical_observations_to_db(resources: list[dict], provider: str = "ucl
                     source="fhir",
                     **co_fields,
                 ))
-                count += 1
+                inserted += 1
             session.flush()
             obs = session.get(ClinicalObservation, rid)
             session.query(ClinicalObservationComponent).filter(ClinicalObservationComponent.observation_id == obs.id).delete(synchronize_session=False)
             for row in co_children.get("clinical_observation_component", []):
                 session.add(ClinicalObservationComponent(observation_id=obs.id, **row))
         session.commit()
-    return count
+    return (inserted, updated)
 
 
 # ── ClinicalNote (via DocumentReference → Binary) ──────────────
