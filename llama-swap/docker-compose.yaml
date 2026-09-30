@@ -1,13 +1,16 @@
 services:
   # llama-swap - Manages llama-server processes for hot-swapping
   llama-swap:
-    image: ghcr.io/mostlygeek/llama-swap:unified-cuda
+    image: ghcr.io/mostlygeek/llama-swap:unified-cuda13
     container_name: llama-swap
     user: root
     restart: unless-stopped
     ports:
       - "5800:5800"
-      - "8082:8080"
+      # 8082 internally as well as externally. A network alias cannot carry a
+      # port, so every swappable backend must listen on the SAME internal port
+      # for the front door's `llm-active` alias to work. See litellm/.
+      - "8082:8082"
     volumes:
       - /mnt/data/models/llm:/mnt/data/models/llm
       - ./configs:/app/configs:ro
@@ -15,10 +18,8 @@ services:
       - LLAMA_CACHE=/mnt/data/models/llm
       - HF_HOME=/mnt/data/models/llm
       - NVIDIA_DRIVER_CAPABILITIES=all
-#      - CUDA_VISIBLE_DEVICES=all
-#      - NVIDIA_VISIBLE_DEVICES=all
       - CUDA_VISIBLE_DEVICES=${GPU_SLOT_1:?GPU_SLOT_3_NOT_SET},${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}
-    command: ["--config-dir", "/app/configs", "--listen", "0.0.0.0:8080"]
+    command: ["--config-dir", "/app/configs", "--listen", "0.0.0.0:8082"]
     working_dir: /app
     deploy:
       resources:
@@ -26,14 +27,22 @@ services:
           devices:
             - driver: nvidia
               device_ids: [
-#                '0','1','2'
                   '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}',
                   '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'
               ]
               capabilities: [ all ]
     networks:
-      - default
-      - proxy
+      # All entries in map form: Compose rejects mixing a bare string entry with
+      # a keyed map entry in the same list.
+      default:
+      proxy:
+        aliases:
+          # The LiteLLM front door (litellm/) points its wildcard deployment at
+          # http://llm-active:8082/v1. Since only one model is GPU-resident at
+          # a time, every backend claims this same alias, so swapping the live
+          # model never requires editing LiteLLM config. Verified: Docker
+          # deregisters the alias as soon as the container stops.
+          - llm-active
     #    labels:
     #        - "homepage.group=AI"
     #        - "homepage.id=llama-swap-card"
