@@ -541,3 +541,33 @@ are NOT opening a PR; a fork could carry `patches/` cleanly.
   context gap. A 4-bit KV path for hybrid-GDN full-attn in SGLang would hand
   back the entire deficit; absent that, the no-spec fallback (187k) remains the
   max-context answer.
+
+### Fourth session (2026-10-03, late): 83k -> 167k pool with MTP on
+
+Opus-5.5 review found the remaining leak: the draft was loading 5.53 GB
+(private bf16 lm_head 2.5 GB + private bf16 embedding 2.4 GB + MTP layer)
+BEFORE KV pool sizing; the embed fp8 conversion ran after. Fixes:
+
+1. `qwen3_5_mtp_pp_spec.py` now builds the draft's lm_head on the meta device
+   when `SGLANG_ENABLE_PP_SPEC=1` (upstream always re-binds the target's head
+   post-sizing via `set_lm_head_from_target`; construction-time pp_size is
+   NOT reliable because the draft runner normalizes its parallel view,
+   measured pp_size=1 -> gate on the env var instead).
+2. The draft embedding is allocated as `_Fp8RowEmbedding` (fp8 rows + per-row
+   scales) AT CONSTRUCTION (before sizing) and filled from CPU in row chunks
+   inside the patched load path. No GPU bf16 transient at any point.
+3. Companion patch `pp_draft_embedding_lazy_meta.py` teaches
+   `load_draft_embedding_from_checkpoint` the skeleton fill + meta-param
+   materialization.
+4. Partition re-sweep after shrinking the draft: **16,48 is the new optimum
+   (167,296 pool tokens)**; 20,44 -> 155,520; 12,52 -> 145,280 (fixed embed+
+   vision overhead on the 4070 starts dominating). 2.5x over the pre-fix 83.5k.
+
+Not validated-then-rejected (graveyard):
+- int8/q8 KV == fp8 in bytes; we're already at the byte floor for this stack.
+- fp4/nvfp4 KV: requires TRTLLM MHA backend = SM90/100/120 only. Dead here.
+- NGRAM / STANDALONE / more: unnecessary once MTP landed at 75-84 tps decode
+  with 167k context; DFLASH remains pp==1-only; TP2+DFlash not worth the
+  asymmetric-symmetric fight over the PHB link (PP2 measured beats it
+  conceptually at these workloads after #1-3).
+- `--enable-int8-mamba-checkpoint`: allocates from headroom, no pool change.

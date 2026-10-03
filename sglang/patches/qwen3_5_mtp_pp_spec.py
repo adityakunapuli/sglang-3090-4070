@@ -222,12 +222,67 @@ class Qwen3_5ForCausalLMMTP(nn.Module):
             if config.tie_word_embeddings:
                 self.lm_head = self.model.embed_tokens
             else:
-                self.lm_head = ParallelLMHead(
-                    config.vocab_size,
-                    config.hidden_size,
-                    quant_config=quant_config,
-                    prefix=add_prefix("lm_head", prefix),
+                import os as _os3
+                # PATCH (local): under PP, the draft's private 2.5 GB lm_head is
+                # guaranteed to be replaced by the target's (set_lm_head_from_target
+                # binds the shared head AFTER KV pool sizing). Building it eagerly
+                # makes pool sizing see phantom pressure (draft loaded at 5.53 GB
+                # incl. head + embed that are later dropped/fp8'd). Build on meta.
+                # note: draft runner normalizes pp_size to 1 in its view; the ONLY
+                # reliable "we are PP+MTP" signal at construction is the env gate.
+                if _os3.environ.get("SGLANG_PP_DRAFT_LAZY_HEAD", "1") == "1" and _os3.environ.get("SGLANG_ENABLE_PP_SPEC") == "1":
+                    with torch.device("meta"):
+                        self.lm_head = ParallelLMHead(
+                            config.vocab_size,
+                            config.hidden_size,
+                            quant_config=quant_config,
+                            prefix=add_prefix("lm_head", prefix),
+                        )
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "MTP draft: lm_head allocated on meta device; will be "
+                        "bound to the target's head post-sizing."
+                    )
+                else:
+                    self.lm_head = ParallelLMHead(
+                        config.vocab_size,
+                        config.hidden_size,
+                        quant_config=quant_config,
+                        prefix=add_prefix("lm_head", prefix),
+                    )
+
+        # PATCH (local): under PP the draft keeps a private 2.4 GB bf16 embedding
+        # copy on the last stage. Allocate it directly as fp8 rows + per-row
+        # scales at construction (BEFORE KV pool sizing) and fill from CPU in
+        # chunks at load time (see pp_draft_embedding_lazy_meta.py). Never a
+        # big GPU transient, and the pool sees only 1.27 GB.
+        import os as _os4
+        if _os4.environ.get("SGLANG_PP_DRAFT_LAZY_HEAD", "1") == "1" and _os4.environ.get("SGLANG_ENABLE_PP_SPEC") == "1" and get_parallel().pp_group.is_last_rank:
+            _emb_mod = self.model.embed_tokens
+            _w = getattr(_emb_mod, "weight", None)
+            if _w is not None and not _w.is_meta and _w.is_cuda:
+                _dev = _w.device
+                import logging
+                logging.getLogger(__name__).warning(
+                    "MTP draft: allocating embed_tokens as fp8 rows pre-sizing "
+                    "(2.54 GB -> 1.27 GB)."
                 )
+                _fp8w = torch.nn.Parameter(
+                    torch.empty(_w.shape, dtype=torch.float8_e4m3fn, device=_dev),
+                    requires_grad=False,
+                )
+                _sc = torch.nn.Parameter(
+                    torch.ones((_w.shape[0], 1), dtype=_w.dtype, device=_dev),
+                    requires_grad=False,
+                )
+                _skel = _Fp8RowEmbedding.__new__(_Fp8RowEmbedding)
+                torch.nn.Module.__init__(_skel)
+                _skel.weight = _fp8w
+                _skel.scale = _sc
+                _skel.out_dtype = _w.dtype
+                self.model.embed_tokens = _skel
+                del _emb_mod, _w
+                torch.cuda.empty_cache()
 
         self.logits_processor = LogitsProcessor(config)
 

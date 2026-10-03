@@ -124,6 +124,9 @@ services:
       # required while MTP is on. See MTP STATUS header above.
       - ./patches/qwen3_5_mm_relay.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5.py:ro
       - ./patches/qwen3_5_mtp_pp_spec.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5_mtp.py:ro
+      # Defer the draft's 2.5GB lm_head + 2.4GB embed to post-sizing (meta
+      # placeholders); recovered ~4-5GB of pool budget, Opus-5.5 review item 1.
+      - ./patches/pp_draft_embedding_lazy_meta.py:/sgl-workspace/sglang/python/sglang/srt/speculative/pp_draft_embedding.py:ro
     env_file:
       # Stack-local values, then the shared root secrets (HF_TOKEN lives there).
       - .env

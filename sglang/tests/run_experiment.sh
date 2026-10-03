@@ -35,6 +35,7 @@ MOUNTS=(
   -v sglang_sglang-cache:/root/.cache
   -v "$PWD/patches/qwen3_5_mm_relay.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5.py:ro"
   -v "$PWD/patches/qwen3_5_mtp_pp_spec.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5_mtp.py:ro"
+  -v "$PWD/patches/pp_draft_embedding_lazy_meta.py:/sgl-workspace/sglang/python/sglang/srt/speculative/pp_draft_embedding.py:ro"
 )
 
 docker rm -f sglang-lab >/dev/null 2>&1
