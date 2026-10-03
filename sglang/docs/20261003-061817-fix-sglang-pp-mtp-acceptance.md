@@ -120,6 +120,77 @@ Seams where a row/shape/content mismatch hides:
   qwen3_5. Note: acceptance is 0 on **plain text**, so S5 alone cannot be the whole
   story — but it could be masking a second defect.
 
+## 2.5 How this got found — process notes (steal the moves, not just the answers)
+
+The conclusions in §1 were cheap; the *mis-conclusions* that preceded them were not.
+These are the moves that worked, including the ones that caught earlier sessions'
+mistakes. Use them before believing anything in a config file, docstring, or dashboard.
+
+- **A file existing is not evidence it works.** An earlier session read
+  `vllm/docker-compose.yml` (`VLLM_PP_LAYER_PARTITION=26,14`, 64k window) as proof PP
+  worked on this hardware. It was the tombstone of a *failed* attempt. Whenever you
+  cite an artifact as evidence, ask: does this prove success, or only that someone tried?
+- **Distrust your own verification method, then verify that.** The first session
+  concluded "still broken on today's main" — but the clone was shallow+sparse, so the
+  merge-base check used to prove absence of the fix was itself invalid, and half the
+  tree wasn't even on disk. The correction came from a one-line `ls` on the actual
+  checkout. When a conclusion is load-bearing, name the mechanism that produced it and
+  sanity-check the mechanism.
+- **Read the source, not the docs, then read the source of the source.** "PP and spec
+  are mutually exclusive" lived in a validation hook; the gate around it
+  (`SGLANG_ENABLE_PP_SPEC`) was undocumented; the half-lifecycle of that feature was
+  visible only on the upstream tracker issue (#39634), not in any release note. Budget
+  time to find the *tracking issue* for a half-landed feature — that's where the truth
+  about in-flight work concentrates. Searching for a tracker before debugging is often
+  worth more than debugging.
+- **Diff against time, not just code.** "Is the fix in the image?" was answered three
+  ways and all three mattered: grep the running container's source (`docker run --
+  entrypoint`), check the image's embedded git commit, then diff that commit against
+  the research clone. Different answer dates = different failure modes blamed on the
+  wrong cause.
+- **Falsify structurally before falsifying empirically.** "PP1+MTP doesn't fit" cost
+  one docker run and one log line (min mem-fraction 0.983). "DFLASH needs pp_size==1"
+  cost one grep. Both would have cost many boot cycles if discovered by experiment.
+  Rank candidate tests by (information gained ÷ minutes).
+- **Instrument the negative, not just the success.** The acceptance=0 finding came from
+  grepping logs for `accept len` AFTER noticing decode was slower — the crash was fixed
+  but the feature was silently worthless. Every "it boots now" claim deserves a "and
+  here's the metric that proves the feature does its job, not merely runs."
+
+## 2.6 The efficiency substrate (why Step 0 is not optional)
+
+Iteration cost asymmetry is the hidden boss fight here: reading source is free,
+booting the 27B is ~10 min. Every experiment queued through the big model fights
+against that budget. The countermeasures that exist or have been proposed:
+
+- **Shrink the reference, not just the test.** The "small vision+GDN+MTP model at PP1"
+  idea exists because the 27B physically cannot be the A/B reference (§1.3). If no
+  suitable small model exists, building one (trim layers, keep the class trio) is a
+  task with a *known boot time measured in seconds*, which converts every future
+  question from 10 min to 10 s. This is the difference between a debugging session and
+  a debugging lifestyle.
+- **Warm the caches like they're infrastructure.** flashinfer/triton/inductor artifacts,
+  the HF model dir, compiled CUDA graphs — every one is rebuildable and none should be
+  rebuilt. `sglang-cache` exists in compose for this reason; one-off test containers
+  that skip it pay the full JIT tax every time.
+- **Pre-write the decision tree, not just the test.** Before booting the expensive
+  harness, write down "if X, next experiment is Y; if not X, next is Z" for the top
+  two outcomes. The 10 minutes then run while you think about something else, and you
+  never fall for the sunk-cost "well it's up, let me also try..." meandering that eats
+  GPU-hours.
+- **Treat container boots as batches, not turns.** A single container can answer three
+  questions if you script the probes before launching (accept-len probe, position
+  dump, mrope dump in ONE run). Composing probes beats sequencing them.
+- **Snapshot mid-state, not just end-state.** `git stash`, patch files under
+  `patches/`, JSONL result logs — the point is that "what did I know when X happened"
+  is always recoverable. Debugging sessions that destroy their own history force
+  re-discovery. (This section itself survived a tree-clobber only because it had been
+  committed minutes earlier — proven live.)
+- **Don't fight the box's physics; instrument around it.** The resources that are
+  scarce are boot cycles and GPU-hours, not CPU-side analysis. A cheap Python probe,
+  a log grep, or a source read that *precedes* a boot is nearly free; treat every
+  successful boot as a chance to answer three questions at once.
+
 ## 3. Hypotheses, each with a cheap falsification test
 
 Orphaned assumptions are what made this bug long-lived. Test these in whatever order
@@ -167,6 +238,8 @@ If ALL of H1–H5 come back clean, the bug is somewhere nobody has looked yet �
 real progress; write that down.
 
 ## 4. Instrumentation & loop discipline (suggestions, not rules)
+
+(Read after §2.5–§2.6 — those sections are the meta-version of this one.)
 
 - The single biggest lever on iteration speed is **graph-capture/JIT time** (~10 min
   boot). Sketches that help: bind-mount `/root/.cache` into every throwaway container
