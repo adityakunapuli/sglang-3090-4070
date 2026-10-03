@@ -2,7 +2,7 @@
 
 **/*.env
 monitoring/vram_temps/.git/
-
+agent-zero/usr
 .archive/
 bifrost/
 blocky/
@@ -11,6 +11,14 @@ traefik/
 docker/audiobookshelf/libation_config/
 audiobookshelf/libation_config/AccountsSettings.json
 audiobookshelf/libation_config/Settings.json
+database/cloudbeaver_workspace/
+database/zeppelin_notebook/
+database/zeppelin_logs/
+hyperqwen/.letta/
+live.out
+maradmin
+*.copy
+
 
 # Global generic ignores (Data, Logs, Caches, Backups, Sensitive)
 **/.lib/
@@ -176,3 +184,7 @@ monitoring/archive_backup/
 #!homepage/config/**
 #homepage/config/logs/
 homepage/public/images/**
+# sglang-src is a scratch clone of sgl-project/sglang (bind-mount source for
+# local patches); not project content. See sglang/patches/.
+sglang/sglang-src/
+sglang/.env

@@ -1,0 +1,208 @@
+# SGLang stack: Swift-1.5-Qwen3.8-27B (PP2 across 3090 Ti + 4070 Ti SUPER)
+#
+# Purpose:
+#   Replace the hyperqwen (patched vLLM) backend with stock SGLang, using
+#   pipeline parallelism instead of tensor parallelism. PP (not TP) is the
+#   right axis here because the two GPUs have asymmetric VRAM (24 GB / 16 GB);
+#   TP expects equal cards, PP tolerates imbalance.
+#
+# Model:
+#   ukisai/Swift-1.5-Qwen3.8-27B  -- GATED repo, needs HF_TOKEN (see .env).
+#   Rationale: trained for ~58% fewer thinking tokens vs base while scoring
+#   slightly higher; that matters more here because this serves a queue.
+#   Quant: AWQ INT4 / compressed-tensors (best-supported Marlin path on Ampere).
+#
+# WHY W4A16 AND NOT FP8/NVFP4:
+#   NVFP4 is Blackwell-only (sm_100/sm_120). Both cards here are pre-Blackwell
+#   (3090 Ti = sm_86 Ampere, 4070 Ti S = sm_89 Ada). FP8 KV *storage* is still
+#   fine because dequant happens before compute -- that is not the same as FP8
+#   tensor cores, which the 3090 Ti lacks.
+#
+# VRAM BUDGET (fp8 KV cache):
+#   weights ~18.7 GB total; ~0.19 GB/layer + ~0.134 GB/layer fp8 KV per layer.
+#   Stage 0 additionally carries embed_tokens (~2.5 GB) + vision tower (~1.4 GB).
+#   Stage 1 additionally carries lm_head (~2.5 GB).
+#     3090 Ti  : 3.9 + 0.324*44  ~= 18.2 GB of 24 GB
+#     4070 Ti S: 2.5 + 0.324*20  ~= 9.0 GB of ~13.4 GB usable
+#   (4070 shares with jellyfin + audiocpp + whisper ~= 2.6 GB.)
+#   Valid window for the 44,20 split is roughly stage0 layers 35..55.
+#
+# CONCURRENCY NOTE (important, and Qwen3.8-specific):
+#   The hybrid Gated-DeltaNet layers use a fixed recurrent state PER SEQUENCE,
+#   not per-token KV. So the real concurrency ceiling is the mamba state pool,
+#   a budget completely separate from KV blocks. Rough size ~150 MB/sequence in
+#   fp32 or ~75 MB in bf16 -> the bf16 setting below roughly doubles the
+#   concurrent-request ceiling. The model config ships mamba_ssm_dtype float32,
+#   so --mamba-ssm-dtype bfloat16 is load-bearing, not cosmetic.
+#   --max-mamba-cache-size is deliberately left unset so SGLang auto-sizes it;
+#   read the computed value back from the startup log.
+#
+# DO NOT enable --enable-mixed-chunk on this model.
+#
+# Upstream sgl-project/sglang#39342 (OPEN, unfixed on main as of 6220f45):
+# --enable-mixed-chunk corrupts the mamba radix cache on hybrid GDN models.
+# merge_batch() nulls mamba_track_*, the GDN backend then skips the state
+# write, but the ping-pong slot is still donated to the radix tree. Every later
+# request sharing that prefix restores an SSM state that was never written.
+# Measured upstream: exact match 0.908 -> 0.836 under load, p50 200ms -> 3-7s.
+# It only fires when a prefill co-batches with running decodes -- which is
+# precisely the multi-consumer workload this box has (Frigate, Paperless x2,
+# Open WebUI, Hermes, Agent Zero). Concurrency is the whole point of this
+# migration, so the flag must stay off.
+#
+# UPSTREAM FIXES / KNOBS FOUND (see the research notes in scripts/docs/):
+#   * sgl#29633 -- mamba radix cache produces a wrong silent first token when a
+#     cache hit lands on prompt length = 1 (mod 64). AMD-validated. Not patched
+#     in this stack; mitigate by testing a 193-token prompt twice if outputs
+#     ever look wrong on a cache hit.
+#   * --enable-mixed-chunk is INCOMPATIBLE with --cuda-graph-backend-prefill
+#     tc_piecewise (sgl#36288 requires breakable). Moot here, graph is off.
+#   * sgl#29034 -- --hicache-size is PER-RANK GB and double-allocates for hybrid
+#     mamba. Not enabling HiCache; if you later do, keep it small.
+#   * NCCL/P2P: consumer GeForce cards have P2P blocked at driver level. PP will
+#     carry every inter-stage activation over PCIe with no P2P shortcut. GPUS.md
+#     records the 4070 Ti S on a PCIe 4.0 x4 link (~7.87 GB/s) and the two GPUs
+#     on separate root complexes. This is the known structural tax -- PP2 here
+#     will be interconnect-bound, not compute-bound. Expect it to show up first
+#     in single-stream decode latency.
+
+services:
+  sglang-qwen38:
+    # PINNED to the 2026-10-02 nightly (commit 67eab570): it is the first
+    # build that contains the PP x speculative hybrid recurrent-state fix
+    # (upstream sgl#40001, "commit accepted GDN states by request-pool row
+    # under SGLANG_ENABLE_PP_SPEC"). v0.5.21 predates it and cannot run
+    # PP + EAGLE on this hybrid-GDN model. Bump deliberately.
+    image: ${SGLANG_IMAGE:-lmsysorg/sglang:nightly-dev-20261002-67eab570}
+    container_name: sglang-qwen38
+    # MTP STATUS (2026-10-03): PP+EAGLE now BOOTS (nightly 67eab570 + patches
+    # below fix both startup crashes), but draft acceptance is 0.00 under PP
+    # for this multimodal model => spec costs ~40% decode instead of gaining.
+    # Disabled by default; re-enable with SGLANG_SPEC=1 to re-test on future
+    # nightlies. See docs/ for the debugging trail and upstream refs (#39634
+    # tracker, #40501 qwen4-exp mm relay which we ported to qwen3_5.py).
+    # SINGLE-GPU + MTP is a dead end here: draft weights + pools push the
+    # minimum viable mem-fraction to 0.983 on a 24 GB 3090 Ti.
+    #
+    # MTP / EAGLE SPECULATIVE DECODING (opt-in): requires SGLANG_ENABLE_PP_SPEC=1
+    # plus two local patches bind-mounted below (only mounted when spec on):
+    #   qwen3_5_mm_relay.py    -- relays vision embeddings across the PP
+    #     boundary so the MTP draft on the last stage can merge them
+    #     (ports upstream #40501's qwen4-exp mechanism to qwen3_5.py).
+    #   qwen3_5_mtp_pp_spec.py -- degrades gracefully (token-embed fallback)
+    #     when the draft sees contains_mm_inputs() with no mm_input_embeds,
+    #     instead of asserting. Spec-decode verify makes the fallback
+    #     correctness-neutral; it only costs draft acceptance locally.
+    #
+    # Heavy model load across two GPUs; keep it off automatic restart so a
+    # config mistake fails loudly instead of crash-looping the host.
+      # MTP / EAGLE speculative decoding: --speculative-algorithm EAGLE with
+      # 3/1/4 (steps/topk/draft-tokens) is the community-verified throughput
+      # optimum for this model family; A/B 4/1/5 for single-stream latency.
+      # SGLANG_SPEC_* defaults in the command below. Draft runs on the LAST
+      # PP stage (the 3090 Ti).
+    restart: unless-stopped
+    stop_grace_period: 60s
+    ipc: host
+    ports:
+      - "${LLM_BACKEND_PORT:-8082}:${LLM_BACKEND_PORT:-8082}"
+    networks:
+      proxy:
+        # LiteLLM (litellm/) resolves whichever backend is live by this alias.
+        # Host networking cannot carry an alias, hence bridge + ipc:host.
+        aliases:
+          - llm-active
+    volumes:
+      - ${SGLANG_MODEL_DIR:-/mnt/data/models/llm/Qwen3.8-SGLang}:/model:ro
+      - sglang-cache:/root/.cache
+      # Local patches binding over the nightly source tree (editable install).
+      # REQUIRED ONLY WHEN SGLANG_SPEC=1. Mount points are comment-toggled
+      # because spec is off by default (acceptance 0 under PP, see header).
+      # - ./patches/qwen3_5_mm_relay.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5.py:ro
+      # - ./patches/qwen3_5_mtp_pp_spec.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5_mtp.py:ro
+    env_file:
+      # Stack-local values, then the shared root secrets (HF_TOKEN lives there).
+      - .env
+      - ../.env
+    environment:
+      HF_HUB_ENABLE_HF_TRANSFER: "1"
+      # Hybrid model + PP: be tolerant of slow interconnect at startup.
+      SGLANG_DISABLE_TQDM: "1"
+      # PROMETHEUS. Both knobs are required for the `llm-backend` scrape job in
+      # monitoring/prometheus.yml, and BOTH default to False, so neither can be
+      # inferred from the flag list:
+      #   --enable-metrics (server arg) mounts /metrics. Without it the router
+      #     404s and Prometheus reports the target DOWN with a 404, which reads
+      #     like a Prometheus/network problem rather than a missing flag.
+      #   SGLANG_ENABLE_METRICS_DEVICE_TIMER populates
+      #     sglang:forward_execution_seconds_total -- the only GPU-busy-time
+      #     denominator available, and therefore the only correct way to derive
+      #     a cache-independent prefill rate (see the Prefill rate panel).
+      #     Gated separately at metrics_reporter.py:297.
+      SGLANG_ENABLE_METRICS_DEVICE_TIMER: "1"
+      # Expandable segments reduces fragmentation across the PP stages.
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      # PP layer split. PP0=4070 Ti S (embed+vision+26 layers), PP1=3090 Ti
+      # (lm_head+38 layers). Balances stage time (26/613 == 38/903) and matches
+      # upstream guidance to put the larger partition on the higher rank.
+      SGLANG_PP_LAYER_PARTITION: ${SGLANG_PP_LAYER_PARTITION:-26,38}
+      # flashinfer CuTe DSL JIT dies with cudaErrorNoKernelImageForDevice under
+      # heterogeneous PP ("Target SM ARCH: unknown"). Force its CUDA JIT path.
+      FLASHINFER_USE_CUDA_NORM: "1"
+      # Device order MUST be PCI_BUS_ID or PP0 lands on the 16 GB card.
+      # See docs/20261002-224500-sglang-qwen38-migration.md section 3.2.
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      # Reorder AFTER PCI_BUS_ID enumeration: PCI_BUS_ID makes dev0=3090Ti, dev1=4070TiS,
+      # so "1,0" puts the 16 GB card first => PP0=4070, PP1=3090, matching the
+      # validated 26,38 partition (176,896 KV tokens). "0,1" yields only 60,992.
+      # validated 26,38 partition. Reversing device_ids above puts the 4070 first.
+      CUDA_VISIBLE_DEVICES: 1,0
+      # Gate for PP + EAGLE/MTP speculative decoding (undocumented upstream).
+      # Off by default: acceptance is 0 under PP on this multimodal model.
+      # Set to "1" AND add the spec flags below AND uncomment patch mounts.
+      SGLANG_ENABLE_PP_SPEC: "${SGLANG_ENABLE_PP_SPEC:-0}"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids:
+                - '${GPU_SLOT_1:?GPU_SLOT_1_NOT_SET}'   # RTX 3090 Ti, stage 0
+                - '${GPU_SLOT_3:?GPU_SLOT_3_NOT_SET}'   # RTX 4070 Ti S, stage 1
+              capabilities: [gpu, compute, utility]
+    command: >
+      python3 -m sglang.launch_server
+      --model-path /model
+      --served-model-name default
+      --host 0.0.0.0
+      --port ${LLM_BACKEND_PORT:-8082}
+      --trust-remote-code
+      --enable-multimodal
+      --dtype bfloat16
+      --pp-size 2
+      --dist-timeout 1800
+      --context-length ${SGLANG_CONTEXT_LENGTH:-262144}
+      --kv-cache-dtype fp8_e4m3
+      --mamba-ssm-dtype bfloat16
+      --mamba-full-memory-ratio 0.5
+      --mamba-radix-cache-strategy extra_buffer
+      --max-mamba-cache-size 24
+      --mem-fraction-static ${SGLANG_MEM_FRACTION:-0.95}
+      --max-running-requests ${SGLANG_MAX_RUNNING_REQUESTS:-64}
+      --chunked-prefill-size 16384
+      --max-prefill-tokens 16384
+      --page-size 64
+      --disable-prefill-cuda-graph
+      --mm-feature-transport cpu
+      ${SGLANG_SPEC_FLAGS:-}
+      --reasoning-parser qwen3
+      --tool-call-parser qwen3_coder
+      --watchdog-timeout 1200
+      --enable-metrics
+
+volumes:
+  sglang-cache:
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,95 @@
+{
+  "label": "pp2-262k-nospec",
+  "ts": "2026-10-02T23:31:24",
+  "server": {
+    "context_length": null,
+    "pp_size": null,
+    "max_running_requests": null,
+    "max_mamba_cache_size": null,
+    "max_total_num_tokens": 164544,
+    "kv_cache_size": null
+  },
+  "gates": [
+    {
+      "gate": "arith",
+      "ok": false,
+      "want": "11735042",
+      "got": "",
+      "ttft": 0,
+      "sec": 5.59
+    },
+    {
+      "gate": "logic",
+      "ok": true,
+      "want": "yes",
+      "got": "yes",
+      "ttft": 0,
+      "sec": 1.65
+    },
+    {
+      "gate": "code",
+      "ok": true,
+      "want": "45",
+      "got": "45",
+      "ttft": 0,
+      "sec": 1.5
+    }
+  ],
+  "vision": {
+    "vision_ok": true,
+    "got": "  Red",
+    "prompt_tokens": 322
+  },
+  "decode": [
+    {
+      "label": "~2000tok",
+      "prompt_tok_approx": 2000,
+      "gen": 51,
+      "ttft_s": 1.408,
+      "total_s": 2.6,
+      "decode_tps": 42.7,
+      "prefill_tok_per_s": 1420.1
+    },
+    {
+      "label": "~20000tok",
+      "prompt_tok_approx": 20000,
+      "gen": 51,
+      "ttft_s": 7.311,
+      "total_s": 8.53,
+      "decode_tps": 42.0,
+      "prefill_tok_per_s": 2735.5
+    },
+    {
+      "label": "~60000tok",
+      "prompt_tok_approx": 60000,
+      "gen": 51,
+      "ttft_s": 1.388,
+      "total_s": 2.61,
+      "decode_tps": 41.8,
+      "prefill_tok_per_s": 43214.6
+    }
+  ],
+  "concurrency": [
+    {
+      "concurrency": 1,
+      "ok": 1,
+      "failed": 0,
+      "wall_s": 5.16,
+      "aggregate_tps": 18.0
+    },
+    {
+      "concurrency": 4,
+      "ok": 4,
+      "failed": 0,
+      "wall_s": 4.19,
+      "aggregate_tps": 109.2
+    },
+    {
+      "concurrency": 8,
+      "ok": 8,
+      "failed": 0,
+      "wall_s": 6.93,
+      "aggregate_tps": 172.9
+    }
+  ]
+}
