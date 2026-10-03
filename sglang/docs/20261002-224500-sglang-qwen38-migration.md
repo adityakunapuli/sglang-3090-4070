@@ -461,3 +461,62 @@ Notes:
 - **2026-10-03 04:55** — acceptance measured 0.00 @ 3/1/4 on text; replayssm-spec variant: same.
 - **2026-10-03 05:10** — PP1+MTP confirmed OOM-infeasible (min mem-fraction 0.983).
 - **2026-10-03 05:20** — shipped no-spec config as default; MTP documented as gated toggle.
+
+---
+
+## 12. Third session (2026-10-03): MTP FIXED — root cause was quantization, not PP
+
+### The fix
+
+The embedded MTP head ships in raw BF16 (`model-mtp-bf16.safetensors`, 15 tensors)
+while the checkpoint's compressed-tensors quant config lists **no `mtp.*` targets**.
+SGLang therefore built the draft's linears as Marlin W4A16 layers; with no packed
+weights on disk, the scale buffers stayed uninitialized (NaN), so every draft logit
+was NaN, `argmax` returned token 0 unconditionally, and **acceptance was 0.00**.
+Two patches in `../patches/` are both needed (see compose header):
+
+1. `qwen3_5_mtp_pp_spec.py`: `_mtp_quant_config` returns None (draft built in bf16)
+   for compressed-tensors checkpoints with no mtp.* quant targets. NOTE: the quant
+   name is `"compressed_tensors"` (underscore), which is why the first pass at this
+   fix silently no-opped on `"compressed-tensors"`.
+   (`SGLANG_DEBUG_MTP=1` gives per-submodule NaN probes; the debug gate skips CUDA
+   graph capture, whose invalidation error sent us down a wrong turn once.)
+2. `qwen3_5_mm_relay.py`: carries `mm_input_embeds` across the PP boundary in the
+   proxy tensor dict so vision works with the draft (port of upstream #40501).
+
+### Measured (production config, with MTP on)
+
+| | no-spec (session 2) | spec ON (this config) |
+|---|---|---|
+| decode tok/s (long gen) | 42.6 | **81–84** (accept len 3.0–3.8) |
+| prefill tok/s @60k | ~1013 | ~1088 |
+| KV pool / hard request cap | 187k | **83.5k→69.9k** (see below) |
+| concurrency cap (mamba) | 6 | 4 |
+| gates / vision / needle@61k | pass | pass |
+
+### Production memory tuning journey (why these exact numbers)
+
+The 4070 Ti S co-hosts ~3GB of foreign processes (jellyfin/whisper/audiocpp) whose
+usage is NOT steady, and `--mem-fraction-static` is computed from *total* VRAM, so
+sizing can overshoot the actually-free memory at stress time. Two failure modes:
+- GDN triton prefill workspace lazy-alloc (96-238 MB spikes) OOMs the PP0 scheduler.
+- The vision tokenizer/encoder on PP0 spikes on multi-MP screenshots; the upstream
+  KV-budget reservation (`SGLANG_VLM_CACHE_SIZE_MB`, default ~100MB) is far too small.
+
+Meaningful sweep results (PP partition, mem fraction, mamba slots → pool tokens):
+`28,36/0.95/24→73k (OOM under bench)`, `26,38/0.94/20→92k (OOM under stress)`,
+`24,40/0.95/16→131k (OOM under stress)`, `24,40/0.92/20+vlm768→96k (OOM under stress)`,
+`22,42/0.90/16+vlm1024→57k (0 OOM)`, **`20,44/0.92/16+vlm1024`→83.5k, STRESS PASS**
+with `--cuda-graph-bs-decode 1 2 4` and `--chunked-prefill-size 8192` (lab values;
+the 16k prefill/default graphs cost ~1GB of PP0 slack and reintroduced the OOM).
+
+Shipped: partition 20,44, mem 0.92, mamba 16 (4 concurrent), VLM reserve 1024MB,
+pool 83,520 tokens at ctx 262144. Tests/stress_validation.py: 30/30 mixed
+multi-image + long-context + concurrent requests, 0 errors, accept len ~3.0.
+To recover 187k-context/no-spec: `SGLANG_ENABLE_PP_SPEC=0 SGLANG_SPEC_FLAGS=""`.
+
+### If upstream ever asks
+
+The proper fix belongs in `_mtp_quant_config` + the checkpoint's quant config
+(add `mtp.*` to the ignore list at quant time) — but per maintainer-sensitivity we
+are NOT opening a PR; a fork could carry `patches/` cleanly.

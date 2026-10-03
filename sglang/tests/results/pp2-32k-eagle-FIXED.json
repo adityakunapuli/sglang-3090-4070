@@ -1,0 +1,63 @@
+{
+  "label": "pp2-32k-eagle-FIXED",
+  "ts": "2026-10-03T07:31:19",
+  "server": {
+    "context_length": null,
+    "pp_size": null,
+    "max_running_requests": null,
+    "max_mamba_cache_size": 12,
+    "max_total_num_tokens": 74176,
+    "kv_cache_size": null
+  },
+  "gates": [
+    {
+      "gate": "arith",
+      "ok": true,
+      "want": "11739042",
+      "got": "11739042",
+      "ttft": 0,
+      "sec": 3.1
+    },
+    {
+      "gate": "logic",
+      "ok": true,
+      "want": "yes",
+      "got": "yes",
+      "ttft": 0,
+      "sec": 0.75
+    },
+    {
+      "gate": "code",
+      "ok": true,
+      "want": "45",
+      "got": "45",
+      "ttft": 0,
+      "sec": 0.82
+    }
+  ],
+  "vision": {
+    "vision_ok": true,
+    "got": "  Red",
+    "prompt_tokens": 322
+  },
+  "decode": [
+    {
+      "label": "~2000tok",
+      "prompt_tok_approx": 2000,
+      "gen": 14,
+      "ttft_s": 2.851,
+      "total_s": 3.39,
+      "decode_tps": 25.9,
+      "prefill_tok_per_s": 701.6
+    },
+    {
+      "label": "~20000tok",
+      "prompt_tok_approx": 20000,
+      "gen": 14,
+      "ttft_s": 1.553,
+      "total_s": 2.13,
+      "decode_tps": 24.2,
+      "prefill_tok_per_s": 12880.5
+    }
+  ]
+}

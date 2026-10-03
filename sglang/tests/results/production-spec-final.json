@@ -1,0 +1,79 @@
+{
+  "label": "production-spec-final",
+  "ts": "2026-10-03T09:28:59",
+  "server": {
+    "context_length": null,
+    "pp_size": null,
+    "max_running_requests": null,
+    "max_mamba_cache_size": 16,
+    "max_total_num_tokens": 83520,
+    "kv_cache_size": null
+  },
+  "gates": [
+    {
+      "gate": "arith",
+      "ok": true,
+      "want": "11739042",
+      "got": "11739042",
+      "ttft": 0,
+      "sec": 3.27
+    },
+    {
+      "gate": "logic",
+      "ok": true,
+      "want": "yes",
+      "got": "yes",
+      "ttft": 0,
+      "sec": 0.83
+    },
+    {
+      "gate": "code",
+      "ok": true,
+      "want": "45",
+      "got": "45",
+      "ttft": 0,
+      "sec": 0.89
+    }
+  ],
+  "vision": {
+    "vision_ok": true,
+    "got": "  Red",
+    "prompt_tokens": 322
+  },
+  "decode": [
+    {
+      "label": "~2000tok",
+      "prompt_tok_approx": 2000,
+      "gen": 13,
+      "ttft_s": 2.904,
+      "total_s": 3.49,
+      "decode_tps": 22.1,
+      "prefill_tok_per_s": 688.7
+    },
+    {
+      "label": "~20000tok",
+      "prompt_tok_approx": 20000,
+      "gen": 14,
+      "ttft_s": 19.64,
+      "total_s": 20.22,
+      "decode_tps": 24.1,
+      "prefill_tok_per_s": 1018.3
+    }
+  ],
+  "concurrency": [
+    {
+      "concurrency": 1,
+      "ok": 1,
+      "failed": 0,
+      "wall_s": 7.8,
+      "aggregate_tps": 11.4
+    },
+    {
+      "concurrency": 4,
+      "ok": 4,
+      "failed": 0,
+      "wall_s": 20.08,
+      "aggregate_tps": 22.5
+    }
+  ]
+}

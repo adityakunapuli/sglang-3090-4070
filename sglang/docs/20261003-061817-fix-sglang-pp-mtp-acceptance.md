@@ -1,6 +1,6 @@
 # Fixing PP × MTP acceptance on Qwen3.8-27B (SGLang) — an open field guide
 
-**Status:** open problem · **Written:** 2026-10-03 · **Related:** the migration doc in this
+**Status:** SOLVED 2026-10-03 — see §8 · **Written:** 2026-10-03 · **Related:** the migration doc in this
 directory (`20261002-224500-sglang-qwen38-migration.md`) covers how the stack got here.
 
 ---
@@ -293,3 +293,28 @@ real progress; write that down.
 
 Whichever path you take: update this file's graveyard and ground-truth tables, and when
 the picture changes materially, commit the `sglang/` dir again.
+
+---
+
+## 8. RESOLUTION (session 3, same day)
+
+Not PP at all. **The draft logits were all-NaN because the MTP head was built
+Marlin W4A16 against a raw-BF16 checkpoint** (compressed-tensors ignore list has
+no `mtp.*` entries); the loader left the scale buffers uninitialized. Every draft
+token argmaxed to id 0 → accept len exactly 1.00. The debug chain that found it:
+MTP_DBG probes showed `argmax==0` constants, then `logits_nan=True`, then NaN
+born inside the inner decoder layer, then `qkv weight_scale norm=nan`, then the
+checkpoint listing proving no packed MTP tensors exist on disk.
+
+Which hypotheses died: H1 (hidden-state relay — real hidden norms were healthy),
+H3 (positions fine in eager), S5 relay patch (needed only for vision correctness
+under spec, not acceptance). The graveyard's "it's a PP-specific alignment bug"
+frame was wrong; this checkpoint/config combo was broken for ANY spec run of this
+quant — PP never entered into it. (That ALSO explains why single-node reports in
+the wild showed healthy acceptance: those users ran BF16 checkpoints.)
+
+Lesson appended to §2.5: **when subsystem X looks broken, verify the trivial
+"is it even loaded right" axis before the exotic architecture axis.** The 3-boot
+bisect (NaN before/after fc; before/after inner layer; weight buffers) did it.
+
+Fix + final numbers + production tuning: migration doc §12 same directory.

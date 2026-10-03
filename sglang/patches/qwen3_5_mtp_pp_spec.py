@@ -88,6 +88,31 @@ def _mtp_quant_config(quant_config):
         ]
         if mtp_excludes and any("mlp.experts" in layer for layer in mtp_excludes):
             return None
+    if quant_config and quant_config.get_name().replace("_", "-") == "compressed-tensors":
+        # PATCH (local): Compressed-tensors checkpoints (AWQ/Marlin W4A16, e.g.
+        # ukisai/Swift-1.5-Qwen3.8-27B) ship the embedded MTP head in raw BF16
+        # (`model-mtp-bf16.safetensors`) with NO `mtp.*` entries in the quant
+        # ignore list. Building the draft as W4A16 would expect packed
+        # int32 weights + scales that do not exist on disk; what loads is the
+        # raw BF16 tensor, producing NaN through .weight-shaped matmuls
+        # (observed: draft logits all-NaN -> argmax 0 -> acceptance 1.00
+        # under NEXTN/EAGLE). If no mtp.* group is listed as quantized, build
+        # the draft in bf16.
+        ignore = getattr(quant_config, "ignore", None) or []
+        groups = getattr(quant_config, "config_groups", {}) or {}
+        mtp_quantized = any(
+            isinstance(t, str) and t.startswith("mtp.")
+            for g in groups.values()
+            for t in getattr(g, "targets", []) or []
+        )
+        if not mtp_quantized:
+            import logging
+            logging.getLogger(__name__).warning(
+                "MTP draft: compressed-tensors checkpoint has no mtp.* "
+                "quantization targets -- building the draft head in bf16 "
+                "(embedded MTP ships unquantized)."
+            )
+            return None
     return quant_config
 
 
@@ -194,6 +219,44 @@ class Qwen3_5ForCausalLMMTP(nn.Module):
         input_embeds: Optional[torch.Tensor] = None,
         **kwargs,
     ):
+        import os as _os, logging as _logging
+        _DBG = _os.environ.get("SGLANG_DEBUG_MTP", "0") == "1" and not torch.cuda.is_current_stream_capturing()
+        _dbg_state = {}
+        if _DBG and not _dbg_state.get("_weights_checked"):
+            try:
+                if not getattr(self, "_dbg_weights_done", False):
+                    self._dbg_weights_done = True
+                    _w = {}
+                    for name, mod in [("fc", self.fc), ("lm_head", self.lm_head)]:
+                        w = getattr(mod, "weight", None)
+                        _w[name] = (round(w.norm().item(), 2) if w is not None else None)
+                        sc = getattr(mod, "weight_scale", None)
+                        if sc is not None:
+                            _w[name + "_scale"] = round(sc.norm().item(), 4)
+                    inner = getattr(getattr(self.model, "layers", [None])[0] if hasattr(self.model, "layers") and len(self.model.layers) else self.model, "self_attn", None)
+                    wq = getattr(getattr(inner, "qkv_proj", None), "weight", None)
+                    _w["qkv"] = (round(wq.norm().item(), 2) if wq is not None else None)
+                    _logging.getLogger(__name__).warning("MTP_DBG weights %s", _w)
+            except Exception as e:
+                _logging.getLogger(__name__).warning("MTP_DBG weight-probe err %s", str(e)[:120])
+        if _DBG:
+            try:
+                hs_probe = forward_batch.spec_info.hidden_states
+                mrope = getattr(forward_batch, "mrope_positions", None)
+                _dbg_state = dict(
+                    mode=str(forward_batch.forward_mode),
+                    mm=forward_batch.contains_mm_inputs(),
+                    mm_embeds=forward_batch.mm_input_embeds is not None,
+                    ids_shape=tuple(input_ids.shape),
+                    pos_shape=tuple(positions.shape),
+                    pos_tail=positions.flatten()[-4:].tolist(),
+                    mrope_none=mrope is None,
+                    hs_norm=(round(hs_probe.norm().item(), 3) if hs_probe is not None else None),
+                    hs_rows=(hs_probe.shape[0] if hs_probe is not None else None),
+                    seq_lens=forward_batch.seq_lens.tolist()[:8],
+                )
+            except Exception as e:  # never let debug kill the forward
+                _dbg_state = {"err": str(e)[:120]}
         exit_stack = ExitStack()
         if (
             is_npu()
@@ -250,6 +313,48 @@ class Qwen3_5ForCausalLMMTP(nn.Module):
             hidden_states = torch.cat([input_embeds, hidden_states], dim=-1)
 
             hidden_states = self.fc(hidden_states)
+            if _DBG:
+                _dbg_state["fc_out_norm"] = round(hidden_states.float().norm().item(), 3)
+                _dbg_state["fc_out_nan"] = bool(hidden_states.isnan().any().item())
+                if not getattr(self, "_dbg_hooks", None):
+                    try:
+                        log = _logging.getLogger(__name__)
+                        lay = getattr(self.model, "layers", [None])[0]
+                        log.warning("MTP_DBG inner-inspect model=%s lay=%s", type(self.model).__name__, type(lay).__name__ if lay is not None else None)
+                        if lay is not None:
+                            try:
+                                qm = getattr(lay.qkv_proj, "quant_method", None)
+                                log.warning("MTP_DBG qkv quant_method=%s cls=%s", type(qm).__name__ if qm else None, _os.environ.get("SGLANG_DEBUG_MTP") and type(lay.qkv_proj).__name__)
+                                for n, prm in list(lay.qkv_proj.named_parameters()) + list(lay.qkv_proj.named_buffers()):
+                                    if torch.is_tensor(prm):
+                                        t = prm.detach()
+                                        gt = t.float() if t.dtype not in (torch.int32, torch.int64, torch.uint8) else t
+                                        log.warning("MTP_DBG qkv_param %s %s %s norm=%s nan=%s",
+                                                    n, tuple(t.shape), str(t.dtype),
+                                                    round(gt.float().abs().sum().item(), 1) if gt.dtype.is_floating_point else "int",
+                                                    bool(t.isnan().any().item()) if t.dtype.is_floating_point else "-")
+                            except Exception as e:
+                                log.warning("MTP_DBG qkv-inspect err %s", e)
+                            def _mk(nm):
+                                def hook(mod, inp, out):
+                                    if _os.environ.get("SGLANG_DEBUG_MTP") != "1" or torch.cuda.is_current_stream_capturing():
+                                        return
+                                    t = out[0] if isinstance(out, tuple) else out
+                                    if torch.is_tensor(t):
+                                        log.warning("MTP_SUB %s norm=%s nan=%s", nm,
+                                                    round(t.float().norm().item(), 3),
+                                                    bool(t.isnan().any().item()))
+                                return hook
+                            log.warning("MTP_DBG registering submodule hooks, layer=%s", type(lay).__name__)
+                            self._dbg_hooks = [
+                                lay.input_layernorm.register_forward_hook(_mk("in_norm")),
+                                lay.qkv_proj.register_forward_hook(_mk("qkv")),
+                                lay.o_proj.register_forward_hook(_mk("o_proj")),
+                                lay.post_attention_layernorm.register_forward_hook(_mk("post_norm")),
+                                lay.mlp.register_forward_hook(_mk("mlp")),
+                            ]
+                    except Exception as e:
+                        _logging.getLogger(__name__).warning("MTP_DBG hook err %s", e)
 
             with get_global_expert_distribution_recorder().disable_this_region():
                 hidden_states = self.model(
@@ -258,12 +363,46 @@ class Qwen3_5ForCausalLMMTP(nn.Module):
                     forward_batch,
                     hidden_states,
                 )
+            if _DBG:
+                _dbg_state["inner_out_norm"] = round(hidden_states.float().norm().item(), 3)
+                _dbg_state["inner_out_nan"] = bool(hidden_states.isnan().any().item())
+                inner = self.model.model if hasattr(self.model, "model") else None
+                if inner is not None and getattr(inner, "norm", None) is not None:
+                    _dbg_state["inner_norm_w"] = round(inner.norm.weight.float().norm().item(), 3)
+                # dump the inner layer's attention out if reachable
+                try:
+                    lay = inner.layers[0]
+                    for nm in ("self_attn", "mlp"):
+                        sub = getattr(lay, nm, None)
+                        if sub is None:
+                            _dbg_state[nm + "_w"] = None
+                            continue
+                        w = getattr(getattr(sub, "qkv_proj", sub), "weight", None)
+                        if w is None and hasattr(sub, "q_proj"):
+                            w = sub.q_proj.weight
+                        _dbg_state[nm + "_w"] = (
+                            (round(w.float().norm().item(), 2), str(getattr(w, "dtype", None)), tuple(w.shape)) if w is not None else None)
+                except Exception:
+                    pass
         finally:
             exit_stack.close()
 
-        return self.logits_processor(
+        out = self.logits_processor(
             input_ids, hidden_states, self.lm_head, forward_batch
         )
+        if _DBG and _dbg_state:
+            try:
+                ntl = getattr(out, "next_token_logits", None)
+                if ntl is not None:
+                    _dbg_state["draft_top1"] = ntl.argmax(-1).tolist()[:8]
+                    _f = ntl.float()
+                    _dbg_state["logits_nan"] = bool(_f.isnan().any().item())
+                    _dbg_state["logits_max_std"] = [round(_f.max().item(), 3), round(_f.std().item(), 3)]
+                _dbg_state["emb_src"] = ("mm" if forward_batch.mm_input_embeds is not None else "token")
+                _logging.getLogger(__name__).warning("MTP_DBG %s", _dbg_state)
+            except Exception:
+                pass
+        return out
 
     def load_weights(
         self, weights: Iterable[Tuple[str, torch.Tensor]], is_mtp: bool = False

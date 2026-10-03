@@ -75,17 +75,22 @@ services:
     # PP + EAGLE on this hybrid-GDN model. Bump deliberately.
     image: ${SGLANG_IMAGE:-lmsysorg/sglang:nightly-dev-20261002-67eab570}
     container_name: sglang-qwen38
-    # MTP STATUS (2026-10-03): PP+EAGLE now BOOTS (nightly 67eab570 + patches
-    # below fix both startup crashes), but draft acceptance is 0.00 under PP
-    # for this multimodal model => spec costs ~40% decode instead of gaining.
-    # Disabled by default; re-enable with SGLANG_SPEC=1 to re-test on future
-    # nightlies. See docs/ for the debugging trail and upstream refs (#39634
-    # tracker, #40501 qwen4-exp mm relay which we ported to qwen3_5.py).
-    # SINGLE-GPU + MTP is a dead end here: draft weights + pools push the
-    # minimum viable mem-fraction to 0.983 on a 24 GB 3090 Ti.
-    #
-    # MTP / EAGLE SPECULATIVE DECODING (opt-in): requires SGLANG_ENABLE_PP_SPEC=1
-    # plus two local patches bind-mounted below (only mounted when spec on):
+    # MTP STATUS (2026-10-03, session 3): FIXED, ON BY DEFAULT. Root cause was
+    # quantization, not PP: this checkpoint ships the MTP head in raw bf16 while
+    # its compressed-tensors config lists no mtp.* targets, so the draft was
+    # built as Marlin W4A16 and got uninitialized scale buffers -> NaN logits ->
+    # acceptance 0.00. patches/qwen3_5_mtp_pp_spec.py forces bf16 for that case
+    # (get_name() is 'compressed_tensors', underscore -- not 'compressed-tensors').
+    # Measured after fix: accept len ~3.0-3.9, decode 81-84 tok/s (vs 42.6
+    # without spec), stress-tested with multi-image + concurrent traffic.
+    # SINGLE-GPU + MTP remains infeasible (min mem-fraction 0.983 on the 3090).
+    # PP + EAGLE requires these two bind-mounted patches:
+    #   qwen3_5_mm_relay.py    -- relays vision embeddings across the PP
+    #     boundary so the last-stage MTP draft can merge them (ports upstream
+    #     #40501's qwen4-exp mechanism to qwen3_5.py).
+    #   qwen3_5_mtp_pp_spec.py -- bf16 fallback for the unquantized-checkpoint
+    #     MTP head (the acceptance fix) + graceful mm-embeds fallback. Contains
+    #     SGLANG_DEBUG_MTP=1 instrumentation hooks for future work.
     #   qwen3_5_mm_relay.py    -- relays vision embeddings across the PP
     #     boundary so the MTP draft on the last stage can merge them
     #     (ports upstream #40501's qwen4-exp mechanism to qwen3_5.py).
@@ -115,11 +120,10 @@ services:
     volumes:
       - ${SGLANG_MODEL_DIR:-/mnt/data/models/llm/Qwen3.8-SGLang}:/model:ro
       - sglang-cache:/root/.cache
-      # Local patches binding over the nightly source tree (editable install).
-      # REQUIRED ONLY WHEN SGLANG_SPEC=1. Mount points are comment-toggled
-      # because spec is off by default (acceptance 0 under PP, see header).
-      # - ./patches/qwen3_5_mm_relay.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5.py:ro
-      # - ./patches/qwen3_5_mtp_pp_spec.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5_mtp.py:ro
+      # Local patches mounted over the nightly source tree (editable install);
+      # required while MTP is on. See MTP STATUS header above.
+      - ./patches/qwen3_5_mm_relay.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5.py:ro
+      - ./patches/qwen3_5_mtp_pp_spec.py:/sgl-workspace/sglang/python/sglang/srt/models/qwen3_5_mtp.py:ro
     env_file:
       # Stack-local values, then the shared root secrets (HF_TOKEN lives there).
       - .env
@@ -154,13 +158,17 @@ services:
       CUDA_DEVICE_ORDER: PCI_BUS_ID
       # Reorder AFTER PCI_BUS_ID enumeration: PCI_BUS_ID makes dev0=3090Ti, dev1=4070TiS,
       # so "1,0" puts the 16 GB card first => PP0=4070, PP1=3090, matching the
-      # validated 26,38 partition (176,896 KV tokens). "0,1" yields only 60,992.
-      # validated 26,38 partition. Reversing device_ids above puts the 4070 first.
+      # (Post-spec sweep: 20,44 puts the 4070's share at 5 full-attn layers ->
+      # 83.5k KV pool with spec on, 3.5GB free on PP0; 26,38/28,36 were the
+      # no-spec era optima.)
       CUDA_VISIBLE_DEVICES: 1,0
-      # Gate for PP + EAGLE/MTP speculative decoding (undocumented upstream).
-      # Off by default: acceptance is 0 under PP on this multimodal model.
-      # Set to "1" AND add the spec flags below AND uncomment patch mounts.
-      SGLANG_ENABLE_PP_SPEC: "${SGLANG_ENABLE_PP_SPEC:-0}"
+      # Gate for PP + EAGLE/MTP speculative decoding; ON by default since the
+      # bf16-draft fix. Set to 0 together with SGLANG_SPEC_FLAGS="" for the
+      # no-spec config (2x slower decode but ~187k vs ~83k KV pool tokens).
+      SGLANG_ENABLE_PP_SPEC: "${SGLANG_ENABLE_PP_SPEC:-1}"
+      # Reserve (out of the KV budget) for vision encoder runtime allocations;
+      # the 100MB upstream default OOMs on multi-MP screenshots under load.
+      SGLANG_VLM_CACHE_SIZE_MB: "${SGLANG_VLM_CACHE_SIZE_MB:-1024}"
     deploy:
       resources:
         reservations:
@@ -186,15 +194,16 @@ services:
       --mamba-ssm-dtype bfloat16
       --mamba-full-memory-ratio 0.5
       --mamba-radix-cache-strategy extra_buffer
-      --max-mamba-cache-size 24
+      --max-mamba-cache-size ${SGLANG_MAX_MAMBA_CACHE:-16}
       --mem-fraction-static ${SGLANG_MEM_FRACTION:-0.95}
       --max-running-requests ${SGLANG_MAX_RUNNING_REQUESTS:-64}
-      --chunked-prefill-size 16384
-      --max-prefill-tokens 16384
+      --chunked-prefill-size 8192
+      --max-prefill-tokens 8192
+      --cuda-graph-bs-decode 1 2 4
       --page-size 64
       --disable-prefill-cuda-graph
       --mm-feature-transport cpu
-      ${SGLANG_SPEC_FLAGS:-}
+      ${SGLANG_SPEC_FLAGS:---speculative-algorithm EAGLE --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4}
       --reasoning-parser qwen3
       --tool-call-parser qwen3_coder
       --watchdog-timeout 1200
