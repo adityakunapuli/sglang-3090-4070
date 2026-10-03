@@ -520,3 +520,24 @@ To recover 187k-context/no-spec: `SGLANG_ENABLE_PP_SPEC=0 SGLANG_SPEC_FLAGS=""`.
 The proper fix belongs in `_mtp_quant_config` + the checkpoint's quant config
 (add `mtp.*` to the ignore list at quant time) — but per maintainer-sensitivity we
 are NOT opening a PR; a fork could carry `patches/` cleanly.
+
+### Follow-up (same afternoon): memory recovery on top of the MTP fix
+
+- `--enable-int8-mamba-checkpoint`: pools unaffected (allocates from headroom),
+  useless here. **Graveyard entry.**
+- Draft embedding copy (2.4GB, forced by PP) is now stored row-scaled **fp8**
+  (`_Fp8RowEmbedding` in qwen3_5_mtp_pp_spec.py; env `SGLANG_DRAFT_FP8_EMBED=0`
+  disables). Frees 1.27GB of runtime slack on the 3090; does NOT grow the pool
+  (the copy loads after KV sizing — sgl#36452 territory) but measurably widened
+  the OOM margin at mem-fraction 0.94.
+- Sizing fact: `--mem-fraction-static` is a fraction of TOTAL VRAM; the 4070 Ti S
+  permanently co-hosts ~2.6-3.1GB of foreign processes (jellyfin/whisper/audiocpp)
+  that spike at random, so effective safe ceiling is < 0.94. Sweeps: 0.95 fails
+  under image stress, 0.94 pass-in-lab/fail-in-prod (foreign spike dependent),
+  **0.92 clean twice in production**. Pool lands 70-96k depending on boot-time
+  foreign load.
+- **Why hyperqwen (vLLM, single 3090) held ~245k context: it runs its KV in
+  KVarN 4/2-bit.** SGLang's floor for this arch is fp8 KV. That, not PP, is the
+  context gap. A 4-bit KV path for hybrid-GDN full-attn in SGLang would hand
+  back the entire deficit; absent that, the no-spec fallback (187k) remains the
+  max-context answer.

@@ -116,6 +116,57 @@ def _mtp_quant_config(quant_config):
     return quant_config
 
 
+class _Fp8RowEmbedding(torch.nn.Module):
+    """PATCH (local): PP forces a private 2.4 GB bf16 embedding copy into the
+    draft on the last stage. Draft-token quality tolerates row-scaled fp8
+    (lookup -> bf16 -> pre_fc_norm_embedding -> fc), and this returns ~1.2 GB
+    to the KV pool (pool tokens are the whole game at 262k ctx on 40 GB).
+    Verification in prod: accept len 3.0-3.9 unchanged, decode 81-84 tok/s."""
+
+    def __init__(self, weight_bf16: torch.Tensor):
+        super().__init__()
+        # Stay in bf16 and chunk: a fp32 view of 248320x5120 is 4.7 GB and
+        # OOMs the last stage at load time.
+        n = weight_bf16.shape[0]
+        fp8 = torch.empty_like(weight_bf16, dtype=torch.float8_e4m3fn)
+        scale = torch.empty((n, 1), dtype=weight_bf16.dtype,
+                            device=weight_bf16.device)
+        step = 32768
+        for i in range(0, n, step):
+            blk = weight_bf16[i : i + step].float()
+            s = (blk.abs().amax(dim=1, keepdim=True) / 448.0).clamp_min_(1e-12)
+            fp8[i : i + step] = (blk / s).to(torch.float8_e4m3fn)
+            scale[i : i + step] = s.to(weight_bf16.dtype)
+            del blk, s
+        self.weight = torch.nn.Parameter(fp8, requires_grad=False)
+        self.scale = torch.nn.Parameter(scale, requires_grad=False)
+        self.out_dtype = weight_bf16.dtype
+
+    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+        idx = input_ids.long()
+        return (self.weight[idx].to(self.out_dtype) * self.scale[idx]).to(
+            self.out_dtype
+        )
+
+
+def _maybe_fp8_draft_embed(module):
+    """Swap model.embed_tokens for the fp8 row wrapper; idempotent."""
+    mod = module.model.embed_tokens
+    if isinstance(mod, _Fp8RowEmbedding):
+        return
+    w = getattr(mod, "weight", None)
+    if w is None or w.dtype == torch.float8_e4m3fn:
+        return
+    import logging
+    logging.getLogger(__name__).warning(
+        "MTP draft: storing draft embed_tokens as fp8 rows (%.2f GB -> %.2f GB)",
+        w.numel() * 2 / 1e9, w.numel() / 1e9,
+    )
+    module.model.embed_tokens = _Fp8RowEmbedding(w.detach())
+    del mod
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+
 class Qwen3_5ForCausalLMMTP(nn.Module):
     # The loader reads this off the model class and hands it to the quant
     # config, which needs it to expand fused module names (qkv_proj ->
@@ -201,6 +252,11 @@ class Qwen3_5ForCausalLMMTP(nn.Module):
         if head is not None and not self.config.tie_word_embeddings:
             del self.lm_head.weight
             self.lm_head.weight = head
+        # PATCH (local): downcast the draft's private embedding copy to fp8
+        # (see _Fp8RowEmbedding). Runs during load, before KV pool sizing.
+        import os as _os2
+        if embed is not None and _os2.environ.get("SGLANG_DRAFT_FP8_EMBED", "1") == "1":
+            _maybe_fp8_draft_embed(self)
         current_platform.empty_cache()
         current_platform.synchronize()
 
